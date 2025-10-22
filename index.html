@@ -3,68 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CrimeCity Chronicles | GTA-style Game</title>
+    <title>Flappy Fly Fiasco</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/feather-icons"></script>
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
 </head>
-<body class="bg-gray-900 text-white">
-    <custom-navbar></custom-navbar>
-    
-    <main>
-        <!-- Hero Section with Vanta.js background -->
-        <section id="hero" class="relative h-screen flex items-center justify-center overflow-hidden">
-            <div class="absolute inset-0 z-0" id="vanta-bg"></div>
-            <div class="z-10 text-center px-4">
-                <h1 class="text-5xl md:text-7xl font-bold mb-6 text-white drop-shadow-lg">CRIMECITY CHRONICLES</h1>
-                <p class="text-xl md:text-2xl mb-8 max-w-2xl mx-auto">The ultimate urban sandbox experience</p>
-                <div class="flex gap-4 justify-center">
-                    <a href="#play" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-full font-bold transition-all transform hover:scale-105">
-                        Play Now
-                    </a>
-                    <a href="#features" class="bg-gray-800 hover:bg-gray-700 text-white px-6 py-3 rounded-full font-bold transition-all transform hover:scale-105">
-                        Learn More
-                    </a>
-                </div>
+<body class="bg-sky-400 flex items-center justify-center min-h-screen overflow-hidden">
+    <div class="game-container relative" style="width: 360px; height: 640px;">
+        <canvas id="gameCanvas" width="360" height="640" class="absolute top-0 left-0"></canvas>
+        
+        <!-- Splash Screen -->
+        <div id="splashScreen" class="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50 text-white transition-opacity duration-300">
+            <h1 class="text-4xl font-bold mb-4">FLAPPY FLY</h1>
+            <div class="relative mb-8">
+                <div class="bird-splash absolute -translate-x-1/2 -translate-y-1/2" style="width: 34px; height: 24px;"></div>
             </div>
-        </section>
-
-        <!-- Game Features -->
-        <section id="features" class="py-20 bg-gray-800">
-            <div class="container mx-auto px-4">
-                <h2 class="text-4xl font-bold text-center mb-16">Urban Mayhem Awaits</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div class="feature-card">
-                        <div class="icon-box bg-red-600">
-                            <i data-feather="map"></i>
-                        </div>
-                        <h3>Massive Open World</h3>
-                        <p>Explore a sprawling city with diverse districts, from upscale penthouses to gritty back alleys.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="icon-box bg-yellow-500">
-                            <i data-feather="activity"></i>
-                        </div>
-                        <h3>Dynamic Missions</h3>
-                        <p>Choose your path with branching storylines and emergent gameplay.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="icon-box bg-blue-500">
-                            <i data-feather="users"></i>
-                        </div>
-                        <h3>Multiplayer Madness</h3>
-                        <p>Team up or compete with players in this living, breathing criminal underworld.</p>
-                    </div>
-                </div>
+            <p class="text-xl mb-6">Tap to start!</p>
+            <div class="flex gap-4">
+                <button id="muteBtn" class="p-2 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30">
+                    <i data-feather="volume-2" class="text-white"></i>
+                </button>
+                <button id="highContrastBtn" class="p-2 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30">
+                    <i data-feather="eye" class="text-white"></i>
+                </button>
             </div>
-        </section>
+        </div>
 
-        <!-- Play Section -->
-        <section id="play" class="py-20 bg-gray-900">
-            <div class="container mx-auto px-4">
-                <div class="flex flex-col md:flex-row items-center gap-12">
-                    <div class="
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-70 text-white hidden">
+            <h2 class="text-3xl font-bold mb-2">GAME OVER</h2>
+            <p class="text-xl mb-1">Score: <span id="finalScore">0</span></p>
+            <p class="text-lg mb-6">Best: <span id="bestScore">0</span></p>
+            <div class="flex gap-4">
+                <button id="restartBtn" class="px-6 py-2 bg-green-500 rounded hover:bg-green-600">Play Again</button>
+                <button id="shareBtn" class="px-6 py-2 bg-blue-500 rounded hover:bg-blue-600">Share</button>
+            </div>
+        </div>
+
+        <!-- Score Display -->
+        <div id="scoreDisplay" class="absolute top-4 left-0 right-0 text-center text-white text-3xl font-bold hidden">0</div>
+    </div>
+
+    <!-- Audio elements -->
+    <audio id="flapSound" src="https://assets.mixkit.co/sfx/preview/mixkit-bird-whistling-1999.mp3" preload="auto"></audio>
+    <audio id="scoreSound" src="https://assets.mixkit.co/sfx/preview/mixkit-positive-interface-beep-221.mp3" preload="auto"></audio>
+    <audio id="hitSound" src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-game-over-213.mp3" preload="auto"></audio>
+
+    <script src="script.js"></script>
+    <script>
+        feather.replace();
+    </script>
 </body>
+
 </html>
