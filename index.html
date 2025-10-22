@@ -1,182 +1,177 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-  <title>Angry Birds — Web Remix</title>
-  <meta name="description" content="Slingshot birds at destructible pig forts. Cinematic zooms, level stars, multiple bird types. Single-file build." />
-  <style>
-    :root{
-      --ui:#101423cc; --ui-border:#2a2f4a66; --ink:#0b0e1a; --accent:#ffd24a;
-    }
-    html,body{height:100%;margin:0;background:#8ed6ff;color:#fff;font-family: ui-rounded, system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;}
-    *{box-sizing:border-box}
-    #app{min-height:100%;display:grid;place-items:center;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-    canvas{touch-action:none; background:transparent; display:block; width:min(100vw, 1000px); height:auto; border-radius:16px; box-shadow:0 10px 40px #0005; border:1px solid #0002}
-    #hud{position:fixed; inset:auto 0 0 0; display:flex; justify-content:center; gap:8px; padding:10px; pointer-events:none}
-    .chip{pointer-events:auto; background:var(--ui); border:1px solid var(--ui-border); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); padding:8px 12px; border-radius:999px; font-size:14px; color:#e6e8f0}
-    #score{position:fixed; top:10px; left:12px; background:var(--ui); border:1px solid var(--ui-border); padding:6px 10px; border-radius:10px; font-weight:800}
-    #levelName{position:fixed; top:10px; right:12px; background:var(--ui); border:1px solid var(--ui-border); padding:6px 10px; border-radius:10px}
-    #overlay{position:fixed; inset:0; display:none; place-items:center; background:#0008}
-    #overlay.show{display:grid}
-    #panel{background:#1b2035; color:#fff; border:1px solid #2a2f4a; border-radius:16px; padding:16px; width:min(380px, 92vw); box-shadow:0 10px 30px #0007}
-    #panel h2{margin:0 0 12px 0}
-    #panel .row{display:flex; justify-content:space-between; margin:6px 0}
-    #panel button{width:100%; margin-top:12px; padding:10px 14px; border-radius:12px; border:1px solid #2a2f4a; background:#2a3050; color:#fff; cursor:pointer}
-    #panel button:hover{filter:brightness(1.08)}
-    #paused{position:fixed; inset:0; display:none; place-items:center; background:#0006; color:#fff; font-weight:700; font-size:28px; text-align:center}
-    #paused.show{display:grid}
-    #bigPopup{position:fixed; top:40%; left:0; right:0; text-align:center; font-weight:900; font-size:64px; opacity:0; transform:translateY(10px); text-shadow:0 4px 0 #0007}
-    #a11y{position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden}
-  </style>
-</head>
-<body>
-  <div id="app">
-    <canvas id="game" width="800" height="450" aria-label="Angry Birds canvas" role="img"></canvas>
-  </div>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"/><title>Sling Flock — Deluxe (Single File)</title><meta name="description" content="Arcade slingshot birds vs. pig forts. Cinematic camera, real-feel physics, multiple bird abilities, music & SFX. Single HTML file."/>
+<style>
+:root{--ui:#101423cc;--ui-border:#2a2f4a66;--ink:#0b0e1a;--accent:#ffd24a}
+html,body{height:100%;margin:0;background:#0b2a44;color:#fff;font-family:ui-rounded,system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+*{box-sizing:border-box}
+#app{min-height:100%;display:grid;place-items:center;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+canvas{touch-action:none;background:transparent;display:block;width:min(100vw,1100px);height:auto;border-radius:16px;box-shadow:0 10px 40px #0006;border:1px solid #0003}
+#hud{position:fixed;inset:auto 0 0 0;display:flex;justify-content:center;gap:8px;padding:10px;pointer-events:none}
+.chip{pointer-events:auto;background:var(--ui);border:1px solid var(--ui-border);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:8px 12px;border-radius:999px;font-size:14px;color:#e6e8f0}
+#score{position:fixed;top:10px;left:12px;background:var(--ui);border:1px solid var(--ui-border);padding:6px 10px;border-radius:10px;font-weight:800}
+#levelName{position:fixed;top:10px;right:12px;background:var(--ui);border:1px solid var(--ui-border);padding:6px 10px;border-radius:10px}
+#overlay{position:fixed;inset:0;display:none;place-items:center;background:#0008}
+#overlay.show{display:grid}
+#panel{background:#1b2035;color:#fff;border:1px solid #2a2f4a;border-radius:16px;padding:16px;width:min(420px,92vw);box-shadow:0 10px 30px #0007}
+#panel h2{margin:0 0 12px 0}
+#panel .row{display:flex;justify-content:space-between;margin:6px 0}
+#panel button{width:100%;margin-top:12px;padding:10px 14px;border-radius:12px;border:1px solid #2a2f4a;background:#2a3050;color:#fff;cursor:pointer}
+#panel button:hover{filter:brightness(1.08)}
+#paused{position:fixed;inset:0;display:none;place-items:center;background:#0006;color:#fff;font-weight:700;font-size:28px;text-align:center}
+#paused.show{display:grid}
+#bigPopup{position:fixed;top:40%;left:0;right:0;text-align:center;font-weight:900;font-size:64px;opacity:0;transform:translateY(10px);text-shadow:0 4px 0 #0007}
+#a11y{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+</style></head><body>
+<div id="app"><canvas id="game" width="800" height="450" aria-label="Sling Flock canvas" role="img"></canvas></div>
+<div id="score">Score 0</div><div id="levelName">Level 1-1</div><div id="bigPopup" aria-hidden="true">+5000</div>
+<div id="hud" aria-hidden="false">
+<label class="chip"><input type="checkbox" id="contrastToggle"> High contrast</label>
+<label class="chip"><input type="checkbox" id="muteToggle"> Mute</label>
+<span class="chip">Drag to aim • Release to fire • Tap/Space = ability • R = retry • P = pause</span>
+</div>
+<div id="paused" aria-hidden="true"><div>Paused — press <b>P</b> to resume</div></div>
+<div id="overlay" aria-hidden="true" role="dialog" aria-modal="true"><div id="panel">
+<h2 id="panelTitle">Level Cleared!</h2>
+<div class="row"><span>Score</span><b id="panelScore">0</b></div>
+<div class="row"><span>Best</span><b id="panelBest">0</b></div>
+<div class="row"><span>Stars</span><b id="panelStars">★☆☆</b></div>
+<button id="retryBtn">Retry</button><button id="nextBtn" style="margin-top:8px">Next Level</button>
+</div></div>
+<div id="a11y" aria-live="polite" aria-atomic="true"></div>
+<script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
+<script>
+/* ===== Legal note =====
+   This build uses ORIGINAL code, visuals, and procedurally generated sounds/music.
+   It does NOT include Rovio Angry Birds copyrighted art/audio.
+*/
 
-  <div id="score">Score 0</div>
-  <div id="levelName">Level 1-1</div>
-  <div id="bigPopup" aria-hidden="true">+5000</div>
+/* ===== Setup ===== */
+const DPR=Math.max(1,Math.min(3,window.devicePixelRatio||1));
+const W=800,H=450;const canvas=document.getElementById('game');const ctx=canvas.getContext('2d');
+function resize(){const vw=Math.min(innerWidth,1100),vh=innerHeight;const s=Math.min(vw/W,vh/H);canvas.style.width=(W*s|0)+'px';canvas.style.height=(H*s|0)+'px';canvas.width=W*DPR|0;canvas.height=H*DPR|0;ctx.setTransform(DPR,0,0,DPR,0,0);}addEventListener('resize',resize);resize();
+const {Engine,World,Bodies,Body,Composite,Events,Vector}=Matter;
+const engine=Engine.create({enableSleeping:true});const world=engine.world;world.gravity.y=1.25;
 
-  <div id="hud" aria-hidden="false">
-    <label class="chip"><input type="checkbox" id="contrastToggle"> High contrast</label>
-    <label class="chip"><input type="checkbox" id="muteToggle"> Mute</label>
-    <span class="chip">Drag to aim • Release to fire • Space = ability • R = retry • P = pause</span>
-  </div>
+/* ===== Camera ===== */
+const cam={x:260,y:280,s:1,tx:260,ty:280,ts:1};
+const camTo=(x,y,s=1)=>{cam.tx=x;cam.ty=y;cam.ts=s};function camUpdate(dt){const k=8*dt;cam.x+=(cam.tx-cam.x)*k;cam.y+=(cam.ty-cam.y)*k;cam.s+=(cam.ts-cam.s)*k;cam.s=Math.max(.6,Math.min(1.6,cam.s));}
 
-  <div id="paused" aria-hidden="true"><div>Paused — press <b>P</b> to resume</div></div>
+/* ===== UI Refs ===== */
+const $score=document.getElementById('score');const $panel=document.getElementById('overlay');
+const $panelScore=document.getElementById('panelScore');const $panelBest=document.getElementById('panelBest');
+const $panelStars=document.getElementById('panelStars');const $retry=document.getElementById('retryBtn');
+const $next=document.getElementById('nextBtn');const $paused=document.getElementById('paused');
+const $popup=document.getElementById('bigPopup');const $a11y=document.getElementById('a11y');
+const $levelName=document.getElementById('levelName');const $mute=document.getElementById('muteToggle');
 
-  <div id="overlay" aria-hidden="true" role="dialog" aria-modal="true">
-    <div id="panel">
-      <h2 id="panelTitle">Level Cleared!</h2>
-      <div class="row"><span>Score</span><b id="panelScore">0</b></div>
-      <div class="row"><span>Best</span><b id="panelBest">0</b></div>
-      <div class="row"><span>Stars</span><b id="panelStars">★☆☆</b></div>
-      <button id="retryBtn">Retry</button>
-      <button id="nextBtn" style="margin-top:8px">Next Level</button>
-    </div>
-  </div>
+/* ===== Audio ===== */
+let AC=null;let musicGain=null;function ensureAC(){if(AC||$mute.checked)return;AC=new (window.AudioContext||window.webkitAudioContext)();musicGain=AC.createGain();musicGain.gain.value=.0;musicGain.connect(AC.destination);}
+function tone(f,t=0.08,type='sine',gain=0.03){if($mute.checked||!AC)return;const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.value=gain;o.connect(g).connect(AC.destination);o.start();o.stop(AC.currentTime+t);}
+const SFX={launch(){tone(520,.12,'triangle',.05)},hit(){tone(200,.11,'sawtooth',.06)},pig(){tone(760,.12,'square',.06)},break(){tone(320,.08,'square',.05)},star(){tone(1200,.25,'sine',.05)},ability(){tone(880,.10,'triangle',.055)}};
+// Original, lightweight background loop: 8-bar arpeggio, fades in after first interaction
+let musicStarted=false;function startMusic(){if(!$mute.checked && AC&&!musicStarted){musicStarted=true;const seq=[0,7,12,7, 0,5,9,5, 0,7,12,7, 2,7,11,7];const base=220;const t0=AC.currentTime+0.1;const tempo=120;const beat=60/tempo;for(let i=0;i<256;i++){const o=AC.createOscillator(),g=AC.createGain();const n=seq[i%seq.length];o.type=i%8? 'sine':'triangle';o.frequency.value=base*Math.pow(2,n/12);g.gain.value=.03*(i%16<8?1:.6);o.connect(g).connect(musicGain);o.start(t0+i*beat/2);o.stop(t0+i*beat/2+0.20);}let now=AC.currentTime;musicGain.gain.cancelScheduledValues(now);musicGain.gain.setValueAtTime(0,now);musicGain.gain.linearRampToValueAtTime(.12,now+2.0);}}
 
-  <div id="a11y" aria-live="polite" aria-atomic="true"></div>
+/* ===== Helpers ===== */
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function popupText(txt){$popup.textContent=txt;$popup.style.opacity=1;$popup.style.transform='translateY(0)';setTimeout(()=>{$popup.style.transition='opacity 300ms, transform 300ms';$popup.style.opacity=0;$popup.style.transform='translateY(10px)';setTimeout(()=>{$popup.style.transition='none'},320)},10)}
+function addScore(v){STATE.score+=v;$score.textContent='Score '+STATE.score;$a11y.textContent='Score '+STATE.score}
 
-  <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
-  <script>
-  const DPR = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
-  const logicalW = 800, logicalH = 450;
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
-  function resize(){
-    const vw = Math.min(window.innerWidth, 1100), vh = window.innerHeight;
-    const scale = Math.min(vw/logicalW, vh/logicalH);
-    canvas.style.width = Math.floor(logicalW*scale)+"px";
-    canvas.style.height = Math.floor(logicalH*scale)+"px";
-    canvas.width = Math.floor(logicalW*DPR); canvas.height = Math.floor(logicalH*DPR);
-    ctx.setTransform(DPR,0,0,DPR,0,0);
-  }
-  addEventListener('resize', resize); resize();
+/* ===== Materials ===== */
+const MAT={wood:{d:0.0012,f:0.6,r:0.15,hp:110,col:'#c58b55'},stone:{d:0.002,f:0.7,r:0.08,hp:220,col:'#9aa3ad'},glass:{d:0.0009,f:0.2,r:0.02,hp:70,col:'#bfe7ff'}};
 
-  const {Engine, World, Bodies, Body, Composite, Events, Vector} = Matter;
-  const engine = Engine.create({enableSleeping:true});
-  const world = engine.world;
-  world.gravity.y = 1.2;
+/* ===== State ===== */
+const STATE={birds:[],pigs:[],blocks:[],bird:null,launched:false,paused:false,abilityUsed:false,score:0,level:0,cleared:false,best:0};
+const sling={A:{x:220,y:340},maxPull:115,pulling:false,p:{x:220,y:340}};
 
-  const STATE = {birds:[], pigs:[], blocks:[], currentBird:null, launched:false, paused:false, score:0};
+/* ===== Entities ===== */
+function block(o){const m=MAT[o.mat||'wood'];const b=Bodies.rectangle(o.x,o.y,o.w,o.h,{density:m.d,friction:m.f,restitution:m.r});if(o.angle)Body.rotate(b,o.angle);b.plugin={hp:m.hp,mat:o.mat||'wood'};STATE.blocks.push(b);return b;}
+function pig(o){const b=Bodies.circle(o.x,o.y,o.r||20,{density:0.0012,friction:0.5,restitution:0.25});b.plugin={pig:true,hp:o.hp||100};STATE.pigs.push(b);return b;}
+function bird(kind,x,y){const mass={red:1,yellow:.9,blue:.8,black:1.1,white:.95}[kind]||1;const b=Bodies.circle(x,y,16,{density:0.001*mass,friction:0.5,restitution:0.18});b.plugin={kind,ability:true};return b;}
 
-  const MATERIAL = {wood:{density:0.0012, friction:0.6, restitution:0.15, color:'#c58b55'}};
-  function makeBlock(x,y,w,h){ const m=MATERIAL.wood; const b=Bodies.rectangle(x,y,w,h,{density:m.density, friction:m.friction, restitution:m.restitution}); World.add(world,b); return b;}
-  function makePig(x,y){const b=Bodies.circle(x,y,20,{density:0.0012, friction:0.5});b.plugin={pig:true,hp:80};World.add(world,b);STATE.pigs.push(b);return b;}
-  function createBird(x,y){const b=Bodies.circle(x,y,16,{density:0.001, friction:0.5, restitution:0.2});World.add(world,b);return b;}
+/* ===== Levels ===== */
+const LEVELS=[
+ {id:'1-1',name:'1-1 Meadow',stars:[30000,60000,90000],birds:['red','yellow','blue'],
+  pigs:[{x:920,y:370,r:22},{x:1040,y:368,r:24}],blocks:[
+   {x:940,y:380,w:120,h:20,mat:'wood'},{x:900,y:340,w:20,h:80,mat:'wood'},{x:980,y:340,w:20,h:80,mat:'wood'},
+   {x:1060,y:360,w:120,h:20,mat:'glass'},{x:1060,y:320,w:20,h:60,mat:'glass'},{x:1060,y:280,w:120,h:20,mat:'stone'}]},
+ {id:'1-2',name:'1-2 Ridge',stars:[40000,70000,100000],birds:['red','black','white'],
+  pigs:[{x:1010,y:350,r:24},{x:1135,y:330,r:26}],blocks:[
+   {x:980,y:380,w:160,h:20,mat:'wood'},{x:940,y:340,w:20,h:80,mat:'wood'},{x:1020,y:340,w:20,h:80,mat:'wood'},
+   {x:1090,y:360,w:140,h:20,mat:'stone'},{x:1090,y:320,w:20,h:60,mat:'stone'},{x:1090,y:280,w:140,h:20,mat:'glass'}]}
+];
 
-  const sling={anchor:{x:220,y:340},maxPull:100,pulling:false,pullPos:{x:0,y:0}};
-  function addGround(){const g=Bodies.rectangle(400,430,1600,40,{isStatic:true});World.add(world,g);}
-  addGround();
+/* ===== Bounds ===== */
+function addBounds(){const g=Bodies.rectangle(1200,430,2400,40,{isStatic:true,friction:1});const L=Bodies.rectangle(-300,225,600,500,{isStatic:true});const R=Bodies.rectangle(2200,225,600,500,{isStatic:true});World.add(world,[g,L,R]);}
 
-  function loadLevel(){
-    Composite.clear(world,false); STATE.birds.length=0; STATE.pigs.length=0; STATE.blocks.length=0; STATE.score=0;
-    addGround();
-    makeBlock(900,380,120,20); makeBlock(900,340,20,80);
-    makePig(940,360); STATE.birds.push(createBird(180,380),createBird(140,380),createBird(100,380));
-    nextBirdToSling();
-  }
-  function nextBirdToSling(){
-    STATE.currentBird=STATE.birds.shift()||null;
-    if(STATE.currentBird){Body.setStatic(STATE.currentBird,true); Body.setPosition(STATE.currentBird,sling.anchor);}
-  }
+/* ===== Load Level ===== */
+function loadLevel(i=0){Composite.clear(world,false);STATE.blocks.length=0;STATE.pigs.length=0;STATE.birds.length=0;
+ STATE.bird=null;STATE.launched=false;STATE.abilityUsed=false;STATE.score=0;STATE.cleared=false;STATE.level=i;
+ addBounds();const L=LEVELS[i];World.add(world,L.blocks.map(block));World.add(world,L.pigs.map(pig));
+ L.birds.forEach((k,idx)=>{const b=bird(k,120-idx*36,380);World.add(world,b);STATE.birds.push(b)});
+ sling.pulling=false;sling.p={...sling.A};nextBird();camTo(260,280,1.05);document.getElementById('levelName').textContent='Level '+L.id;
+ STATE.best=+(localStorage.getItem('best:'+L.id)||0);$score.textContent='Score 0';startIntroPan();}
+function startIntroPan(){camTo(450,280,1.0);setTimeout(()=>camTo(980,300,1.05),380);setTimeout(()=>camTo(260,280,1.05),1100);}
 
-  function launchCurrentBird(){
-    if(!STATE.currentBird)return;
-    const b=STATE.currentBird; Body.setStatic(b,false);
-    const pull=Vector.sub(sling.anchor,sling.pullPos);
-    Body.applyForce(b,b.position,Vector.mult(pull,0.0028)); // FIXED: proper force
-    STATE.launched=true;
-  }
+/* ===== Next Bird ===== */
+function nextBird(){STATE.bird=STATE.birds.shift()||null;STATE.abilityUsed=false;if(STATE.bird){Body.setPosition(STATE.bird,sling.A);Body.setVelocity(STATE.bird,{x:0,y:0});Body.setAngularVelocity(STATE.bird,0);Body.setStatic(STATE.bird,true);}}
 
-  let mouse={x:0,y:0,down:false};
-  function toWorld(pt){
-    const rect=canvas.getBoundingClientRect();
-    const x=(pt.clientX-rect.left)/(rect.width)*logicalW;
-    const y=(pt.clientY-rect.top)/(rect.height)*logicalH;
-    return{x,y};
-  }
+/* ===== Launch & Abilities ===== */
+function nonlinearForce(pullLen){const t=pullLen/sling.maxPull;return 0.0020 + 0.0022*(t*t);}
+function launch(){if(!STATE.bird)return;Body.setStatic(STATE.bird,false);const pull=Vector.sub(sling.A,sling.p);const len=Vector.magnitude(pull);const f=nonlinearForce(len);Body.applyForce(STATE.bird,STATE.bird.position,Vector.mult(pull,f));STATE.launched=true;SFX.launch();ensureAC();startMusic();camTo(STATE.bird.position.x,STATE.bird.position.y,1.2);}
+function ability(){const b=STATE.bird;if(!b||!STATE.launched||STATE.abilityUsed)return;STATE.abilityUsed=true;SFX.ability();const k=b.plugin.kind;
+ if(k==='yellow'){Body.setVelocity(b,Vector.mult(b.velocity,1.85));}
+ else if(k==='blue'){const v=b.velocity,p=b.position,mag=Vector.magnitude(v),dirs=[-0.16,0,0.16];dirs.forEach(d=>{const nb=bird('blue',p.x,p.y);World.add(world,nb);Body.setVelocity(nb,{x:v.x+d*mag,y:v.y-Math.abs(d)*0.25*mag})});World.remove(world,b);}
+ else if(k==='black'){explode(b.position,95,30);}
+ else if(k==='white'){const egg=Bodies.circle(b.position.x,b.position.y,10,{density:0.0008,restitution:0.2});egg.plugin={egg:true};World.add(world,egg);Body.applyForce(egg,egg.position,{x:0,y:0.05});Body.setVelocity(b,{x:b.velocity.x*0.9,y:-6});}
+}
 
-  canvas.addEventListener('mousedown',e=>{mouse.down=true;const p=toWorld(e);const bpos=STATE.currentBird?.position;if(bpos){const d=Vector.magnitude(Vector.sub(p,bpos));if(d<80)sling.pulling=true;}});
-  canvas.addEventListener('mouseup',e=>{mouse.down=false;if(sling.pulling){sling.pulling=false;launchCurrentBird();}});
-  canvas.addEventListener('mousemove',e=>{
-    const p=toWorld(e);
-    if(sling.pulling&&STATE.currentBird&&!STATE.launched){
-      const vec=Vector.sub(p,sling.anchor);
-      const len=Math.min(sling.maxPull,Vector.magnitude(vec));
-      const dir=Vector.normalise(vec);
-      sling.pullPos={x:sling.anchor.x+dir.x*len,y:sling.anchor.y+dir.y*len};
-      Body.setPosition(STATE.currentBird,sling.pullPos);
-    }
-  });
+/* ===== Explode ===== */
+function explode(pos,r=95,force=30){Composite.allBodies(world).forEach(o=>{if(o.isStatic)return;const d=Vector.magnitude(Vector.sub(o.position,pos));if(d<r){const dir=Vector.normalise(Vector.sub(o.position,pos));Body.applyForce(o,o.position,Vector.mult(dir,force/Math.max(30,d)));if(o.plugin&&o.plugin.hp){o.plugin.hp-=(r-d)*0.6;if(o.plugin.hp<=0)removeBody(o)}}});popupText('BOOM!')}
 
-  Events.on(engine,'collisionStart',ev=>{
-    for(const pair of ev.pairs){
-      const a=pair.bodyA,b=pair.bodyB;
-      const relVel=Vector.magnitude(Vector.sub(a.velocity,b.velocity));
-      if(a.plugin&&a.plugin.pig&&relVel>3){World.remove(world,a);STATE.score+=5000;}
-      if(b.plugin&&b.plugin.pig&&relVel>3){World.remove(world,b);STATE.score+=5000;}
-    }
-  });
+/* ===== Input ===== */
+let mouse={x:0,y:0,down:false};
+function toWorld(pt){const r=canvas.getBoundingClientRect();const x=(pt.clientX-r.left)/r.width*W;const y=(pt.clientY-r.top)/r.height*H;const wx=(x-W*.5)/cam.s+cam.x;const wy=(y-H*.5)/cam.s+cam.y;return{x:wx,y:wy}}
+canvas.addEventListener('mousedown',e=>{ensureAC();mouse.down=true;const p=toWorld(e);if(STATE.bird&&!STATE.launched){const d=Vector.magnitude(Vector.sub(p,STATE.bird.position));if(d<90)sling.pulling=true}});
+canvas.addEventListener('mouseup',e=>{mouse.down=false;if(sling.pulling&&STATE.bird&&!STATE.launched){sling.pulling=false;launch()}else if(STATE.launched){ability()}});
+canvas.addEventListener('mousemove',e=>pointerMove(e));
+canvas.addEventListener('touchstart',e=>{e.preventDefault();ensureAC();mouse.down=true;const p=toWorld(e.touches[0]);if(STATE.bird&&!STATE.launched){const d=Vector.magnitude(Vector.sub(p,STATE.bird.position));if(d<98)sling.pulling=true}}, {passive:false});
+canvas.addEventListener('touchend',e=>{e.preventDefault();mouse.down=false;if(sling.pulling&&STATE.bird&&!STATE.launched){sling.pulling=false;launch()}else if(STATE.launched){ability()}}, {passive:false});
+canvas.addEventListener('touchmove',e=>{e.preventDefault();pointerMove(e.touches[0])}, {passive:false});
+function pointerMove(e){const p=toWorld(e);if(sling.pulling&&STATE.bird&&!STATE.launched){const v=Vector.sub(p,sling.A);const len=Math.min(sling.maxPull,Vector.magnitude(v));const dir=Vector.normalise(v);sling.p={x:sling.A.x+dir.x*len,y:sling.A.y+dir.y*len};Body.setPosition(STATE.bird,sling.p);camTo(260,280,1.05+len/sling.maxPull*0.15)}else if(mouse.down&&(!STATE.bird||STATE.launched)){camTo(cam.tx-(p.x-mouse.x),cam.ty-(p.y-mouse.y),cam.ts)}mouse=p}
+const keys=new Set();addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys.add(k);if(k==='r'){e.preventDefault();loadLevel(STATE.level)}if(k==='p'){e.preventDefault();togglePause()}if(k===' '){e.preventDefault();ability()}});addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
+function togglePause(force){const v=typeof force==='boolean'?force:!STATE.paused;STATE.paused=v;$paused.classList.toggle('show',v)}addEventListener('visibilitychange',()=>{if(document.hidden)togglePause(true)});
 
-  function drawWorld(){
-    ctx.clearRect(0,0,logicalW,logicalH);
-    ctx.fillStyle='#8ed6ff';ctx.fillRect(0,0,logicalW,logicalH);
-    for(const b of world.bodies){
-      ctx.save();ctx.translate(b.position.x,b.position.y);ctx.rotate(b.angle);
-      if(b.circleRadius){
-        const isPig=b.plugin&&b.plugin.pig;
-        ctx.fillStyle=isPig?'#7bd36a':'#ff4444';
-        ctx.beginPath();ctx.arc(0,0,b.circleRadius,0,Math.PI*2);ctx.fill();
-      }else{
-        const w=b.bounds.max.x-b.bounds.min.x;const h=b.bounds.max.y-b.bounds.min.y;
-        ctx.fillStyle='#c58b55';ctx.fillRect(-w/2,-h/2,w,h);
-      }
-      ctx.restore();
-    }
-    // sling posts
-    const A=sling.anchor;
-    ctx.fillStyle='#5c3a1e';ctx.fillRect(A.x-12,A.y-90,8,90);ctx.fillRect(A.x+6,A.y-90,8,90);
-    if(STATE.currentBird&&(sling.pulling||!STATE.launched)){
-      const bp=STATE.currentBird.position;
-      ctx.strokeStyle='#4d2a12';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(A.x-10,A.y-60);ctx.lineTo(bp.x,bp.y);ctx.stroke();
-      ctx.strokeStyle='#7b4420';ctx.beginPath();ctx.moveTo(A.x+10,A.y-54);ctx.lineTo(bp.x,bp.y);ctx.stroke();
-    }
-  }
+/* ===== Collisions ===== */
+Events.on(engine,'collisionStart',ev=>{for(const pair of ev.pairs){impact(pair.bodyA,pair.bodyB,pair);impact(pair.bodyB,pair.bodyA,pair)}});
+function impact(a,b,pair){const rel=Vector.magnitude(Vector.sub(a.velocity,b.velocity));const energy=rel*(a.mass||1)*40;if(a.plugin&&a.plugin.pig){a.plugin.hp-=energy*.35;if(energy>12)SFX.hit();if(a.plugin.hp<=0){removePig(a)}}if(a.plugin&&a.plugin.hp){a.plugin.hp-=energy*.25;if(a.plugin.hp<=0){removeBody(a);addScore(400+(Math.random()*400|0));SFX.break();}}}
+function removeBody(b){World.remove(world,b)}function removePig(p){World.remove(world,p);addScore(5000);popupText('+5000');SFX.pig()}
 
-  let last=performance.now();
-  function loop(){
-    const n=performance.now();let dt=(n-last)/1000;last=n;dt=Math.min(dt,1/30);
-    if(!STATE.paused){Engine.update(engine,dt*1000);}
-    drawWorld();
-    requestAnimationFrame(loop);
-  }
+/* ===== Outcome ===== */
+function starStr(n){return'★'.repeat(n)+'☆'.repeat(3-n)}
+function checkOutcome(){const alive=STATE.pigs.filter(p=>world.bodies.includes(p));const noneLeft=!STATE.bird&&STATE.birds.length===0&&STATE.launched;if(alive.length===0&&!STATE.cleared){win()}else if(noneLeft){lose()}}
+function panel(win){const L=LEVELS[STATE.level];const stars=(STATE.score>=L.stars[2])?3:(STATE.score>=L.stars[1])?2:(STATE.score>=L.stars[0])?1:0;$panelScore.textContent=STATE.score;const key='best:'+L.id;const old=+(localStorage.getItem(key)||0);if(STATE.score>old)localStorage.setItem(key,STATE.score);$panelBest.textContent=Math.max(old,STATE.score);$panelStars.textContent=starStr(stars);document.getElementById('panelTitle').textContent=win?'Level Cleared!':'Level Failed';$panel.classList.add('show');$panel.setAttribute('aria-hidden','false');if(stars>0)SFX.star()}
+function win(){STATE.cleared=true;panel(true)}function lose(){panel(false)}
+$retry.addEventListener('click',()=>{$panel.classList.remove('show');loadLevel(STATE.level)});$next.addEventListener('click',()=>{$panel.classList.remove('show');loadLevel((STATE.level+1)%LEVELS.length)});
 
-  loadLevel();
-  loop();
-  </script>
-</body>
-</html>
+/* ===== Drawing ===== */
+function drawBackground(){const g=ctx.createLinearGradient(0,cam.y-300,0,cam.y+400);g.addColorStop(0,'#8ed6ff');g.addColorStop(1,'#e3f6ff');ctx.fillStyle=g;ctx.fillRect(cam.x-W,cam.y-H,W*2,H*2);const w=2000,off=(cam.x*.3)%w;ctx.fillStyle='#6da060';for(let i=-1;i<=1;i++){ctx.fillRect(i*w-off,380,w,300)}ctx.fillStyle='rgba(255,255,255,.9)';for(let i=0;i<6;i++){const cx=(i*300-(cam.x*.2)%600)+300,cy=140+(i%3)*20;ctx.beginPath();ctx.arc(cx,cy,26,0,Math.PI*2);ctx.arc(cx+24,cy+4,22,0,Math.PI*2);ctx.fill()}}
+function drawSling(){const A=sling.A;const back={x:A.x-10,y:A.y-60},front={x:A.x+10,y:A.y-54};ctx.fillStyle='#5c3a1e';ctx.fillRect(A.x-12,A.y-90,8,90);ctx.fillRect(A.x+6,A.y-90,8,90);if(STATE.bird&&(sling.pulling||!STATE.launched)){const bp=STATE.bird.position;ctx.strokeStyle='#4d2a12';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(back.x,back.y);ctx.lineTo(bp.x,bp.y);ctx.stroke();ctx.strokeStyle='#7b4420';ctx.beginPath();ctx.moveTo(front.x,front.y);ctx.lineTo(bp.x,bp.y);ctx.stroke()}}
+function drawBirdSprite(b){const k=(b.plugin&&b.plugin.kind)||'red';const r=b.circleRadius;ctx.save();
+if(k==='yellow'){ctx.fillStyle='#ffd24a';ctx.beginPath();ctx.moveTo(-r, r*0.6);ctx.lineTo(r,0);ctx.lineTo(-r,-r*0.6);ctx.closePath();ctx.fill();ctx.fillStyle='#000';ctx.fillRect(-r*0.1,-2,r*0.5,4);}
+else{const color={red:'#ff4444',blue:'#5ab0ff',black:'#444',white:'#fff'}[k]||'#ff4444';ctx.fillStyle=color;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';if(k!=='black'){ctx.beginPath();ctx.arc(-4,0,5,0,Math.PI*2);ctx.arc(4,0,5,0,Math.PI*2);ctx.fill()}ctx.fillStyle='#000';ctx.fillRect(-r*0.3,-2,r*0.6,4);}
+ctx.restore();}
+function drawBodies(){const hc=document.getElementById('contrastToggle').checked;for(const b of world.bodies){ctx.save();ctx.translate(b.position.x,b.position.y);ctx.rotate(b.angle);
+ if(b.circleRadius){const isPig=b.plugin&&b.plugin.pig;if(isPig){const r=b.circleRadius;ctx.fillStyle=hc?'#0f0':'#7bd36a';ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#000';ctx.fillRect(-r*0.3,-r*0.1,r*0.2,4);ctx.fillRect(r*0.1,-r*0.1,r*0.2,4);ctx.fillRect(-2,r*0.2,4,4);}else{drawBirdSprite(b);}}
+ else{const w=b.bounds.max.x-b.bounds.min.x,h=b.bounds.max.y-b.bounds.min.y;const mat=(b.plugin&&b.plugin.mat)||'wood';ctx.fillStyle=hc?(mat==='stone'?'#aaa':mat==='glass'?'#ccf':'#c80'):MAT[mat].col;ctx.fillRect(-w/2,-h/2,w,h);ctx.strokeStyle='#0006';ctx.lineWidth=2;ctx.strokeRect(-w/2,-h/2,w,h);}ctx.restore();}}
+function drawWorld(){ctx.save();ctx.translate(W*.5,H*.5);ctx.scale(cam.s,cam.s);ctx.translate(-cam.x,-cam.y);drawBackground();drawBodies();drawSling();ctx.restore();}
+
+/* ===== Loop ===== */
+let last=performance.now();
+function loop(){const n=performance.now();let dt=(n-last)/1000;last=n;dt=Math.min(dt,1/30);if(!STATE.paused)Engine.update(engine,dt*1000);
+ if(STATE.launched&&STATE.bird)camTo(STATE.bird.position.x,STATE.bird.position.y,1.2);camUpdate(dt);
+ for(const blk of STATE.blocks){if(!world.bodies.includes(blk))continue;const v=Vector.magnitude(blk.velocity);if(v>8)cam.ts=1.35}if(!STATE.launched)cam.ts=Math.max(1.0,cam.ts*.98);
+ if(STATE.launched&&STATE.bird){const b=STATE.bird;const speed=Vector.magnitude(b.velocity);if(speed<.35||b.position.y>650||b.position.x>1900||b.position.x<-300){STATE.launched=false;setTimeout(()=>nextBird(),600);camTo(260,280,1.05);}}
+ checkOutcome();ctx.clearRect(0,0,W,H);drawWorld();requestAnimationFrame(loop);}
+
+/* ===== Start ===== */
+function addBoundsAndStart(){addBounds();loadLevel(0);loop()}addBoundsAndStart();
+</script></body></html>
