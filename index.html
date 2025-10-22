@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Shaebae’s Game</title>
+  <title>TayTay's Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <style>
     :root {
@@ -45,7 +45,8 @@
   </div>
 
   <div class="hud" aria-hidden="true">
-    <div class="topbar">
+    <!-- added id="topbar" -->
+    <div id="topbar" class="topbar">
       <button id="muteBtn" class="btn" aria-pressed="false" aria-label="Toggle sound">🔊 Sound</button>
       <label class="toggle"><input type="checkbox" id="jsToggle" checked> Jump scare</label>
       <label class="toggle"><input type="checkbox" id="casualToggle"> Casual</label>
@@ -92,7 +93,7 @@
     bird: { size: { w: 34, h: 24 }, hitboxRadius: 12, idleBobPx: 4 },
     ground: { height: 112 },
     scorePopup: { dy: 40, duration: 0.6 },
-    jumpScare: { durationMs: 1200 } // how long the face stays up
+    jumpScare: { durationMs: 1200 }
   };
 
   const DPR = Math.min(window.devicePixelRatio || 1, 3);
@@ -115,6 +116,7 @@
   const pausedBadge = document.getElementById('pausedBadge');
   const ariaLive = document.getElementById('aria');
   const toast = document.getElementById('toast');
+  const topbar = document.getElementById('topbar'); // <— NEW
 
   /* ========= STATE ========= */
   const W = CFG.canvas.width, H = CFG.canvas.height;
@@ -174,7 +176,7 @@
     const bufferSize = Math.max(1, Math.floor(audioCtx.sampleRate * seconds));
     const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
     const data = buffer.getChannelData(0);
-    for (let i=0; i<bufferSize; i++) data[i] = (Math.random()*2-1) * (1 - i/bufferSize); // slight decay
+    for (let i=0; i<bufferSize; i++) data[i] = (Math.random()*2-1) * (1 - i/bufferSize);
     const src = audioCtx.createBufferSource();
     src.buffer = buffer;
     return src;
@@ -182,17 +184,16 @@
   const sfx = {
     flap: () => beep('square', 600, 0.08, 0.15),
     point: () => beep('triangle', 880, 0.07, 0.18),
-    hit: () => beep('sawtooth', 120, 0.15, 0.22),
-    die: () => beep('sine', 80, 0.35, 0.25),
-    swoosh: () => beep('triangle', 300, 0.1, 0.12),
+    hit:   () => beep('sawtooth', 120, 0.15, 0.22),
+    die:   () => beep('sine', 80, 0.35, 0.25),
+    swoosh:() => beep('triangle', 300, 0.1, 0.12),
     scream: () => {
       if (!audioCtx || storage.muted) return;
       const t = audioCtx.currentTime;
       const g = audioCtx.createGain();
-      g.gain.value = 0.0001; // start silent
+      g.gain.value = 0.0001;
       g.connect(audioCtx.destination);
 
-      // Two detuned oscillators + noise burst
       const o1 = audioCtx.createOscillator();
       const o2 = audioCtx.createOscillator();
       o1.type = 'sawtooth'; o2.type = 'square';
@@ -205,7 +206,6 @@
       const noise = createNoiseNode(1.0);
       if (noise) noise.connect(g);
 
-      // Aggressive quick rise, then decay
       g.gain.exponentialRampToValueAtTime(0.9, t + 0.04);
       g.gain.exponentialRampToValueAtTime(0.05, t + 1.05);
 
@@ -252,11 +252,23 @@
   window.addEventListener('resize', fitCanvas, { passive: true });
   fitCanvas();
 
+  /* ========= UI SHOW/HIDE (NEW) ========= */
+  function refreshUI() {
+    // Show topbar only on splash/ready OR when paused mid-game
+    const show = (state === 'ready') || (state === 'running' && paused);
+    topbar.style.display = show ? '' : 'none';
+  }
+
   /* ========= INPUT ========= */
   const flap = () => {
     if (state === 'dead') return;
     ensureAudio();
-    if (state === 'ready') { state = 'running'; announce('Game started'); splashEl.style.display = 'none'; }
+    if (state === 'ready') {
+      state = 'running';
+      announce('Game started');
+      splashEl.style.display = 'none';
+      refreshUI(); // <— NEW
+    }
     if (paused) return;
     bird.vy = CFG.physics.flapImpulse; sfx.flap();
   };
@@ -269,7 +281,13 @@
   }, { passive: false });
 
   document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'running') setPause(true); });
-  function setPause(p) { if (state !== 'running') return; paused = p; pausedBadge.style.display = p ? '' : 'none'; announce(p?'Paused':'Resumed'); }
+  function setPause(p) {
+    if (state !== 'running') return;
+    paused = p;
+    pausedBadge.style.display = p ? '' : 'none';
+    announce(p?'Paused':'Resumed');
+    refreshUI(); // <— NEW
+  }
   function togglePause() { setPause(!paused); }
 
   /* ========= UI TOGGLES ========= */
@@ -284,7 +302,9 @@
   jsToggle.addEventListener('change', () => { storage.jump = jsToggle.checked; localStorage.setItem('sb_jump', storage.jump?'1':'0'); showToast(storage.jump ? 'Jump scare ON' : 'Jump scare OFF'); });
 
   document.getElementById('againBtn').addEventListener('click', () => {
-    overPanel.style.display = 'none'; splashEl.style.display = ''; state = 'ready'; resetGame(); announce('Back to splash');
+    overPanel.style.display = 'none'; splashEl.style.display = '';
+    state = 'ready'; resetGame(); announce('Back to splash');
+    refreshUI(); // <— NEW
   });
   document.getElementById('shareBtn').addEventListener('click', async () => {
     const text = `I scored ${scoreNow.textContent} in Shaebae’s Game! Can you beat me?`;
@@ -369,15 +389,11 @@
     setTimeout(() => { jumpScare.active = false; showGameOver(); }, CFG.jumpScare.durationMs);
   }
 
-  function drawJumpScareOverlay(dt) {
-    // progress 0..1
+  function drawJumpScareOverlay() {
     const p = clamp(jumpScare.t / jumpScare.dur, 0, 1);
-    // blackout background
     ctx.save();
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = '#000'; ctx.fillRect(0,0,W,H);
 
-    // jitter / scale pulse (reduced motion => no shake)
     const shake = storage.reduced ? 0 : (1 - p) * 6;
     const jx = storage.reduced ? 0 : (Math.random() * 2 - 1) * shake;
     const jy = storage.reduced ? 0 : (Math.random() * 2 - 1) * shake;
@@ -386,25 +402,20 @@
     ctx.translate(W/2 + jx, H/2 + jy);
     ctx.scale(scale, scale);
 
-    // Draw a creepy face (canvas, no external assets)
     const faceR = Math.min(W,H) * 0.42;
-    // pale face
     ctx.fillStyle = '#f2f2f2';
     ctx.beginPath(); ctx.arc(0, 0, faceR, 0, Math.PI*2); ctx.fill();
 
-    // dark eye sockets
     const eyeDX = faceR*0.38, eyeY = -faceR*0.1, eyeR = faceR*0.18;
     ctx.fillStyle = '#000';
     ctx.beginPath(); ctx.ellipse(-eyeDX, eyeY, eyeR*1.05, eyeR*1.25, -0.25, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(eyeDX,  eyeY, eyeR*1.05, eyeR*1.25,  0.25, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse( eyeDX, eyeY, eyeR*1.05, eyeR*1.25,  0.25, 0, Math.PI*2); ctx.fill();
 
-    // blood-red pupils
     ctx.fillStyle = '#c00000';
     const pupilR = eyeR*0.55;
     ctx.beginPath(); ctx.arc(-eyeDX, eyeY, pupilR, 0, Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.arc( eyeDX, eyeY, pupilR, 0, Math.PI*2); ctx.fill();
 
-    // jagged mouth
     ctx.fillStyle = '#7a0000';
     const mw = faceR*0.95, mh = faceR*0.28, my = faceR*0.35;
     ctx.beginPath();
@@ -417,7 +428,6 @@
     ctx.lineTo(mw/2, my+2);
     ctx.closePath(); ctx.fill();
 
-    // teeth highlights
     ctx.fillStyle = '#eeeeee';
     for (let i=0;i<9;i++){
       const x = -mw/2 + (mw/10)*(i+0.5);
@@ -425,7 +435,6 @@
       ctx.fillRect(x-2, y, 4, mh*0.6);
     }
 
-    // vignette/flicker
     const flicker = storage.reduced ? 0.85 : (0.85 + (Math.random()*0.15));
     const grd = ctx.createRadialGradient(0,0,faceR*0.5, 0,0,faceR*1.2);
     grd.addColorStop(0, `rgba(255,255,255,${0.08*flicker})`);
@@ -436,7 +445,9 @@
   }
 
   function die() {
-    state = 'dead'; paused = false; pausedBadge.style.display = 'none';
+    state = 'dead';
+    refreshUI(); // <— NEW (hide topbar on death)
+    paused = false; pausedBadge.style.display = 'none';
     const fallUntil = () => {
       const now = performance.now();
       const dt = Math.min((now - lastMs)/1000, 1/30);
@@ -452,7 +463,6 @@
         requestAnimationFrame(fallUntil);
       } else {
         bird.y = groundY - CFG.bird.hitboxRadius;
-        // Trigger jump scare (or normal delay) after impact
         triggerJumpScare();
       }
     };
@@ -472,7 +482,6 @@
 
   /* ========= RENDER ========= */
   function render() {
-    // Sky
     ctx.save();
     ctx.fillStyle = isNight() ? getComputedStyle(document.documentElement).getPropertyValue('--bg-night') : getComputedStyle(document.documentElement).getPropertyValue('--bg');
     ctx.fillRect(0,0,W,H);
@@ -491,7 +500,6 @@
       ctx.globalAlpha = 1;
     }
 
-    // Jump scare overlay on top
     if (jumpScare.active) drawJumpScareOverlay();
 
     ctx.restore();
@@ -575,7 +583,15 @@
   }
 
   /* ========= INIT ========= */
-  function init() { resetGame(); splashEl.style.display = ''; hudScore.textContent = '0'; overPanel.style.display = 'none'; lastMs = performance.now(); requestAnimationFrame(loop); }
+  function init() {
+    resetGame();
+    splashEl.style.display = '';
+    hudScore.textContent = '0';
+    overPanel.style.display = 'none';
+    lastMs = performance.now();
+    requestAnimationFrame(loop);
+    refreshUI(); // <— NEW (show topbar initially)
+  }
   init();
 
 })();
