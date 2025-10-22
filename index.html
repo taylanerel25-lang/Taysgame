@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -60,14 +60,8 @@
 
   <div id="a11y" aria-live="polite" aria-atomic="true"></div>
 
-  <!-- Physics (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
   <script>
-  // =========================
-  // Angry Birds — Web Remix
-  // (single-file build with Matter.js physics)
-  // =========================
-
   const DPR = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
   const logicalW = 800, logicalH = 450;
   const canvas = document.getElementById('game');
@@ -82,423 +76,106 @@
   }
   addEventListener('resize', resize); resize();
 
-  // UI elements
-  const $score = document.getElementById('score');
-  const $panel = document.getElementById('overlay');
-  const $panelScore = document.getElementById('panelScore');
-  const $panelBest = document.getElementById('panelBest');
-  const $panelStars = document.getElementById('panelStars');
-  const $retry = document.getElementById('retryBtn');
-  const $next = document.getElementById('nextBtn');
-  const $paused = document.getElementById('paused');
-  const $popup = document.getElementById('bigPopup');
-  const $a11y = document.getElementById('a11y');
-  const $contrast = document.getElementById('contrastToggle');
-  const $mute = document.getElementById('muteToggle');
+  const {Engine, World, Bodies, Body, Composite, Events, Vector} = Matter;
+  const engine = Engine.create({enableSleeping:true});
+  const world = engine.world;
+  world.gravity.y = 1.2;
 
-  // Storage
-  const store = {
-    get(key, def=0){ try{return JSON.parse(localStorage.getItem(key)) ?? def;}catch{ return def; }},
-    set(key,v){ localStorage.setItem(key, JSON.stringify(v)); }
-  };
+  const STATE = {birds:[], pigs:[], blocks:[], currentBird:null, launched:false, paused:false, score:0};
 
-  // Audio minimal
-  let AC=null; function ensureAC(){ if(AC || $mute.checked) return; AC = new (window.AudioContext||window.webkitAudioContext)(); }
-  function beep(type='sine', f=440, t=0.08, gain=0.03){ if($mute.checked || !AC) return; const o=AC.createOscillator(), g=AC.createGain(); o.type=type; o.frequency.value=f; g.gain.value=gain; o.connect(g).connect(AC.destination); o.start(); o.stop(AC.currentTime + t); }
-  const SFX={ launch(){beep('triangle', 500, .12, .05)}, hit(){beep('sawtooth', 220,.1,.06)}, pig(){beep('square', 760, .08, .05)}, break(){beep('square', 300,.06,.05)}, star(){beep('sine', 1200,.2,.04)}, ability(){beep('triangle', 880,.07,.05)} };
+  const MATERIAL = {wood:{density:0.0012, friction:0.6, restitution:0.15, color:'#c58b55'}};
+  function makeBlock(x,y,w,h){ const m=MATERIAL.wood; const b=Bodies.rectangle(x,y,w,h,{density:m.density, friction:m.friction, restitution:m.restitution}); World.add(world,b); return b;}
+  function makePig(x,y){const b=Bodies.circle(x,y,20,{density:0.0012, friction:0.5});b.plugin={pig:true,hp:80};World.add(world,b);STATE.pigs.push(b);return b;}
+  function createBird(x,y){const b=Bodies.circle(x,y,16,{density:0.001, friction:0.5, restitution:0.2});World.add(world,b);return b;}
 
-  // Matter aliases
-  const {Engine, World, Bodies, Body, Composite, Composites, Constraint, Events, Vector, Query} = Matter;
+  const sling={anchor:{x:220,y:340},maxPull:100,pulling:false,pullPos:{x:0,y:0}};
+  function addGround(){const g=Bodies.rectangle(400,430,1600,40,{isStatic:true});World.add(world,g);}
+  addGround();
 
-  // Camera
-  const camera = { x: 260, y: 280, scale: 1, targetX: 260, targetY: 280, targetScale: 1 };
-  function setCamera(x,y,s){ camera.targetX=x; camera.targetY=y; camera.targetScale=s; }
-  function updateCamera(dt){
-    const k = 8*dt; // smoothing
-    camera.x += (camera.targetX - camera.x)*k;
-    camera.y += (camera.targetY - camera.y)*k;
-    camera.scale += (camera.targetScale - camera.scale)*k;
-    camera.scale = Math.max(0.6, Math.min(1.6, camera.scale));
-  }
-
-  // World
-  const engine = Engine.create({ enableSleeping: true });
-  const world = engine.world; world.gravity.y = 1.1; // tuned; gameplay feel like ~900 px/s^2
-
-  // Materials
-  const MATERIAL = {
-    wood:  { density:0.0012, friction:0.6, restitution:0.15, hp: 110, color:'#c58b55' },
-    stone: { density:0.0020, friction:0.7, restitution:0.08, hp: 220, color:'#9aa3ad' },
-    ice:   { density:0.0009, friction:0.2, restitution:0.02, hp: 70,  color:'#bfe7ff' }
-  };
-
-  // Entities
-  const STATE = { mode:'menu', birds:[], pigs:[], blocks:[], ground:null, sling:null, slingBand:null, currentBird:null, score:0, levelIndex:0, launched:false, abilityUsed:false, best: store.get('best:1-1',0), cleared:false, paused:false };
-
-  // Ground and bounds
-  function addBounds(){
-    const ground = Bodies.rectangle(1200, 420, 2400, 60, { isStatic:true, friction:1, render:{fillStyle:'#5a8638'} });
-    const leftWall = Bodies.rectangle(-200, 200, 400, 800, { isStatic:true });
-    const rightWall = Bodies.rectangle(2000, 200, 400, 800, { isStatic:true });
-    World.add(world, [ground, leftWall, rightWall]);
-    STATE.ground = ground;
-  }
-
-  // Level definition (can expand)
-  const LEVELS = [
-    {
-      id:'1-1', name:'1-1 Meadow', stars:[30000, 60000, 90000],
-      birds:['red','yellow','blue'],
-      pigs:[ {x: 880, y: 370, r:20, type:'small'}, {x: 1000, y: 370, r:22, type:'med'} ],
-      blocks:[
-        {x:940,y:380,w:120,h:20,mat:'wood',angle:0},
-        {x:900,y:340,w:20,h:80,mat:'wood',angle:0},
-        {x:980,y:340,w:20,h:80,mat:'wood',angle:0},
-        {x:1060,y:360,w:120,h:20,mat:'ice',angle:0},
-        {x:1060,y:320,w:20,h:60,mat:'ice',angle:0},
-        {x:1060,y:280,w:120,h:20,mat:'stone',angle:0}
-      ]
-    }
-  ];
-
-  function makeBlock({x,y,w,h,mat,angle=0}){
-    const m = MATERIAL[mat]||MATERIAL.wood;
-    const body = Bodies.rectangle(x,y,w,h,{ density:m.density, friction:m.friction, restitution:m.restitution });
-    Body.rotate(body, angle);
-    body.plugin = { hp: m.hp, mat:mat, w, h };
-    STATE.blocks.push(body);
-    return body;
-  }
-
-  function makePig({x,y,r=20,type='med'}){
-    const hpByType = { small: 60, med: 100, large: 150, helmet: 220 };
-    const body = Bodies.circle(x,y,r,{ density:0.0012, friction:0.5, restitution:0.3 });
-    body.plugin = { hp: hpByType[type]||100, r, type };
-    STATE.pigs.push(body);
-    return body;
-  }
-
-  // Slingshot
-  const sling = { anchor: {x: 220, y: 340}, maxPull: 100, pulling:false, pullPos:{x:0,y:0} };
-
-  function loadLevel(idx=0){
-    // reset
-    Composite.clear(world, false); STATE.blocks.length=0; STATE.pigs.length=0; STATE.birds.length=0; STATE.currentBird=null; STATE.launched=false; STATE.abilityUsed=false; STATE.score=0; STATE.cleared=false; STATE.levelIndex=idx; STATE.best = store.get('best:'+LEVELS[idx].id,0);
-    addBounds();
-
-    const L = LEVELS[idx];
-    // blocks
-    World.add(world, L.blocks.map(makeBlock));
-    // pigs
-    World.add(world, L.pigs.map(makePig));
-    // birds queue (off-sling)
-    for(let i=0;i<L.birds.length;i++) STATE.birds.push( createBird(L.birds[i], 120 - i*36, 380 + i*2) );
-    // sling
-    STATE.sling = sling; sling.pulling=false; sling.pullPos={x:sling.anchor.x, y:sling.anchor.y};
-    // place first bird on sling
+  function loadLevel(){
+    Composite.clear(world,false); STATE.birds.length=0; STATE.pigs.length=0; STATE.blocks.length=0; STATE.score=0;
+    addGround();
+    makeBlock(900,380,120,20); makeBlock(900,340,20,80);
+    makePig(940,360); STATE.birds.push(createBird(180,380),createBird(140,380),createBird(100,380));
     nextBirdToSling();
-    // camera to sling
-    setCamera(260, 280, 1.0);
   }
-
   function nextBirdToSling(){
-    STATE.currentBird = STATE.birds.shift()||null;
-    STATE.abilityUsed=false;
-    if(STATE.currentBird){
-      Body.setPosition(STATE.currentBird, sling.anchor);
-      Body.setVelocity(STATE.currentBird, {x:0,y:0});
-      Body.setAngularVelocity(STATE.currentBird, 0);
-      Body.setStatic(STATE.currentBird, true);
-      setTimeout(()=> setCamera(260, 280, 1.0), 200);
-    }
-  }
-
-  function createBird(kind, x, y){
-    const massBy = { red:1, yellow:0.9, blue:0.8, black:1.1, white:0.95 };
-    const body = Bodies.circle(x,y,16, { density:0.001*massBy[kind], friction:0.5, restitution:0.15 });
-    body.plugin = { kind, ability:true };
-    World.add(world, body);
-    return body;
+    STATE.currentBird=STATE.birds.shift()||null;
+    if(STATE.currentBird){Body.setStatic(STATE.currentBird,true); Body.setPosition(STATE.currentBird,sling.anchor);}
   }
 
   function launchCurrentBird(){
-    if(!STATE.currentBird) return;
-    const b = STATE.currentBird; Body.setStatic(b, false);
-    const pull = Vector.sub(sling.anchor, sling.pullPos); // from pulled pos to anchor
-    const strength = 0.21; // tuning factor
-    const vel = Vector.mult(pull, strength);
-    Body.setVelocity(b, vel);
-    STATE.launched = true; SFX.launch(); ensureAC();
-    // cinematic zoom
-    setCamera(b.position.x, b.position.y, 1.2);
+    if(!STATE.currentBird)return;
+    const b=STATE.currentBird; Body.setStatic(b,false);
+    const pull=Vector.sub(sling.anchor,sling.pullPos);
+    Body.applyForce(b,b.position,Vector.mult(pull,0.0028)); // FIXED: proper force
+    STATE.launched=true;
   }
 
-  // Bird abilities
-  function triggerAbility(){
-    const b = STATE.currentBird; if(!b || !STATE.launched) return; if(STATE.abilityUsed) return; STATE.abilityUsed=true; SFX.ability();
-    const k = b.plugin.kind;
-    if(k==='yellow'){
-      // dash: increase velocity
-      Body.setVelocity(b, Vector.mult(b.velocity, 1.8));
-    } else if(k==='blue'){
-      // split into 3
-      const vel = b.velocity; const pos = b.position; const off = 0.25;
-      for(const dir of [-0.15, 0, 0.15]){
-        const nb = createBird('blue', pos.x, pos.y);
-        Body.setVelocity(nb, { x: vel.x + dir*Vector.magnitude(vel), y: vel.y - Math.abs(dir)*off*Vector.magnitude(vel)});
-      }
-      // remove original
-      World.remove(world, b); STATE.currentBird = STATE.birds[0] || null; // focus will remain on existing one? We'll follow the fastest
-    } else if(k==='black'){
-      // explosion
-      explode(b.position, 80, 28); // radius, force
-    } else if(k==='white'){
-      // drop egg
-      const egg = Bodies.circle(b.position.x, b.position.y, 10, { density:0.0008, restitution:0.2 });
-      egg.plugin = { egg:true };
-      World.add(world, egg);
-      Body.applyForce(egg, egg.position, {x:0, y:0.05});
-      // bounce up a bit
-      Body.setVelocity(b, { x: b.velocity.x*0.9, y: -6 });
-    }
-  }
-
-  function explode(pos, radius=80, force=25){
-    const bodies = Composite.allBodies(world);
-    for(const body of bodies){
-      const d = Vector.magnitude(Vector.sub(body.position, pos));
-      if(d < radius && !body.isStatic){
-        const dir = Vector.normalise(Vector.sub(body.position, pos));
-        Body.applyForce(body, body.position, Vector.mult(dir, force/d));
-        if(body.plugin && body.plugin.hp){ body.plugin.hp -= (radius - d)*0.6; if(body.plugin.hp<=0) destroyBody(body); }
-      }
-    }
-    popupText('+BOOM');
-  }
-
-  // Input
-  const keys = new Set();
-  addEventListener('keydown', e=>{
-    const k=e.key.toLowerCase(); keys.add(k);
-    if(k==='r'){ e.preventDefault(); retryLevel(); }
-    if(k==='p'){ e.preventDefault(); togglePause(); }
-    if(k===' '){ e.preventDefault(); triggerAbility(); }
-  });
-  addEventListener('keyup', e=>{ keys.delete(e.key.toLowerCase()); });
-
-  let mouse = {x:0,y:0, down:false, last:{x:0,y:0}};
-  canvas.addEventListener('mousedown', e=>{ mouse.down=true; onPointerDown(e); });
-  canvas.addEventListener('mouseup',   e=>{ mouse.down=false; onPointerUp(e); });
-  canvas.addEventListener('mousemove', e=>{ onPointerMove(e); });
-  canvas.addEventListener('touchstart', e=>{ e.preventDefault(); mouse.down=true; onPointerDown(e.touches[0]); }, {passive:false});
-  canvas.addEventListener('touchend',   e=>{ e.preventDefault(); mouse.down=false; onPointerUp(e.changedTouches[0]||{}); }, {passive:false});
-  canvas.addEventListener('touchmove',  e=>{ e.preventDefault(); onPointerMove(e.touches[0]); }, {passive:false});
-
+  let mouse={x:0,y:0,down:false};
   function toWorld(pt){
-    // convert canvas client to world coord considering camera
-    const rect = canvas.getBoundingClientRect();
-    const x = (pt.clientX - rect.left)/(rect.width) * logicalW;
-    const y = (pt.clientY - rect.top)/(rect.height) * logicalH;
-    // invert camera transform
-    const wx = (x - logicalW*0.5)/camera.scale + camera.x;
-    const wy = (y - logicalH*0.5)/camera.scale + camera.y;
-    return {x:wx, y:wy};
+    const rect=canvas.getBoundingClientRect();
+    const x=(pt.clientX-rect.left)/(rect.width)*logicalW;
+    const y=(pt.clientY-rect.top)/(rect.height)*logicalH;
+    return{x,y};
   }
 
-  function onPointerDown(e){ ensureAC(); const p = toWorld(e); mouse.last=p;
-    // If bird on sling, start pulling when near bird
-    if(STATE.currentBird && !STATE.launched){
-      const bpos = STATE.currentBird.position; const d = Vector.magnitude(Vector.sub(p, bpos));
-      if(d < 40){ sling.pulling=true; }
-    }
-  }
-  function onPointerMove(e){ const p=toWorld(e); mouse.last=p;
-    if(sling.pulling && STATE.currentBird && !STATE.launched){
-      const vec = Vector.sub(p, sling.anchor); const len = Math.min(sling.maxPull, Vector.magnitude(vec));
-      const dir = Vector.normalise(vec);
-      sling.pullPos = { x: sling.anchor.x + dir.x*len, y: sling.anchor.y + dir.y*len };
-      Body.setPosition(STATE.currentBird, sling.pullPos);
-      // zoom out slightly while pulling
-      setCamera(260, 280, 1.05 + len/sling.maxPull*0.15);
-    } else if(!STATE.currentBird || STATE.launched){
-      // camera pan when idle (drag UI)
-      if(mouse.down){ setCamera(camera.targetX - (p.x - mouse.x), camera.targetY - (p.y - mouse.y), camera.targetScale); }
-    }
-    mouse.x=p.x; mouse.y=p.y;
-  }
-  function onPointerUp(e){ if(sling.pulling && STATE.currentBird && !STATE.launched){ sling.pulling=false; launchCurrentBird(); } else if(STATE.launched){ triggerAbility(); } }
-
-  function togglePause(force){ const v = typeof force==='boolean'? force : !STATE.paused; STATE.paused=v; $paused.classList.toggle('show', v); }
-  addEventListener('visibilitychange', ()=>{ if(document.hidden) togglePause(true); });
-
-  function retryLevel(){ loadLevel(STATE.levelIndex); }
-
-  // Collisions for damage/score
-  Events.on(engine, 'collisionStart', ev=>{
-    for(const pair of ev.pairs){
-      handleImpact(pair.bodyA, pair.bodyB, pair.collision);
-      handleImpact(pair.bodyB, pair.bodyA, pair.collision);
+  canvas.addEventListener('mousedown',e=>{mouse.down=true;const p=toWorld(e);const bpos=STATE.currentBird?.position;if(bpos){const d=Vector.magnitude(Vector.sub(p,bpos));if(d<80)sling.pulling=true;}});
+  canvas.addEventListener('mouseup',e=>{mouse.down=false;if(sling.pulling){sling.pulling=false;launchCurrentBird();}});
+  canvas.addEventListener('mousemove',e=>{
+    const p=toWorld(e);
+    if(sling.pulling&&STATE.currentBird&&!STATE.launched){
+      const vec=Vector.sub(p,sling.anchor);
+      const len=Math.min(sling.maxPull,Vector.magnitude(vec));
+      const dir=Vector.normalise(vec);
+      sling.pullPos={x:sling.anchor.x+dir.x*len,y:sling.anchor.y+dir.y*len};
+      Body.setPosition(STATE.currentBird,sling.pullPos);
     }
   });
 
-  function handleImpact(a,b, collision){
-    const impulse = collision.penetration? Vector.magnitude(collision.penetration) : 0.5; // proxy magnitude
-    const relVel = Vector.magnitude(Vector.sub(a.velocity, b.velocity));
-    const energy = relVel * (a.mass||1) * 40; // tuned
-
-    // Pigs
-    if(a.plugin && a.plugin.type){
-      a.plugin.hp -= energy*0.3;
-      if(energy>12) { SFX.hit(); }
-      if(a.plugin.hp <= 0){ destroyPig(a); }
+  Events.on(engine,'collisionStart',ev=>{
+    for(const pair of ev.pairs){
+      const a=pair.bodyA,b=pair.bodyB;
+      const relVel=Vector.magnitude(Vector.sub(a.velocity,b.velocity));
+      if(a.plugin&&a.plugin.pig&&relVel>3){World.remove(world,a);STATE.score+=5000;}
+      if(b.plugin&&b.plugin.pig&&relVel>3){World.remove(world,b);STATE.score+=5000;}
     }
+  });
 
-    // Blocks
-    if(a.plugin && a.plugin.hp){
-      a.plugin.hp -= energy*0.25;
-      if(a.plugin.hp <= 0){ destroyBody(a); addScore(500 + Math.floor(Math.random()*300)); }
-      else if(energy>18){ SFX.break(); }
-    }
-  }
-
-  function destroyBody(b){
-    if(b.isSleeping) Body.setStatic(b,false);
-    World.remove(world,b);
-    // particles would go here
-  }
-  function destroyPig(p){ World.remove(world,p); addScore(5000); SFX.pig(); popupText('+5000'); }
-
-  function addScore(v){ STATE.score += v; $score.textContent = 'Score '+STATE.score; $a11y.textContent = 'Score '+STATE.score; }
-
-  // Win/Lose check
-  function checkOutcome(){
-    const pigsAlive = STATE.pigs.filter(p=>world.bodies.includes(p));
-    const noBirdsLeft = !STATE.currentBird && STATE.birds.length===0 && STATE.launched;
-    if(pigsAlive.length===0 && !STATE.cleared){ levelCleared(); }
-    else if(noBirdsLeft){ levelFailed(); }
-  }
-
-  function levelCleared(){ STATE.cleared=true; showPanel(true); }
-  function levelFailed(){ showPanel(false); }
-
-  function starString(stars){ return '★'.repeat(stars) + '☆'.repeat(3-stars); }
-
-  function showPanel(cleared){
-    const L = LEVELS[STATE.levelIndex];
-    const stars = (STATE.score>=L.stars[2])?3: (STATE.score>=L.stars[1])?2: (STATE.score>=L.stars[0])?1:0;
-    $panelScore.textContent = STATE.score; const bestKey='best:'+L.id; const oldBest=store.get(bestKey,0); if(STATE.score>oldBest){ store.set(bestKey, STATE.score); }
-    $panelBest.textContent = Math.max(oldBest, STATE.score);
-    $panelStars.textContent = starString(stars);
-    document.getElementById('panelTitle').textContent = cleared? 'Level Cleared!' : 'Level Failed';
-    $panel.classList.add('show'); $panel.setAttribute('aria-hidden','false');
-    if(stars>0) SFX.star();
-  }
-
-  $retry.addEventListener('click', ()=>{ $panel.classList.remove('show'); loadLevel(STATE.levelIndex); });
-  $next.addEventListener('click', ()=>{ $panel.classList.remove('show'); const n=(STATE.levelIndex+1)%LEVELS.length; loadLevel(n); });
-
-  function popupText(txt){ $popup.textContent = txt; $popup.style.opacity = 1; $popup.style.transform = 'translateY(0)'; setTimeout(()=>{ $popup.style.transition='opacity 300ms, transform 300ms'; $popup.style.opacity=0; $popup.style.transform='translateY(10px)'; setTimeout(()=>{ $popup.style.transition='none'; }, 320); }, 10); }
-
-  // Render helpers
   function drawWorld(){
-    // camera transform
-    ctx.save();
-    ctx.translate(logicalW*0.5, logicalH*0.5); ctx.scale(camera.scale, camera.scale); ctx.translate(-camera.x, -camera.y);
-
-    // background
-    drawBackground();
-
-    // draw bodies
-    const highContrast = document.getElementById('contrastToggle').checked;
+    ctx.clearRect(0,0,logicalW,logicalH);
+    ctx.fillStyle='#8ed6ff';ctx.fillRect(0,0,logicalW,logicalH);
     for(const b of world.bodies){
-      ctx.save(); ctx.translate(b.position.x, b.position.y); ctx.rotate(b.angle);
+      ctx.save();ctx.translate(b.position.x,b.position.y);ctx.rotate(b.angle);
       if(b.circleRadius){
-        const isPig = b.plugin && b.plugin.type; const r=b.circleRadius;
-        if(isPig){
-          ctx.fillStyle = highContrast? '#0f0' : '#7bd36a';
-          ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.fill();
-          // face
-          ctx.fillStyle='#000'; ctx.fillRect(-r*0.3,-r*0.1, r*0.2, 4); ctx.fillRect(r*0.1,-r*0.1, r*0.2, 4); ctx.fillRect(-2,r*0.2, 4,4);
-        } else {
-          // birds
-          const k = (b.plugin && b.plugin.kind)||'red';
-          ctx.fillStyle = {red:'#ff4444', yellow:'#ffd24a', blue:'#5ab0ff', black:'#444', white:'#fff'}[k]||'#ff4444';
-          ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.fill();
-          ctx.fillStyle='#000'; ctx.fillRect(-r*0.3,-2, r*0.6,4);
-        }
-      } else {
-        // blocks
-        const w=b.bounds.max.x-b.bounds.min.x; const h=b.bounds.max.y-b.bounds.min.y;
-        const mat = (b.plugin&&b.plugin.mat)||'wood';
-        ctx.fillStyle = highContrast? (mat==='stone'?'#aaa':mat==='ice'?'#ccf':'#c80') : MATERIAL[mat].color;
-        ctx.fillRect(-w/2,-h/2,w,h);
-        ctx.strokeStyle = '#0006'; ctx.lineWidth=2; ctx.strokeRect(-w/2,-h/2,w,h);
+        const isPig=b.plugin&&b.plugin.pig;
+        ctx.fillStyle=isPig?'#7bd36a':'#ff4444';
+        ctx.beginPath();ctx.arc(0,0,b.circleRadius,0,Math.PI*2);ctx.fill();
+      }else{
+        const w=b.bounds.max.x-b.bounds.min.x;const h=b.bounds.max.y-b.bounds.min.y;
+        ctx.fillStyle='#c58b55';ctx.fillRect(-w/2,-h/2,w,h);
       }
       ctx.restore();
     }
-
-    // Sling posts & bands
-    drawSling();
-
-    ctx.restore();
-  }
-
-  function drawBackground(){
-    const w=2000,h=1000; // world bg size
-    // sky gradient
-    const g = ctx.createLinearGradient(0, camera.y-300, 0, camera.y+400); g.addColorStop(0,'#8ed6ff'); g.addColorStop(1,'#e3f6ff'); ctx.fillStyle=g; ctx.fillRect(camera.x-logicalW, camera.y-logicalH, logicalW*2, logicalH*2);
-    // far hills parallax
-    const off = (camera.x*0.3)%w; ctx.fillStyle='#76b06e'; for(let i=-1;i<=1;i++){ ctx.fillRect(i*w-off, 380, w, 300); }
-    // clouds (simple)
-    ctx.fillStyle='rgba(255,255,255,0.9)';
-    for(let i=0;i<6;i++){ const cx = (i*300 - (camera.x*0.2)%600)+300; const cy=140+ (i%3)*20; ctx.beginPath(); ctx.arc(cx,cy, 28,0,Math.PI*2); ctx.arc(cx+24, cy+4, 24,0,Math.PI*2); ctx.fill(); }
-  }
-
-  function drawSling(){
-    const A = sling.anchor; const back = {x:A.x-10, y:A.y-60}, front={x:A.x+10,y:A.y-54};
-    ctx.fillStyle='#5c3a1e'; ctx.fillRect(A.x-12, A.y-90, 8, 90); ctx.fillRect(A.x+6, A.y-90, 8, 90);
-    // bands
-    if(STATE.currentBird && (sling.pulling || !STATE.launched)){
-      const bp = STATE.currentBird.position;
-      ctx.strokeStyle='#4d2a12'; ctx.lineWidth=6; ctx.beginPath(); ctx.moveTo(back.x, back.y); ctx.lineTo(bp.x, bp.y); ctx.stroke();
-      ctx.strokeStyle='#7b4420'; ctx.lineWidth=6; ctx.beginPath(); ctx.moveTo(front.x, front.y); ctx.lineTo(bp.x, bp.y); ctx.stroke();
+    // sling posts
+    const A=sling.anchor;
+    ctx.fillStyle='#5c3a1e';ctx.fillRect(A.x-12,A.y-90,8,90);ctx.fillRect(A.x+6,A.y-90,8,90);
+    if(STATE.currentBird&&(sling.pulling||!STATE.launched)){
+      const bp=STATE.currentBird.position;
+      ctx.strokeStyle='#4d2a12';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(A.x-10,A.y-60);ctx.lineTo(bp.x,bp.y);ctx.stroke();
+      ctx.strokeStyle='#7b4420';ctx.beginPath();ctx.moveTo(A.x+10,A.y-54);ctx.lineTo(bp.x,bp.y);ctx.stroke();
     }
   }
 
-  // Main loop
-  let last = performance.now();
+  let last=performance.now();
   function loop(){
-    const n=performance.now(); let dt=(n-last)/1000; last=n; dt=Math.min(dt, 1/30);
-    if(!STATE.paused){ Engine.update(engine, dt*1000); }
-
-    // camera follow
-    if(STATE.launched && STATE.currentBird){ const b=STATE.currentBird; setCamera(b.position.x, b.position.y, 1.2); }
-    updateCamera(dt);
-
-    // cinematic zoom on big impacts (simple heuristic)
-    for(const b of STATE.blocks){ if(!world.bodies.includes(b)) continue; const v=Vector.magnitude(b.velocity); if(v>8){ camera.targetScale = 1.35; } }
-    if(!STATE.launched) camera.targetScale = Math.max(1.0, camera.targetScale*0.98);
-
-    // if launched bird slows or leaves screen, prep next
-    if(STATE.launched && STATE.currentBird){
-      const b=STATE.currentBird; const speed = Vector.magnitude(b.velocity);
-      if(speed<0.4 || b.position.y>650 || b.position.x>1800 || b.position.x<-200){
-        STATE.launched=false; // move to next
-        setTimeout(()=>{ nextBirdToSling(); }, 800);
-        setCamera(260, 280, 1.0);
-      }
-    }
-
-    checkOutcome();
-    // render
-    ctx.clearRect(0,0,logicalW,logicalH);
+    const n=performance.now();let dt=(n-last)/1000;last=n;dt=Math.min(dt,1/30);
+    if(!STATE.paused){Engine.update(engine,dt*1000);}
     drawWorld();
-
     requestAnimationFrame(loop);
   }
 
-  // Start
-  loadLevel(0);
+  loadLevel();
   loop();
   </script>
 </body>
