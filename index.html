@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>TayTay's Game</title>
+  <title>Shaebae’s Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <style>
     :root {
@@ -13,46 +13,35 @@
       --panel: rgba(255,255,255,0.9);
       --panel-dark: rgba(0,0,0,0.65);
     }
-    html, body { height: 100%; margin: 0; background: #111; color: var(--text); font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans"; overscroll-behavior: none; }
-    .wrap { position: fixed; inset: 0; display: grid; place-items: center; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
-    canvas { background: var(--bg); box-shadow: 0 10px 40px rgba(0,0,0,0.35); border-radius: 16px; image-rendering: pixelated; touch-action: none; }
-    .hud { position: fixed; inset: 0; pointer-events: none; display: grid; place-items: center; font-weight: 700; letter-spacing: 0.5px; user-select: none; }
-    .topbar { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; pointer-events: auto; flex-wrap: wrap; justify-content: center; }
-    .btn, .toggle { appearance: none; border: 0; background: var(--panel); color: #111; padding: 8px 12px; border-radius: 999px; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer; }
-    .toggle { display: flex; gap: 6px; align-items: center; }
-    .btn:focus, .toggle:focus { outline: 3px solid #000; outline-offset: 2px; }
-    .score { position: fixed; top: 18px; right: 14px; font-size: 28px; color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,0.6); pointer-events: none; }
-    .splash { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; text-align: center; color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,0.5); }
-    .splash .title { font-size: 34px; margin-bottom: 8px; }
-    .splash .subtitle { font-size: 18px; opacity: 0.9; }
-    .panel { min-width: 280px; max-width: 90vw; background: var(--panel); color: #111; border-radius: 18px; padding: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.25); pointer-events: auto; transform: translateY(8px); }
-    .panel.dark { background: var(--panel-dark); color: #f0f0f0; }
-    .panel h2 { margin: 0 0 8px 0; font-size: 22px; text-align: center; }
-    .panel .row { display: flex; justify-content: space-between; align-items: center; font-size: 18px; padding: 6px 0; }
-    .panel .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
-    .pill { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.08); padding: 4px 10px; border-radius: 999px; font-size: 14px; }
-    .sr-only { position: absolute!important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-    .toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 8px 12px; border-radius: 10px; font-size: 14px; pointer-events: none; opacity: 0; transition: opacity .25s ease, transform .25s ease; }
-    .toast.show { opacity: 1; transform: translate(-50%, -6px); }
-    .high-contrast canvas { outline: 4px solid #000; }
-    .high-contrast .btn, .high-contrast .toggle, .high-contrast .panel { border: 3px solid #000; }
-    .paused-badge { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; color: #fff; font-size: 26px; text-shadow: 0 2px 0 rgba(0,0,0,0.6); }
+    html,body{height:100%;margin:0;background:#111;color:var(--text);font-family:ui-rounded,system-ui,-apple-system,Segoe UI,Roboto,Arial,Noto Sans;overscroll-behavior:none;}
+    .wrap{position:fixed;inset:0;display:grid;place-items:center;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
+    canvas{background:var(--bg);box-shadow:0 10px 40px rgba(0,0,0,.35);border-radius:16px;image-rendering:pixelated;touch-action:none;}
+    .hud{position:fixed;inset:0;pointer-events:none;display:grid;place-items:center;font-weight:700;letter-spacing:.5px;user-select:none;}
+    .topbar{position:fixed;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;pointer-events:auto;flex-wrap:wrap;justify-content:center;}
+    .btn,.toggle{appearance:none;border:0;background:var(--panel);color:#111;padding:8px 12px;border-radius:999px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.15);cursor:pointer;}
+    .toggle{display:flex;gap:6px;align-items:center;}
+    .score{position:fixed;top:18px;right:14px;font-size:28px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.6);pointer-events:none;}
+    .splash{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;text-align:center;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.5);}
+    .splash .title{font-size:34px;margin-bottom:8px;}
+    .panel{min-width:280px;max-width:90vw;background:var(--panel);color:#111;border-radius:18px;padding:16px;box-shadow:0 8px 30px rgba(0,0,0,.25);pointer-events:auto;transform:translateY(8px);}
+    .panel.dark{background:var(--panel-dark);color:#f0f0f0;}
+    .panel h2{margin:0 0 8px 0;font-size:22px;text-align:center;}
+    .panel .row{display:flex;justify-content:space-between;align-items:center;font-size:18px;padding:6px 0;}
+    .panel .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+    .pill{display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.08);padding:4px 10px;border-radius:999px;font-size:14px;}
+    .paused-badge{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;color:#fff;font-size:26px;text-shadow:0 2px 0 rgba(0,0,0,.6);}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <canvas id="game" width="360" height="640" aria-label="Shaebae’s Game canvas"></canvas>
-  </div>
+  <div class="wrap"><canvas id="game" width="360" height="640"></canvas></div>
 
-  <div class="hud" aria-hidden="true">
-    <!-- added id="topbar" -->
-    <div id="topbar" class="topbar">
-      <button id="muteBtn" class="btn" aria-pressed="false" aria-label="Toggle sound">🔊 Sound</button>
-      <label class="toggle"><input type="checkbox" id="jsToggle" checked> Jump scare</label>
+  <div class="hud">
+    <div class="topbar">
+      <button id="muteBtn" class="btn">🔊 Sound</button>
       <label class="toggle"><input type="checkbox" id="casualToggle"> Casual</label>
       <label class="toggle"><input type="checkbox" id="hcToggle"> High contrast</label>
       <label class="toggle"><input type="checkbox" id="rmToggle"> Reduced motion</label>
-      <button id="pauseBtn" class="btn" aria-label="Pause (P)">⏸️ Pause</button>
+      <button id="pauseBtn" class="btn">⏸️ Pause</button>
     </div>
     <div id="scoreHud" class="score">0</div>
     <div id="splash" class="splash">
@@ -66,10 +55,10 @@
   </div>
 
   <div id="gameOver" class="hud" style="display:none;">
-    <div class="panel" role="dialog" aria-modal="true" aria-labelledby="overTitle">
-      <h2 id="overTitle">Game Over</h2>
+    <div class="panel">
+      <h2>Game Over</h2>
       <div class="row"><span>Score</span><strong id="scoreNow">0</strong></div>
-      <div class="row"><span>Best</span><span><strong id="bestNow">0</strong> <span id="medal" class="pill" aria-label="medal" style="display:none;">🥉 Bronze</span></span></div>
+      <div class="row"><span>Best</span><span><strong id="bestNow">0</strong> <span id="medal" class="pill" style="display:none;">🥉 Bronze</span></span></div>
       <div class="actions">
         <button id="againBtn" class="btn">Play Again</button>
         <button id="shareBtn" class="btn">Share</button>
@@ -77,523 +66,48 @@
     </div>
   </div>
 
-  <div id="aria" class="sr-only" aria-live="polite"></div>
-  <div id="toast" class="toast" role="status"></div>
-
 <script>
 (() => {
-  'use strict';
-
-  /* ========= CONFIG ========= */
-  const CFG = {
-    canvas: { width: 360, height: 640 },
-    physics: { gravity: 1800, flapImpulse: -420, maxFallSpeed: 900 },
-    world: { speedStart: 180, speedEnd: 240, speedEndScore: 30 },
-    pipes: { gapStart: 160, gapEnd: 135, gapEndScore: 20, spawnStart: 1.2, spawnEnd: 0.95, spawnEndScore: 25, minGapCenterY: 120, maxGapCenterYPaddingBottom: 120, width: 64 },
-    bird: { size: { w: 34, h: 24 }, hitboxRadius: 12, idleBobPx: 4 },
-    ground: { height: 112 },
-    scorePopup: { dy: 40, duration: 0.6 },
-    jumpScare: { durationMs: 1200 }
+  "use strict";
+  const CFG={canvas:{width:360,height:640},physics:{gravity:1800,flapImpulse:-420,maxFallSpeed:900},world:{speedStart:180,speedEnd:240,speedEndScore:30},pipes:{gapStart:160,gapEnd:135,gapEndScore:20,spawnStart:1.2,spawnEnd:.95,spawnEndScore:25,minGapCenterY:120,maxGapCenterYPaddingBottom:120,width:64},bird:{size:{w:34,h:24},hitboxRadius:12,idleBobPx:4},ground:{height:112},jumpScare:{durationMs:1200}};
+  const W=CFG.canvas.width,H=CFG.canvas.height,DPR=Math.min(window.devicePixelRatio||1,3);
+  const canvas=document.getElementById("game"),ctx=canvas.getContext("2d"),hudScore=document.getElementById("scoreHud"),splashEl=document.getElementById("splash"),overPanel=document.getElementById("gameOver"),scoreNow=document.getElementById("scoreNow"),bestNow=document.getElementById("bestNow"),medalEl=document.getElementById("medal"),muteBtn=document.getElementById("muteBtn"),casualToggle=document.getElementById("casualToggle"),hcToggle=document.getElementById("hcToggle"),rmToggle=document.getElementById("rmToggle"),pauseBtn=document.getElementById("pauseBtn"),pausedBadge=document.getElementById("pausedBadge");
+  let state="ready",paused=false,worldTime=0,spawnTimer=0,lastMs=performance.now(),score=0,bird,pipes=[],clouds=[{x:40,y:100,s:.3},{x:240,y:60,s:.25},{x:170,y:140,s:.22}],storage={best:Number(localStorage.getItem("sb_best")||0),muted:localStorage.getItem("sb_muted")==="1",reduced:localStorage.getItem("sb_reduced")==="1",highContrast:localStorage.getItem("sb_highcontrast")==="1",casual:localStorage.getItem("sb_casual")==="1"};
+  if(storage.muted)muteBtn.textContent="🔇 Muted";if(storage.highContrast)document.body.classList.add("high-contrast"),hcToggle.checked=true;if(storage.reduced)rmToggle.checked=true;if(storage.casual)casualToggle.checked=true;
+  const audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  const sfx={
+    flap(){if(storage.muted)return;beep("square",600,.08,.2)},
+    point(){if(storage.muted)return;beep("triangle",880,.07,.25)},
+    hit(){if(storage.muted)return;beep("sawtooth",120,.15,.3)},
+    die(){if(storage.muted)return;beep("sine",80,.35,.35)},
+    scream(){if(storage.muted)return;const g=audioCtx.createGain(),t=audioCtx.currentTime;o("sawtooth",1400,380,1,g,t);o("square",700,180,1,g,t);const n=noise(1);n.connect(g);g.connect(audioCtx.destination);g.gain.exponentialRampToValueAtTime(1.5,t+.04);g.gain.exponentialRampToValueAtTime(.05,t+1.05);}
   };
-
-  const DPR = Math.min(window.devicePixelRatio || 1, 3);
-
-  /* ========= DOM ========= */
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
-  const splashEl = document.getElementById('splash');
-  const hudScore = document.getElementById('scoreHud');
-  const overPanel = document.getElementById('gameOver');
-  const scoreNow = document.getElementById('scoreNow');
-  const bestNow = document.getElementById('bestNow');
-  const medalEl = document.getElementById('medal');
-  const muteBtn = document.getElementById('muteBtn');
-  const casualToggle = document.getElementById('casualToggle');
-  const hcToggle = document.getElementById('hcToggle');
-  const rmToggle = document.getElementById('rmToggle');
-  const jsToggle = document.getElementById('jsToggle');
-  const pauseBtn = document.getElementById('pauseBtn');
-  const pausedBadge = document.getElementById('pausedBadge');
-  const ariaLive = document.getElementById('aria');
-  const toast = document.getElementById('toast');
-  const topbar = document.getElementById('topbar'); // <— NEW
-
-  /* ========= STATE ========= */
-  const W = CFG.canvas.width, H = CFG.canvas.height;
-  let state = 'ready'; // 'ready' | 'running' | 'dead'
-  let paused = false;
-  let worldTime = 0;
-  let spawnTimer = 0;
-  let lastMs = performance.now();
-
-  const storage = {
-    best: Number(localStorage.getItem('sb_best') || 0),
-    muted: localStorage.getItem('sb_muted') === '1',
-    reduced: localStorage.getItem('sb_reduced') === '1',
-    highContrast: localStorage.getItem('sb_highcontrast') === '1',
-    casual: localStorage.getItem('sb_casual') === '1',
-    jump: localStorage.getItem('sb_jump') !== '0' // default ON
-  };
-
-  if (storage.muted) muteBtn.setAttribute('aria-pressed', 'true'), muteBtn.textContent = '🔇 Muted';
-  if (storage.highContrast) document.body.classList.add('high-contrast'), hcToggle.checked = true;
-  if (storage.reduced) rmToggle.checked = true;
-  if (storage.casual) casualToggle.checked = true;
-  jsToggle.checked = storage.jump;
-
-  const BIRD_X = Math.round(W * 0.28);
-  let bird = { x: BIRD_X, y: H * 0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };
-
-  const pipes = [];
-  const pops = [];
-  const clouds = [
-    { x: 40, y: 100, s: 0.3 },
-    { x: 240, y: 60, s: 0.25 },
-    { x: 170, y: 140, s: 0.22 }
-  ];
-
-  let score = 0;
-  const medalFor = (s) => s>=50?['🏆 Platinum','#e5e4e2']:s>=30?['🥇 Gold','#f7c32e']:s>=20?['🥈 Silver','#c0c0c0']:s>=10?['🥉 Bronze','#cd7f32']:null;
-  const isNight = () => Math.floor(score / 10) % 2 === 1;
-
-  /* ========= AUDIO ========= */
-  let audioCtx = null;
-  const ensureAudio = () => { if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch {} } };
-  const beep = (type, freq, dur, vol=0.2) => {
-    if (!audioCtx || storage.muted) return;
-    const o = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    o.type = type; o.frequency.value = freq;
-    g.gain.value = vol;
-    o.connect(g).connect(audioCtx.destination);
-    const t = audioCtx.currentTime;
-    o.start(t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur*0.9);
-    o.stop(t + dur);
-  };
-  const createNoiseNode = (seconds=1.0) => {
-    if (!audioCtx) return null;
-    const bufferSize = Math.max(1, Math.floor(audioCtx.sampleRate * seconds));
-    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i=0; i<bufferSize; i++) data[i] = (Math.random()*2-1) * (1 - i/bufferSize);
-    const src = audioCtx.createBufferSource();
-    src.buffer = buffer;
-    return src;
-  };
-  const sfx = {
-    flap: () => beep('square', 600, 0.08, 0.15),
-    point: () => beep('triangle', 880, 0.07, 0.18),
-    hit:   () => beep('sawtooth', 120, 0.15, 0.22),
-    die:   () => beep('sine', 80, 0.35, 0.25),
-    swoosh:() => beep('triangle', 300, 0.1, 0.12),
-    scream: () => {
-      if (!audioCtx || storage.muted) return;
-      const t = audioCtx.currentTime;
-      const g = audioCtx.createGain();
-      g.gain.value = 0.0001;
-      g.connect(audioCtx.destination);
-
-      const o1 = audioCtx.createOscillator();
-      const o2 = audioCtx.createOscillator();
-      o1.type = 'sawtooth'; o2.type = 'square';
-      o1.frequency.setValueAtTime(1400, t);
-      o1.frequency.exponentialRampToValueAtTime(380, t + 1.0);
-      o2.frequency.setValueAtTime(700, t);
-      o2.frequency.exponentialRampToValueAtTime(180, t + 1.0);
-      o1.connect(g); o2.connect(g);
-
-      const noise = createNoiseNode(1.0);
-      if (noise) noise.connect(g);
-
-      g.gain.exponentialRampToValueAtTime(0.9, t + 0.04);
-      g.gain.exponentialRampToValueAtTime(0.05, t + 1.05);
-
-      o1.start(t); o2.start(t);
-      if (noise) noise.start(t);
-      o1.stop(t + 1.1); o2.stop(t + 1.1);
-      if (noise) noise.stop(t + 1.05);
-    }
-  };
-
-  /* ========= HELPERS ========= */
-  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-  const lerp = (a, b, t) => a + (b - a) * t;
-  const easeT = (score, endScore) => clamp(score / endScore, 0, 1);
-  const pipeGap = () => lerp(CFG.pipes.gapStart, CFG.pipes.gapEnd, easeT(score, CFG.pipes.gapEndScore));
-  const spawnInterval = () => lerp(CFG.pipes.spawnStart, CFG.pipes.spawnEnd, easeT(score, CFG.pipes.spawnEndScore));
-  const speedBase = () => {
-    const base = lerp(CFG.world.speedStart, CFG.world.speedEnd, easeT(score, CFG.world.speedEndScore));
-    return storage.casual ? Math.max(150, base - 30) : base;
-  };
-  const groundY = H - CFG.ground.height;
-
-  const showToast = (msg) => { toast.textContent = msg; toast.classList.add('show'); clearTimeout(showToast._t); showToast._t = setTimeout(() => toast.classList.remove('show'), 1200); };
-  const announce = (msg) => { ariaLive.textContent = ''; setTimeout(() => ariaLive.textContent = msg, 30); };
-
-  function resetGame() {
-    score = 0; hudScore.textContent = '0'; worldTime = 0; spawnTimer = -0.5;
-    bird.x = BIRD_X; bird.y = H*0.5; bird.vy = 0; bird.rot = 0; bird.frame = 0; bird.frameTimer = 0;
-    pipes.length = 0; pops.length = 0;
-    sfx.swoosh();
-  }
-
-  /* ========= DPR / RESIZE ========= */
-  function fitCanvas() {
-    const aspect = W / H;
-    const vw = window.innerWidth, vh = window.innerHeight;
-    let cssW, cssH;
-    if (vw / vh < aspect) { cssW = Math.min(vw, W*2.5); cssH = Math.round(cssW / aspect); }
-    else { cssH = Math.min(vh, H*2.5); cssW = Math.round(cssH * aspect); }
-    canvas.style.width = cssW + 'px'; canvas.style.height = cssH + 'px';
-    canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
-    ctx.setTransform(1,0,0,1,0,0); ctx.scale(DPR, DPR); ctx.imageSmoothingEnabled = false;
-  }
-  window.addEventListener('resize', fitCanvas, { passive: true });
-  fitCanvas();
-
-  /* ========= UI SHOW/HIDE (NEW) ========= */
-  function refreshUI() {
-    // Show topbar only on splash/ready OR when paused mid-game
-    const show = (state === 'ready') || (state === 'running' && paused);
-    topbar.style.display = show ? '' : 'none';
-  }
-
-  /* ========= INPUT ========= */
-  const flap = () => {
-    if (state === 'dead') return;
-    ensureAudio();
-    if (state === 'ready') {
-      state = 'running';
-      announce('Game started');
-      splashEl.style.display = 'none';
-      refreshUI(); // <— NEW
-    }
-    if (paused) return;
-    bird.vy = CFG.physics.flapImpulse; sfx.flap();
-  };
-  canvas.addEventListener('mousedown', (e) => { e.preventDefault(); flap(); });
-  canvas.addEventListener('touchstart', (e) => { e.preventDefault(); flap(); }, { passive: false });
-  window.addEventListener('keydown', (e) => {
-    const k = e.key.toLowerCase();
-    if ([' ', 'w', 'arrowup'].includes(k)) { e.preventDefault(); flap(); }
-    if (k === 'p') togglePause();
-  }, { passive: false });
-
-  document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'running') setPause(true); });
-  function setPause(p) {
-    if (state !== 'running') return;
-    paused = p;
-    pausedBadge.style.display = p ? '' : 'none';
-    announce(p?'Paused':'Resumed');
-    refreshUI(); // <— NEW
-  }
-  function togglePause() { setPause(!paused); }
-
-  /* ========= UI TOGGLES ========= */
-  muteBtn.addEventListener('click', () => {
-    storage.muted = !storage.muted; localStorage.setItem('sb_muted', storage.muted?'1':'0');
-    muteBtn.setAttribute('aria-pressed', storage.muted?'true':'false');
-    muteBtn.textContent = storage.muted ? '🔇 Muted' : '🔊 Sound';
-  });
-  hcToggle.addEventListener('change', () => { storage.highContrast = hcToggle.checked; localStorage.setItem('sb_highcontrast', storage.highContrast?'1':'0'); document.body.classList.toggle('high-contrast', storage.highContrast); });
-  rmToggle.addEventListener('change', () => { storage.reduced = rmToggle.checked; localStorage.setItem('sb_reduced', storage.reduced?'1':'0'); });
-  casualToggle.addEventListener('change', () => { storage.casual = casualToggle.checked; localStorage.setItem('sb_casual', storage.casual?'1':'0'); showToast(storage.casual ? 'Casual Mode ON' : 'Casual Mode OFF'); });
-  jsToggle.addEventListener('change', () => { storage.jump = jsToggle.checked; localStorage.setItem('sb_jump', storage.jump?'1':'0'); showToast(storage.jump ? 'Jump scare ON' : 'Jump scare OFF'); });
-
-  document.getElementById('againBtn').addEventListener('click', () => {
-    overPanel.style.display = 'none'; splashEl.style.display = '';
-    state = 'ready'; resetGame(); announce('Back to splash');
-    refreshUI(); // <— NEW
-  });
-  document.getElementById('shareBtn').addEventListener('click', async () => {
-    const text = `I scored ${scoreNow.textContent} in Shaebae’s Game! Can you beat me?`;
-    try { if (navigator.share) await navigator.share({ text, title: 'Shaebae’s Game' }); else { await navigator.clipboard.writeText(text); showToast('Copied to clipboard!'); } } catch {}
-  });
-
-  /* ========= GAME LOGIC ========= */
-  function spawnPipe() {
-    const gap = pipeGap();
-    const padBottom = CFG.pipes.maxGapCenterYPaddingBottom;
-    const minC = CFG.pipes.minGapCenterY;
-    const maxCenter = (groundY - padBottom) - gap/2;
-    const minCenter = minC + gap/2;
-    let gapY = Math.round(lerp(minCenter, maxCenter, Math.random()));
-    pipes.push({ x: W + 10, gapY, gap, w: CFG.pipes.width, scored: false });
-  }
-
-  function update(dt) {
-    if (state !== 'running' || paused) return;
-    const speed = speedBase();
-    worldTime += dt; spawnTimer += dt;
-
-    if (spawnTimer >= spawnInterval()) { spawnTimer = 0; spawnPipe(); }
-
-    if (!storage.reduced) {
-      for (const c of clouds) { c.x -= speed * c.s * dt; if (c.x < -80) c.x += W + 160; }
-    }
-
-    bird.vy += CFG.physics.gravity * dt;
-    bird.vy = clamp(bird.vy, -9999, CFG.physics.maxFallSpeed);
-    bird.y += bird.vy * dt; bird.y = clamp(bird.y, 2, H + 1000);
-
-    const targetRot = bird.vy < 0 ? -25 * Math.PI/180 : Math.min(90 * Math.PI/180, bird.vy / CFG.physics.maxFallSpeed * (90*Math.PI/180));
-    bird.rot = lerp(bird.rot, targetRot, 0.12);
-
-    const animFps = bird.vy < 0 ? 8 : 4;
-    bird.frameTimer += dt; if (bird.frameTimer >= 1/animFps) { bird.frame = (bird.frame + 1) % 3; bird.frameTimer = 0; }
-
-    for (const p of pipes) {
-      p.x -= speed * dt;
-      const cx = p.x + p.w/2;
-      if (!p.scored && cx < bird.x) {
-        p.scored = true; score++; hudScore.textContent = String(score);
-        pops.push({ x: cx, y: p.gapY, t: 0, duration: CFG.scorePopup.duration, text: '+1' });
-        if (navigator.vibrate) navigator.vibrate(20);
-        sfx.point(); announce(`Score ${score}`);
-      }
-    }
-    while (pipes.length && pipes[0].x + pipes[0].w < -20) pipes.shift();
-
-    const r = CFG.bird.hitboxRadius;
-    const circle = { x: bird.x + 2, y: bird.y, r };
-    const penetrationNeeded = 0.2 * r; // forgiving
-    let hit = false;
-    for (const p of pipes) {
-      const topRect = { x: p.x, y: -10000, w: p.w, h: (p.gapY - p.gap/2) + 10000 };
-      const botRect = { x: p.x, y: (p.gapY + p.gap/2), w: p.w, h: (groundY - (p.gapY + p.gap/2)) };
-      if (circleRectDeepOverlap(circle, topRect, penetrationNeeded) || circleRectDeepOverlap(circle, botRect, penetrationNeeded)) { hit = true; break; }
-    }
-    if (circle.y + circle.r >= groundY) { die(); return; }
-    if (hit) { sfx.hit(); die(); }
-    for (let i=pops.length-1; i>=0; i--) { const pop = pops[i]; pop.t += dt; if (pop.t >= pop.duration) pops.splice(i,1); }
-  }
-
-  function circleRectDeepOverlap(circ, rect, needed) {
-    const nx = clamp(circ.x, rect.x, rect.x + rect.w);
-    const ny = clamp(circ.y, rect.y, rect.y + rect.h);
-    const dx = circ.x - nx, dy = circ.y - ny;
-    const dist = Math.hypot(dx, dy);
-    const overlap = circ.r - dist;
-    return overlap > needed;
-  }
-
-  /* ========= JUMP SCARE ========= */
-  const jumpScare = { active: false, t: 0, dur: CFG.jumpScare.durationMs / 1000 };
-
-  function triggerJumpScare() {
-    if (!storage.jump) { setTimeout(showGameOver, 600); return; }
-    jumpScare.active = true; jumpScare.t = 0;
-    if (navigator.vibrate) navigator.vibrate([40, 40, 120]);
-    sfx.scream();
-    setTimeout(() => { jumpScare.active = false; showGameOver(); }, CFG.jumpScare.durationMs);
-  }
-
-  function drawJumpScareOverlay() {
-    const p = clamp(jumpScare.t / jumpScare.dur, 0, 1);
-    ctx.save();
-    ctx.fillStyle = '#000'; ctx.fillRect(0,0,W,H);
-
-    const shake = storage.reduced ? 0 : (1 - p) * 6;
-    const jx = storage.reduced ? 0 : (Math.random() * 2 - 1) * shake;
-    const jy = storage.reduced ? 0 : (Math.random() * 2 - 1) * shake;
-    const scale = 1 + (1 - p) * 0.25;
-
-    ctx.translate(W/2 + jx, H/2 + jy);
-    ctx.scale(scale, scale);
-
-    const faceR = Math.min(W,H) * 0.42;
-    ctx.fillStyle = '#f2f2f2';
-    ctx.beginPath(); ctx.arc(0, 0, faceR, 0, Math.PI*2); ctx.fill();
-
-    const eyeDX = faceR*0.38, eyeY = -faceR*0.1, eyeR = faceR*0.18;
-    ctx.fillStyle = '#000';
-    ctx.beginPath(); ctx.ellipse(-eyeDX, eyeY, eyeR*1.05, eyeR*1.25, -0.25, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse( eyeDX, eyeY, eyeR*1.05, eyeR*1.25,  0.25, 0, Math.PI*2); ctx.fill();
-
-    ctx.fillStyle = '#c00000';
-    const pupilR = eyeR*0.55;
-    ctx.beginPath(); ctx.arc(-eyeDX, eyeY, pupilR, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc( eyeDX, eyeY, pupilR, 0, Math.PI*2); ctx.fill();
-
-    ctx.fillStyle = '#7a0000';
-    const mw = faceR*0.95, mh = faceR*0.28, my = faceR*0.35;
-    ctx.beginPath();
-    ctx.moveTo(-mw/2, my);
-    for (let i=0;i<=10;i++){
-      const x = -mw/2 + (mw/10)*i;
-      const y = my + (i%2===0 ? -mh : mh/3);
-      ctx.lineTo(x,y);
-    }
-    ctx.lineTo(mw/2, my+2);
-    ctx.closePath(); ctx.fill();
-
-    ctx.fillStyle = '#eeeeee';
-    for (let i=0;i<9;i++){
-      const x = -mw/2 + (mw/10)*(i+0.5);
-      const y = my - mh*0.35 + (i%2? 3: -3);
-      ctx.fillRect(x-2, y, 4, mh*0.6);
-    }
-
-    const flicker = storage.reduced ? 0.85 : (0.85 + (Math.random()*0.15));
-    const grd = ctx.createRadialGradient(0,0,faceR*0.5, 0,0,faceR*1.2);
-    grd.addColorStop(0, `rgba(255,255,255,${0.08*flicker})`);
-    grd.addColorStop(1, 'rgba(0,0,0,0.95)');
-    ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(0,0,faceR*1.25,0,Math.PI*2); ctx.fill();
-
-    ctx.restore();
-  }
-
-  function die() {
-    state = 'dead';
-    refreshUI(); // <— NEW (hide topbar on death)
-    paused = false; pausedBadge.style.display = 'none';
-    const fallUntil = () => {
-      const now = performance.now();
-      const dt = Math.min((now - lastMs)/1000, 1/30);
-      lastMs = now;
-
-      bird.vy += CFG.physics.gravity * dt;
-      bird.vy = clamp(bird.vy, -9999, CFG.physics.maxFallSpeed);
-      bird.y += bird.vy * dt;
-      bird.rot = lerp(bird.rot, 90*Math.PI/180, 0.12);
-
-      render();
-      if (bird.y + CFG.bird.hitboxRadius < groundY) {
-        requestAnimationFrame(fallUntil);
-      } else {
-        bird.y = groundY - CFG.bird.hitboxRadius;
-        triggerJumpScare();
-      }
-    };
-    if (navigator.vibrate) navigator.vibrate(80);
-    sfx.die();
-    fallUntil();
-  }
-
-  function showGameOver() {
-    scoreNow.textContent = String(score);
-    if (score > storage.best) { storage.best = score; localStorage.setItem('sb_best', String(score)); }
-    bestNow.textContent = String(storage.best);
-    const m = medalFor(storage.best);
-    if (m) { medalEl.style.display = ''; medalEl.textContent = m[0]; } else { medalEl.style.display = 'none'; }
-    overPanel.style.display = '';
-  }
-
-  /* ========= RENDER ========= */
-  function render() {
-    ctx.save();
-    ctx.fillStyle = isNight() ? getComputedStyle(document.documentElement).getPropertyValue('--bg-night') : getComputedStyle(document.documentElement).getPropertyValue('--bg');
-    ctx.fillRect(0,0,W,H);
-
-    if (!storage.reduced) drawClouds();
-    drawPipes();
-    drawBird();
-    drawGround();
-
-    for (const pop of pops) {
-      const t = clamp(pop.t / pop.duration, 0, 1);
-      const y = pop.y - t * CFG.scorePopup.dy;
-      ctx.globalAlpha = 1 - t;
-      ctx.fillStyle = '#fff'; ctx.font = 'bold 20px ui-rounded, system-ui, sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText(pop.text, pop.x, y);
-      ctx.globalAlpha = 1;
-    }
-
-    if (jumpScare.active) drawJumpScareOverlay();
-
-    ctx.restore();
-  }
-
-  function drawClouds() {
-    for (const c of clouds) {
-      ctx.save(); ctx.translate(c.x, c.y);
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
-      roundedRect(-20, -10, 40, 20, 8); roundedRect(5, -14, 30, 18, 8); roundedRect(-35, -8, 26, 16, 8);
-      ctx.fill(); ctx.restore();
-    }
-  }
-
-  function drawPipes() {
-    for (const p of pipes) {
-      const topH = p.gapY - p.gap/2;
-      const botY = p.gapY + p.gap/2;
-      const botH = groundY - botY;
-      const color = '#2fbf59', dark = '#209745';
-      ctx.fillStyle = color; ctx.fillRect(p.x, 0, p.w, topH);
-      ctx.fillStyle = dark;  ctx.fillRect(p.x - 4, topH - 16, p.w + 8, 16);
-      ctx.fillStyle = color; ctx.fillRect(p.x, botY, p.w, botH);
-      ctx.fillStyle = dark;  ctx.fillRect(p.x - 4, botY, p.w + 8, 16);
-      ctx.fillStyle = 'rgba(0,0,0,0.08)'; ctx.fillRect(p.x + 6, 0, 3, topH); ctx.fillRect(p.x + 6, botY, 3, botH);
-    }
-  }
-
-  function drawBird() {
-    ctx.save();
-    const bx = bird.x, by = bird.y, w = CFG.bird.size.w, h = CFG.bird.size.h, r = CFG.bird.hitboxRadius;
-    const idleBob = (state === 'ready' && !storage.reduced) ? Math.sin(worldTime * Math.PI * 2 * 2) * CFG.bird.idleBobPx : 0;
-    ctx.translate(bx, by + idleBob); ctx.rotate(bird.rot);
-
-    ctx.fillStyle = '#ffd84a'; roundedRect(-w/2, -h/2, w, h, 6); ctx.fill();
-    ctx.fillStyle = '#fff2b2'; roundedRect(-w*0.2, -h*0.15, w*0.8, h*0.7, 6); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(w*0.1, -h*0.1, 4, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(w*0.1+1, -h*0.1, 2, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#ff9a00'; ctx.beginPath(); ctx.moveTo(w*0.45, 0); ctx.lineTo(w*0.25, -3); ctx.lineTo(w*0.25, 3); ctx.closePath(); ctx.fill();
-
-    const f = bird.frame; const wy = f===0?-2:f===1?0:2;
-    ctx.save(); ctx.translate(-4, wy); ctx.fillStyle = '#f7bf3c'; roundedRect(-10, -6, 18, 12, 6); ctx.fill(); ctx.restore();
-
-    if (document.body.classList.contains('high-contrast')) { ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(2,0,r,0,Math.PI*2); ctx.stroke(); }
-    ctx.restore();
-  }
-
-  function drawGround() {
-    const speed = speedBase();
-    const t = (worldTime * speed) % 48;
-    const y = groundY;
-    ctx.fillStyle = '#e6a65d'; ctx.fillRect(0, y, W, H - y);
-    ctx.fillStyle = '#68c151'; ctx.fillRect(0, y-8, W, 8);
-    ctx.fillStyle = 'rgba(0,0,0,0.06)';
-    for (let x=-t; x < W; x += 48) { ctx.fillRect(x, y+6, 24, 6); ctx.fillRect(x+24, y+16, 24, 6); }
-  }
-
-  function roundedRect(x,y,w,h,r) {
-    ctx.beginPath();
-    ctx.moveTo(x+r, y);
-    ctx.arcTo(x+w, y, x+w, y+h, r);
-    ctx.arcTo(x+w, y+h, x, y+h, r);
-    ctx.arcTo(x, y+h, x, y, r);
-    ctx.arcTo(x, y, x+w, y, r);
-    ctx.closePath();
-  }
-
-  /* ========= LOOP ========= */
-  function loop(now) {
-    const dt = clamp((now - lastMs) / 1000, 0, 1/30);
-    lastMs = now;
-
-    if (state === 'ready') worldTime += dt;
-    else if (state === 'running' && !paused) { worldTime += dt; update(dt); }
-
-    if (jumpScare.active) jumpScare.t += dt;
-
-    canvas.style.background = isNight() ? getComputedStyle(document.documentElement).getPropertyValue('--bg-night') : getComputedStyle(document.documentElement).getPropertyValue('--bg');
-    render();
-    requestAnimationFrame(loop);
-  }
-
-  /* ========= INIT ========= */
-  function init() {
-    resetGame();
-    splashEl.style.display = '';
-    hudScore.textContent = '0';
-    overPanel.style.display = 'none';
-    lastMs = performance.now();
-    requestAnimationFrame(loop);
-    refreshUI(); // <— NEW (show topbar initially)
-  }
-  init();
-
+  function o(type,f1,f2,d,g,t){const osc=audioCtx.createOscillator();osc.type=type;osc.frequency.setValueAtTime(f1,t);osc.frequency.exponentialRampToValueAtTime(f2,t+d);osc.connect(g);osc.start(t);osc.stop(t+d+.05);}
+  function noise(sec){const b=audioCtx.createBuffer(1,Math.floor(audioCtx.sampleRate*sec),audioCtx.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length);const s=audioCtx.createBufferSource();s.buffer=b;return s;}
+  function beep(type,freq,dur,vol){const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.value=vol;o.connect(g).connect(audioCtx.destination);const t=audioCtx.currentTime;o.start(t);g.gain.exponentialRampToValueAtTime(.0001,t+dur*.9);o.stop(t+dur);}
+  function reset(){score=0;hudScore.textContent="0";worldTime=0;spawnTimer=-.5;pipes=[];bird={x:W*.28,y:H*.5,vy:0,rot:0,frame:0,frameTimer:0};}
+  function fit(){const a=W/H,vw=innerWidth,vh=innerHeight;let cw,ch;vw/vh<a?(cw=Math.min(vw,W*2.5),ch=Math.round(cw/a)):(ch=Math.min(vh,H*2.5),cw=Math.round(ch*a));canvas.style.width=cw+"px";canvas.style.height=ch+"px";canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);ctx.setTransform(1,0,0,1,0,0);ctx.scale(DPR,DPR);}
+  fit();addEventListener("resize",fit);
+  function flap(){if(state==="dead")return;if(state==="ready"){state="running";splashEl.style.display="none";}if(paused)return;bird.vy=CFG.physics.flapImpulse;sfx.flap();}
+  canvas.onmousedown=e=>{e.preventDefault();flap();};canvas.ontouchstart=e=>{e.preventDefault();flap();};
+  onkeydown=e=>{const k=e.key.toLowerCase();if([" ","w","arrowup"].includes(k)){e.preventDefault();flap();}if(k==="p")togglePause();};
+  function setPause(p){if(state!=="running")return;paused=p;pausedBadge.style.display=p?"":"none";}
+  function togglePause(){setPause(!paused);}
+  muteBtn.onclick=()=>{storage.muted=!storage.muted;localStorage.setItem("sb_muted",storage.muted?"1":"0");muteBtn.textContent=storage.muted?"🔇 Muted":"🔊 Sound";};
+  hcToggle.onchange=()=>{storage.highContrast=hcToggle.checked;localStorage.setItem("sb_highcontrast",storage.highContrast?"1":"0");document.body.classList.toggle("high-contrast",storage.highContrast);};
+  rmToggle.onchange=()=>{storage.reduced=rmToggle.checked;localStorage.setItem("sb_reduced",storage.reduced?"1":"0");};
+  casualToggle.onchange=()=>{storage.casual=casualToggle.checked;localStorage.setItem("sb_casual",storage.casual?"1":"0");};
+  document.getElementById("againBtn").onclick=()=>{overPanel.style.display="none";splashEl.style.display="";state="ready";reset();};
+  document.getElementById("shareBtn").onclick=async()=>{const t=`I scored ${scoreNow.textContent} in Shaebae’s Game!`;if(navigator.share)await navigator.share({text:t});else await navigator.clipboard.writeText(t);};
+  const jump={active:false,t:0,dur:CFG.jumpScare.durationMs/1000};
+  function triggerJump(){jump.active=true;jump.t=0;if(navigator.vibrate)navigator.vibrate([40,40,120]);sfx.scream();setTimeout(()=>{jump.active=false;showOver();},CFG.jumpScare.durationMs);}
+  function die(){state="dead";paused=false;pausedBadge.style.display="none";if(navigator.vibrate)navigator.vibrate(80);sfx.die();fall();}
+  function fall(){const f=()=>{const n=performance.now(),dt=Math.min((n-lastMs)/1000,1/30);lastMs=n;bird.vy+=CFG.physics.gravity*dt;bird.vy=Math.min(bird.vy,CFG.physics.maxFallSpeed);bird.y+=bird.vy*dt;render();if(bird.y+CFG.bird.hitboxRadius< H-CFG.ground.height)requestAnimationFrame(f);else triggerJump();};requestAnimationFrame(f);}
+  function showOver(){scoreNow.textContent=score;if(score>storage.best){storage.best=score;localStorage.setItem("sb_best",score);}bestNow.textContent=storage.best;overPanel.style.display="";}
+  function render(){ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue("--bg");ctx.fillRect(0,0,W,H);if(jump.active)drawJump();}
+  function drawJump(){ctx.save();ctx.fillStyle="#000";ctx.fillRect(0,0,W,H);ctx.translate(W/2,H/2);ctx.fillStyle="#f2f2f2";const R=Math.min(W,H)*.42;ctx.beginPath();ctx.arc(0,0,R,0,Math.PI*2);ctx.fill();ctx.fillStyle="#000";ctx.beginPath();ctx.ellipse(-R*.38,-R*.1,R*.18,R*.22,-.25,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(R*.38,-R*.1,R*.18,R*.22,.25,0,Math.PI*2);ctx.fill();ctx.fillStyle="#c00000";ctx.beginPath();ctx.arc(-R*.38,-R*.1,R*.1,0,Math.PI*2);ctx.arc(R*.38,-R*.1,R*.1,0,Math.PI*2);ctx.fill();ctx.fillStyle="#7a0000";ctx.beginPath();ctx.moveTo(-R*.5,R*.35);for(let i=0;i<=10;i++){const x=-R*.5+(R*.95/10)*i;const y=R*.35+(i%2===0?-R*.28:R*.09);ctx.lineTo(x,y);}ctx.closePath();ctx.fill();ctx.restore();}
+  function loop(n){const dt=Math.min((n-lastMs)/1000,1/30);lastMs=n;if(jump.active)jump.t+=dt;requestAnimationFrame(loop);render();}
+  reset();loop(performance.now());
 })();
 </script>
 </body>
