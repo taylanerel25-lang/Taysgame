@@ -1,275 +1,281 @@
 <!DOCTYPE html><html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Fishy Flip — Phase A Prototype</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Fishy Flip — Phase B (Playable)</title>
   <style>
-    :root{
-      /* Ocean palette */
-      --sea-top:#7ad3ff;/* light sky*/
-      --sea-mid:#2aa8df;/* ocean */
-      --sea-deep:#0e6fae;/* deep */
-      --coral-1:#ff7f6e;/* warm coral */
-      --coral-2:#ffb86b;/* soft orange */
-      --coral-3:#ffdc6b;/* sand */
-      --shark:#4d5b6a;/* hazard (later) */
-      --ui:#ffffff;
-      --shadow: rgba(0,0,0,.25);/* Logical playfield used for sizing */
-  --world-w: 360; /* units */
-  --world-h: 640; /* units */
-  --fish-w: 32;   /* units */
-  --fish-h: 24;   /* units */
-  --column-w: 60; /* units */
-  --gap: 140;     /* opening size */
+    :root {
+      --sea-top: #7ad3ff;
+      --sea-mid: #2aa8df;
+      --sea-deep: #0e6fae;
+      --coral-1: #ff7f6e;
+      --coral-2: #ffb86b;
+      --coral-3: #ffdc6b;
+      --ui: #fff;
+      --shadow: rgba(0, 0, 0, 0.25);
+      --world-w: 360;
+      --world-h: 640;
+    }* {
+  box-sizing: border-box;
 }
 
-/* Reset */
-*{ box-sizing:border-box; }
-html,body{ height:100%; }
-body{
-  margin:0;
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
   background: radial-gradient(120% 120% at 50% 0%, var(--sea-top) 0%, var(--sea-mid) 40%, var(--sea-deep) 100%);
-  font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-  color:var(--ui);
-  display:grid;
-  place-items:center;
+  font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji';
+  color: var(--ui);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
 }
 
-/* Container that keeps a 9:16 area and scales responsively */
-.frame{
-  position:relative;
-  width:min(92vw, 48rem);
+.frame {
+  position: relative;
+  width: min(92vw, 48rem);
   aspect-ratio: 9 / 16;
   border-radius: 20px;
   box-shadow: 0 20px 50px var(--shadow);
-  overflow:hidden;
-  outline:1px solid rgba(255,255,255,.08);
+  overflow: hidden;
+  outline: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, var(--sea-top), var(--sea-mid) 45%, var(--sea-deep));
 }
 
-/* World layer — we use CSS variables to compute pixel scale */
-.world{
-  position:absolute; inset:0;
-  /* Parallax ocean: two scrolling layers */
-  --bg1:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><path d="M0 60 C 20 50 40 70 60 60 C 80 50 100 70 120 60 V120 H0 Z" fill="%23209bd6" opacity="0.20"/></svg>');
-  --bg2:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120" viewBox="0 0 160 120"><path d="M0 80 C 30 70 60 90 90 80 C 120 70 150 90 160 80 V120 H0 Z" fill="%230a5e96" opacity="0.25"/></svg>');
-  background:
-    var(--bg1) repeat-x bottom / 240px 120px,
-    var(--bg2) repeat-x bottom / 320px 120px,
-    radial-gradient(120% 120% at 50% 0%, var(--sea-top) 0%, var(--sea-mid) 40%, var(--sea-deep) 100%);
-  animation: parallax1 18s linear infinite;
-}
-.world::before{
-  /* second layer moving at a different speed */
-  content:""; position:absolute; inset:0;
-  background:
-    var(--bg2) repeat-x 0 100% / 360px 140px;
-  animation: parallax2 28s linear infinite;
-  opacity:.55;
-  pointer-events:none;
-}
-
-@keyframes parallax1 { from{ background-position: 0 100%, 0 100%, 0 0 } to{ background-position: -240px 100%, -320px 100%, 0 0 } }
-@keyframes parallax2 { from{ background-position: 0 100% } to{ background-position: -360px 100% } }
-
-/* World inner that we scale to a logical 360x640 grid */
-.world-inner{
-  position:absolute; inset:0; transform-origin: top left;
-}
-/* We'll compute scale in JS later; for now just fit naturally. */
-/* For Phase A, we use absolute percentages so it looks right visually. */
-
-/* Fish */
-.fish{
-  position:absolute;
-  /* Place near left third, vertically centered initially */
-  left: 22%; top: 45%;
-  width: calc(var(--fish-w) * 1px); height: calc(var(--fish-h) * 1px);
+.fish {
+  position: absolute;
+  left: 22%;
+  top: 45%;
+  width: 32px;
+  height: 24px;
   transform: translate(-50%, -50%);
-  /* Simple body using CSS — can replace with PNG later */
-  --body:#f7b500; --fin:#ff7f6e; --eye:#101010; --shine:#fff;
-  filter: drop-shadow(0 4px 6px rgba(0,0,0,.25));
-  animation: bob 2.2s ease-in-out infinite;
-}
-@keyframes bob { 0%,100%{ transform: translate(-50%, -50%) translateY(-4px) } 50%{ transform: translate(-50%, -50%) translateY(4px) } }
-
-.fish .shape{
-  position:absolute; inset:0;
-  background: var(--body);
   border-radius: 60% 40% 45% 55% / 60% 55% 45% 40%;
+  background: linear-gradient(90deg, #ffd9d3 0%, #fff 60%);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.25);
 }
-.fish .tail{
-  position:absolute; right:-12px; top:50%; width:14px; height:14px;
-  background: var(--fin); border-radius: 4px 10px 10px 4px;
-  transform: translateY(-50%) rotate(12deg);
-  animation: tail 300ms ease-in-out infinite;
-  transform-origin: 0% 50%;
+
+.columns {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
 }
-@keyframes tail { 0%,100%{ transform: translateY(-50%) rotate(12deg) } 50%{ transform: translateY(-50%) rotate(-6deg) } }
-.fish .fin{
-  position:absolute; left:10px; top:60%; width:12px; height:10px;
-  background: var(--fin); border-radius: 10px 10px 10px 10px; transform: translateY(-50%);
+
+.column {
+  position: absolute;
+  top: 0;
+  width: 60px;
+  display: grid;
+  grid-template-rows: 1fr auto 1fr;
 }
-.fish .eye{
-  position:absolute; left:8px; top:38%; width:8px; height:8px; background:#fff; border-radius:50%; box-shadow: inset 0 0 0 2px rgba(0,0,0,.1);
+
+.column .top {
+  background: var(--coral-1);
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
 }
-.fish .eye::after{ content:""; position:absolute; left:3px; top:3px; width:3px; height:3px; background:var(--eye); border-radius:50%; }
 
-/* Columns (coral) */
-.columns{ position:absolute; inset:0; overflow:hidden; }
-.column{
-  position:absolute; top:0; bottom:0; width: calc(var(--column-w) * 1px);
-  left: 100%;
-  animation: scroll 6.8s linear infinite;
+.column .gap {
+  background: transparent;
 }
-/* vary colors */
-.column:nth-child(3n+1) .top, .column:nth-child(3n+1) .bottom{ background:var(--coral-1); }
-.column:nth-child(3n+2) .top, .column:nth-child(3n+2) .bottom{ background:var(--coral-2); }
-.column:nth-child(3n+3) .top, .column:nth-child(3n+3) .bottom{ background:var(--coral-3); }
 
-/* Individual offsets for staggering */
-.column.c1{ animation-delay: 0s; }
-.column.c2{ animation-delay: 1.3s; }
-.column.c3{ animation-delay: 2.6s; }
-.column.c4{ animation-delay: 3.9s; }
-.column.c5{ animation-delay: 5.2s; }
-
-@keyframes scroll{ from{ transform: translateX(0) } to{ transform: translateX(-120%) } }
-
-.top, .bottom{
-  position:absolute; left:0; width:100%;
-  border-radius: 8px;
-  box-shadow: 0 6px 10px rgba(0,0,0,.25) inset;
+.column .bottom {
+  background: var(--coral-2);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
 }
-/* For Phase A we pick a fixed gap position so it looks balanced visually */
-.top{ top:0; height: 35%; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; }
-.bottom{ bottom:0; height: calc(65% - var(--gap) * 1px); border-top-left-radius: 16px; border-top-right-radius: 16px; }
 
-/* HUD */
-.hud{
-  position:absolute; left:0; right:0; top:.75rem; display:flex; justify-content:center; pointer-events:none;
-  text-shadow: 0 2px 4px rgba(0,0,0,.35);
+.hud {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 1rem;
+  font-size: 2rem;
+  font-weight: 800;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
 }
-.score{ font-weight:800; font-size: clamp(1.5rem, 4.2vw, 2.25rem); letter-spacing:.04em; }
 
-/* Overlays */
-.overlay{ position:absolute; inset:0; display:grid; place-items:center; background: rgba(7, 33, 61, .55); backdrop-filter: blur(4px); }
-.panel{
-  width:min(90%, 26rem); background: rgba(255,255,255,.12); color:white; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,.35);
-  border:1px solid rgba(255,255,255,.25); padding: 1.25rem;
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  z-index: 5;
 }
-.panel h1{ margin:.25rem 0 1rem; font-size: clamp(1.5rem, 5vw, 2rem); }
-.panel h2{ margin:1rem 0 .5rem; font-size: 1.125rem; opacity:.9 }
-.panel p{ margin:.25rem 0 .75rem; opacity:.95 }
-.panel .btns{ display:flex; gap:.5rem; flex-wrap:wrap; }
-.btn{ appearance:none; border:0; border-radius: 12px; padding:.75rem 1rem; font-weight:700; cursor:pointer; color:#08324f; background:#fff; box-shadow: 0 8px 18px rgba(0,0,0,.25); }
-.btn.secondary{ background: rgba(255,255,255,.85); }
 
-/* CSS-only toggle for Start & How-to (no JS in Phase A) */
-#startToggle, #howToggle{ display:none; }
-/* Home overlay shows when startToggle is NOT checked */
-#startToggle:checked ~ .home{ display:none; }
-/* How-to modal shows only when howToggle is checked */
-.howto{ display:none; }
-#howToggle:checked ~ .howto{ display:grid; }
+.panel {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-align: center;
+  color: #fff;
+  max-width: 26rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+}
 
-/* Leaderboard list (static dummy in Phase A) */
-.lb{ list-style:none; padding:0; margin:.5rem 0 0; max-height: 10rem; overflow:auto; }
-.lb li{ display:flex; justify-content:space-between; padding:.4rem .5rem; background: rgba(0,0,0,.15); border-radius: 10px; margin:.35rem 0; font-weight:600; }
-
-/* Accessibility: prefers-reduced-motion */
-@media (prefers-reduced-motion: reduce){
-  .world, .world::before, .fish, .tail, .column{ animation-duration: 0s !important; animation-iteration-count: 1 !important; }
+.btn {
+  appearance: none;
+  border: 0;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: #08324f;
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+  margin: 0.5rem;
 }
 
   </style>
 </head>
 <body>
-  <div class="frame" role="application" aria-label="Fishy Flip prototype">
-    <!-- CSS-only toggles for Phase A (no JS). Start hides Home overlay; How-to shows modal. -->
-    <input id="startToggle" type="checkbox" />
-    <input id="howToggle" type="checkbox" /><!-- World (parallax background) -->
-<div class="world" aria-hidden="true">
-  <div class="world-inner">
-    <!-- Columns (fixed gap visuals for Phase A) -->
-    <div class="columns" aria-hidden="true">
-      <div class="column c1" aria-hidden="true">
-        <div class="top"></div>
-        <div class="bottom"></div>
-      </div>
-      <div class="column c2" aria-hidden="true">
-        <div class="top"></div>
-        <div class="bottom"></div>
-      </div>
-      <div class="column c3" aria-hidden="true">
-        <div class="top"></div>
-        <div class="bottom"></div>
-      </div>
-      <div class="column c4" aria-hidden="true">
-        <div class="top"></div>
-        <div class="bottom"></div>
-      </div>
-      <div class="column c5" aria-hidden="true">
-        <div class="top"></div>
-        <div class="bottom"></div>
-      </div>
-    </div>
-
-    <!-- Fish (CSS-rendered; replace with sprite later if desired) -->
-    <div class="fish" role="img" aria-label="Orange fish">
-      <div class="shape"></div>
-      <div class="tail"></div>
-      <div class="fin"></div>
-      <div class="eye"></div>
-    </div>
-
-    <!-- HUD (visual only in Phase A) -->
-    <div class="hud" aria-hidden="true">
-      <div class="score">0</div>
-    </div>
+  <div class="frame">
+    <div class="columns" id="columns"></div>
+    <div class="fish" id="fish"></div>
+    <div class="hud"><span id="score">0</span></div><div class="overlay" id="home">
+  <div class="panel">
+    <h1>Fishy Flip</h1>
+    <p>Tap/Click/Space to swim upward. Dodge coral. Pass columns to score.</p>
+    <button class="btn" id="playBtn">Play</button>
   </div>
 </div>
 
-<!-- HOME overlay -->
-<div class="overlay home" aria-live="polite">
-  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="t">
-    <h1 id="t">Fishy Flip</h1>
-    <p>Tap/Click/Space to make your fish swim upward. Dodge the coral. Pass columns to score. Don’t touch anything!</p>
-    <div class="btns">
-      <label for="startToggle" class="btn" aria-label="Play">Play</label>
-      <label for="howToggle" class="btn secondary" aria-label="How to play">How to Play</label>
-    </div>
-    <h2>Top 10 Leaderboard (demo)</h2>
-    <ol class="lb" aria-label="Leaderboard">
-      <li><span>#1 Kay</span><span>27</span></li>
-      <li><span>#2 John</span><span>22</span></li>
-      <li><span>#3 Tay</span><span>19</span></li>
-      <li><span>#4 Sam</span><span>17</span></li>
-      <li><span>#5 Lee</span><span>16</span></li>
-      <li><span>#6 Ari</span><span>15</span></li>
-      <li><span>#7 Mo</span><span>13</span></li>
-      <li><span>#8 Jin</span><span>12</span></li>
-      <li><span>#9 Pip</span><span>10</span></li>
-      <li><span>#10 Zed</span><span>9</span></li>
-    </ol>
-    <p style="opacity:.8; margin-top: .75rem">v0.1.0 — Phase A (visual prototype)</p>
+<div class="overlay" id="gameover" hidden>
+  <div class="panel">
+    <h2>Game Over</h2>
+    <p>Score: <strong id="finalScore">0</strong></p>
+    <p>Best: <strong id="bestScore">0</strong></p>
+    <button class="btn" id="restartBtn">Restart</button>
   </div>
 </div>
 
-<!-- HOW-TO modal -->
-<div class="overlay howto" aria-live="polite">
-  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="ht">
-    <h1 id="ht">How to Play</h1>
-    <p>• Tap anywhere (mobile) or Press Space/Click (desktop) to swim up.<br>
-       • Avoid touching coral, the sea floor, or the surface.<br>
-       • Each set of coral you pass scores +1.<br>
-       • The game speeds up and gaps get tighter over time.
-    </p>
-    <div class="btns">
-      <label for="howToggle" class="btn" aria-label="Close">Close</label>
-    </div>
-  </div>
-</div>
+  </div>  <script>
+    const GRAVITY = 0.5;
+    const FLAP = -8;
+    const GAP = 150;
+    const SPEED = 2.5;
 
-  </div>
-</body>
+    const fish = document.getElementById('fish');
+    const columnsEl = document.getElementById('columns');
+    const scoreEl = document.getElementById('score');
+    const homeEl = document.getElementById('home');
+    const overEl = document.getElementById('gameover');
+    const finalEl = document.getElementById('finalScore');
+    const bestEl = document.getElementById('bestScore');
+    const playBtn = document.getElementById('playBtn');
+    const restartBtn = document.getElementById('restartBtn');
+
+    let y = 320, vy = 0, score = 0, best = +localStorage.getItem('fishyBest') || 0, cols = [];
+
+    function start() {
+      homeEl.hidden = true;
+      overEl.hidden = true;
+      y = 320; vy = 0; score = 0; scoreEl.textContent = 0;
+      cols = [];
+      columnsEl.innerHTML = '';
+      for (let i = 0; i < 3; i++) addColumn(400 + i * 200);
+      requestAnimationFrame(loop);
+    }
+
+    function addColumn(x) {
+      const gapY = Math.random() * 300 + 150;
+      const c = document.createElement('div');
+      c.className = 'column';
+      const top = document.createElement('div');
+      const gap = document.createElement('div');
+      const bot = document.createElement('div');
+      top.className = 'top'; gap.className = 'gap'; bot.className = 'bottom';
+      c.append(top, gap, bot);
+      columnsEl.append(c);
+      cols.push({ el: c, x, gapY, passed: false });
+      updateColumn(c, x, gapY);
+    }
+
+    function updateColumn(el, x, gapY) {
+      el.style.left = x + 'px';
+      const gapPct = (GAP / 640) * 100;
+      const centerPct = (gapY / 640) * 100;
+      const topH = Math.max(0, centerPct - gapPct / 2);
+      const botH = Math.max(0, 100 - (centerPct + gapPct / 2));
+      el.style.gridTemplateRows = `${topH}% ${gapPct}% ${botH}%`;
+    }
+
+    function loop() {
+      vy += GRAVITY; y += vy;
+      fish.style.top = (y / 640) * 100 + '%';
+
+      cols.forEach(c => {
+        c.x -= SPEED;
+        updateColumn(c.el, c.x, c.gapY);
+        if (!c.passed && c.x + 60 < 80) {
+          c.passed = true;
+          score++;
+          scoreEl.textContent = score;
+        }
+        if (c.x + 60 < 0) {
+          c.x = Math.max(...cols.map(k => k.x)) + 200;
+          c.gapY = Math.random() * 300 + 150;
+          c.passed = false;
+        }
+      });
+
+      if (hit()) {
+        gameOver();
+        return;
+      }
+
+      if (y > 640 || y < 0) {
+        gameOver();
+        return;
+      }
+
+      requestAnimationFrame(loop);
+    }
+
+    function hit() {
+      const fishRect = { x1: 80 - 16, x2: 80 + 16, y1: y - 12, y2: y + 12 };
+      for (const c of cols) {
+        const top = { x1: c.x, x2: c.x + 60, y1: 0, y2: c.gapY - GAP / 2 };
+        const bot = { x1: c.x, x2: c.x + 60, y1: c.gapY + GAP / 2, y2: 640 };
+        if (overlap(fishRect, top) || overlap(fishRect, bot)) return true;
+      }
+      return false;
+    }
+
+    function overlap(a, b) {
+      return !(a.x2 < b.x1 || a.x1 > b.x2 || a.y2 < b.y1 || a.y1 > b.y2);
+    }
+
+    function gameOver() {
+      overEl.hidden = false;
+      finalEl.textContent = score;
+      if (score > best) {
+        best = score;
+        localStorage.setItem('fishyBest', best);
+      }
+      bestEl.textContent = best;
+    }
+
+    function flap() {
+      vy = FLAP;
+    }
+
+    document.addEventListener('mousedown', flap);
+    document.addEventListener('touchstart', flap, { passive: true });
+    document.addEventListener('keydown', e => {
+      if (e.code === 'Space' || e.code === 'ArrowUp') flap();
+    });
+
+    playBtn.onclick = start;
+    restartBtn.onclick = start;
+  </script></body>
 </html>
