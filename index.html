@@ -68,7 +68,7 @@
       <div class="splash-inner">
         <div class="title">Tay’s Game ❤️</div>
         <div class="subtitle">Tap / Click / Space to start</div>
-        <div style="margin-top:6px;font-size:14px;opacity:.9">Avoid the pipes. Good luck!</div>
+        <div style="margin-top:6px;font-size:14px;opacity:.9">Avoid the pipes, collect coins. Good luck!</div>
       </div>
 
       <!-- Leaderboard on splash (bottom) -->
@@ -131,7 +131,9 @@
     bird: { size: { w: 34, h: 24 }, hitboxRadius: 12 },
     ground: { height: 112 },
     scorePopup: { dy: 40, duration: 0.6 },
-    birdIdleBobPx: 4
+    birdIdleBobPx: 4,
+    particles: { max: 50, flapCount: 3, collectCount: 5 },
+    collectibles: { chance: 0.3, bonus: 5, size: 16 }
   };
 
   const DPR = Math.min(window.devicePixelRatio || 1, 3);
@@ -178,14 +180,23 @@
 
   const pipes = [];
   const pops = [];
-  const clouds = [
+  const cloudsFg = [ // Foreground clouds, faster
     { x: 40,  y: 100, s: 0.30 },
     { x: 240, y: 60,  s: 0.25 },
     { x: 170, y: 140, s: 0.22 }
   ];
+  const cloudsBg = [ // Background clouds, slower for parallax
+    { x: 100, y: 80, s: 0.15 },
+    { x: 300, y: 120, s: 0.12 },
+    { x: 200, y: 50, s: 0.18 }
+  ];
 
   let score = 0;
+  let multiplier = 1;
   window.score = 0; // expose for Firebase block
+
+  const collectibles = [];
+  const particles = [];
 
   const medalFor = (s) => s>=50?['🏆 Platinum','#e5e4e2']:s>=30?['🥇 Gold','#f7c32e']:s>=20?['🥈 Silver','#c0c0c0']:s>=10?['🥉 Bronze','#cd7f32']:null;
 
@@ -212,7 +223,8 @@
     point:()=>beep('triangle',880,0.07,0.18),
     hit:  ()=>beep('sawtooth',120,0.15,0.22),
     die:  ()=>beep('sine',80,0.35,0.25),
-    swoosh:()=>beep('triangle',300,0.1,0.12)
+    swoosh:()=>beep('triangle',300,0.1,0.12),
+    collect:()=>beep('sine',1200,0.1,0.2)
   };
 
   /* ========= HELPERS ========= */
@@ -226,8 +238,8 @@
   const announce=(msg)=>{ const a=document.getElementById('aria'); a.textContent=''; setTimeout(()=>a.textContent=msg,30); };
 
   function resetGame(){
-    score=0; hudScore.textContent='0'; worldTime=0; spawnTimer=-0.5;
-    pipes.length=0; pops.length=0;
+    score=0; multiplier=1; hudScore.textContent='0'; worldTime=0; spawnTimer=-0.5;
+    pipes.length=0; pops.length=0; collectibles.length=0; particles.length=0;
     bird={ x:BIRD_X, y:H*0.5, vy:0, rot:0, frame:0, frameTimer:0 };
     sfx.swoosh(); lastStage=-1;
     document.getElementById('bestHud').textContent=`Highest: ${storage.best}`;
@@ -263,6 +275,19 @@
       splashEl.style.display='none';
     }
     bird.vy=CFG.physics.flapImpulse; sfx.flap();
+    // Add flap particles
+    for(let i=0; i<CFG.particles.flapCount; i++){
+      particles.push({
+        x: bird.x - CFG.bird.size.w/2 + Math.random()*10,
+        y: bird.y + Math.random()*CFG.bird.size.h - CFG.bird.size.h/2,
+        vx: -speedBase()*0.5 + Math.random()*50 - 25,
+        vy: Math.random()*100 - 50,
+        life: 0.5 + Math.random()*0.5,
+        size: 2 + Math.random()*2,
+        color: '#ffd84a',
+        t: 0
+      });
+    }
   };
   canvas.addEventListener('mousedown',e=>{e.preventDefault();flap();});
   canvas.addEventListener('touchstart',e=>{e.preventDefault();flap();},{passive:false});
@@ -314,6 +339,12 @@
     const minCenter=minC+gap/2;
     let gapY=Math.round(lerp(minCenter,maxCenter,Math.random()));
     pipes.push({ x:W+10, gapY, gap, w:CFG.pipes.width, scored:false });
+
+    // Spawn collectible sometimes
+    if(Math.random() < CFG.collectibles.chance){
+      const collY = gapY + (Math.random() - 0.5) * (gap - CFG.collectibles.size * 2);
+      collectibles.push({ x: W + 10 + CFG.pipes.width / 2, y: collY, collected: false });
+    }
   }
 
   function update(dt){
@@ -323,7 +354,8 @@
 
     if(spawnTimer>=spawnInterval()){ spawnTimer=0; spawnPipe(); }
 
-    for(const c of clouds){ c.x-=speed*c.s*dt; if(c.x<-80) c.x+=W+160; }
+    for(const c of cloudsFg){ c.x-=speed*c.s*dt; if(c.x<-80) c.x+=W+160; }
+    for(const c of cloudsBg){ c.x-=speed*c.s*dt; if(c.x<-80) c.x+=W+160; }
 
     bird.vy+=CFG.physics.gravity*dt;
     bird.vy=clamp(bird.vy,-9999,CFG.physics.maxFallSpeed);
@@ -340,7 +372,9 @@
       p.x-=speed*dt;
       const cx=p.x+p.w/2;
       if(!p.scored && cx<bird.x){
-        p.scored=true; score++; hudScore.textContent=String(score);
+        p.scored=true;
+        const addScore = Math.round(1 * multiplier);
+        score += addScore; hudScore.textContent=String(score);
         window.score=score;
 
         if(score>storage.best){
@@ -349,14 +383,41 @@
           document.getElementById('bestHud').textContent=`Highest: ${storage.best}`;
         }
 
-        pops.push({ x:cx, y:p.gapY, t:0, duration:CFG.scorePopup.duration, text:'+1' });
+        pops.push({ x:cx, y:p.gapY, t:0, duration:CFG.scorePopup.duration, text:`+${addScore}` });
         if(navigator.vibrate) navigator.vibrate(20);
         sfx.point(); announce(`Score ${score}`);
 
         const st=currentStage(); if(st!==lastStage){ lastStage=st; onStageChange(); }
+
+        // Multiplier increase every 5 pipes
+        if(score % 5 === 0) { multiplier += 0.1; showToast(`Multiplier x${multiplier.toFixed(1)}!`); }
       }
     }
     while(pipes.length && pipes[0].x+pipes[0].w<-20) pipes.shift();
+
+    // Update collectibles
+    for(const coll of collectibles){
+      coll.x -= speed * dt;
+      if(!coll.collected && Math.hypot(bird.x - coll.x, bird.y - coll.y) < CFG.bird.hitboxRadius + CFG.collectibles.size / 2){
+        coll.collected = true;
+        score += CFG.collectibles.bonus; hudScore.textContent=String(score);
+        sfx.collect(); showToast(`+${CFG.collectibles.bonus} Bonus!`);
+        // Add collect particles
+        for(let i=0; i<CFG.particles.collectCount; i++){
+          particles.push({
+            x: coll.x,
+            y: coll.y,
+            vx: Math.random()*100 - 50,
+            vy: Math.random()*100 - 150,
+            life: 0.8 + Math.random()*0.4,
+            size: 3 + Math.random()*3,
+            color: '#ffcc00',
+            t: 0
+          });
+        }
+      }
+    }
+    collectibles = collectibles.filter(c => c.x > -20 && !c.collected);
 
     // Collisions
     const r=CFG.bird.hitboxRadius;
@@ -372,6 +433,16 @@
     if(hit){ sfx.hit(); die(); }
 
     for(let i=pops.length-1;i>=0;i--){ const pop=pops[i]; pop.t+=dt; if(pop.t>=pop.duration) pops.splice(i,1); }
+
+    // Update particles
+    for(let i=particles.length-1; i>=0; i--){
+      const p = particles[i];
+      p.t += dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += CFG.physics.gravity * 0.2 * dt; // Light gravity
+      if(p.t >= p.life) particles.splice(i,1);
+    }
   }
 
   function circleRectDeepOverlap(circ,rect,needed){
@@ -423,10 +494,10 @@
     ctx.arcTo(x,y,x+w,y,r);
     ctx.closePath();
   }
-  function drawClouds(){
+  function drawClouds(clouds, opacity=0.9){
     for(const c of clouds){
       ctx.save(); ctx.translate(c.x,c.y);
-      ctx.fillStyle='rgba(255,255,255,.9)';
+      ctx.fillStyle=`rgba(255,255,255,${opacity})`;
       roundedRect(-20,-10,40,20,8); roundedRect(5,-14,30,18,8); roundedRect(-35,-8,26,16,8);
       ctx.fill(); ctx.restore();
     }
@@ -439,15 +510,32 @@
       const topH=p.gapY-p.gap/2;
       const botY=p.gapY+p.gap/2;
       const botH=groundY-botY;
+      const persp = 8; // Perspective taper amount
 
       // Radial gradient for 3D cylindrical look
       const grad = ctx.createRadialGradient(p.x + p.w/2, 0, p.w/2, p.x + p.w/2, 0, 0);
       grad.addColorStop(0, baseColor);
       grad.addColorStop(0.7, '#ffffff40'); // Highlight
       grad.addColorStop(1, dark); // Shadow
+
+      // Top pipe with perspective (wider at bottom)
       ctx.fillStyle=grad; 
-      ctx.fillRect(p.x,0,p.w,topH);
-      ctx.fillRect(p.x,botY,p.w,botH);
+      ctx.beginPath();
+      ctx.moveTo(p.x, 0);
+      ctx.lineTo(p.x + p.w, 0);
+      ctx.lineTo(p.x + p.w + persp, topH);
+      ctx.lineTo(p.x - persp, topH);
+      ctx.closePath();
+      ctx.fill();
+
+      // Bottom pipe with perspective (wider at top)
+      ctx.beginPath();
+      ctx.moveTo(p.x - persp, botY);
+      ctx.lineTo(p.x + p.w + persp, botY);
+      ctx.lineTo(p.x + p.w, groundY);
+      ctx.lineTo(p.x, groundY);
+      ctx.closePath();
+      ctx.fill();
 
       // Bevel on caps for 3D depth
       ctx.fillStyle=dark;  
@@ -468,9 +556,9 @@
     const idleBob=(state==='ready') ? Math.sin(worldTime*Math.PI*4)*CFG.birdIdleBobPx : 0;
     ctx.translate(bird.x,bird.y+idleBob); ctx.rotate(bird.rot);
 
-    // Linear gradient for 3D body shading
+    // Linear gradient for 3D body shading, dynamic based on rotation
     const bodyGrad = ctx.createLinearGradient(-w/2, -h/2, -w/2, h/2);
-    bodyGrad.addColorStop(0, '#ffe066'); // Lighter top
+    bodyGrad.addColorStop(0, lerpColor('#ffe066', '#cc9e00', Math.sin(bird.rot))); // Adjust shade with rot
     bodyGrad.addColorStop(1, '#ffd84a'); // Base yellow bottom
     ctx.fillStyle=bodyGrad; 
     roundedRect(-w/2,-h/2,w,h,6); ctx.fill();
@@ -504,12 +592,13 @@
     roundedRect(-10,-6,18,12,6); ctx.fill(); 
     ctx.restore();
 
-    // Subtle shadow under bird for overall 3D lift
     ctx.restore();
+    // Dynamic shadow under bird for overall 3D lift, based on height
     ctx.save();
-    ctx.translate(bird.x, bird.y + idleBob + h/2 + 2);
+    const shadowScale = 1 - (bird.y / groundY) * 0.5; // Smaller shadow when higher
+    ctx.translate(bird.x, groundY - 4);
     ctx.fillStyle='rgba(0,0,0,0.15)'; 
-    ctx.beginPath(); ctx.ellipse(0, 0, w/2 - 2, 3, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, 0, (w/2 - 2) * shadowScale, 3 * shadowScale, 0, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
   function drawGround(){
@@ -521,6 +610,39 @@
     ctx.fillStyle='rgba(0,0,0,.06)';
     for(let x=-t;x<W;x+=48){ ctx.fillRect(x,y+6,24,6); ctx.fillRect(x+24,y+16,24,6); }
   }
+  function drawCollectibles(){
+    for(const coll of collectibles){
+      if(coll.collected) continue;
+      const grad = ctx.createRadialGradient(coll.x, coll.y, 0, coll.x, coll.y, CFG.collectibles.size / 2);
+      grad.addColorStop(0, '#ffff99');
+      grad.addColorStop(1, '#ffcc00');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(coll.x, coll.y, CFG.collectibles.size / 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  function drawParticles(){
+    for(const p of particles){
+      const t = p.t / p.life;
+      ctx.globalAlpha = 1 - t;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * (1 - t), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  function lerpColor(a, b, t) {
+    const ah = parseInt(a.replace(/#/g, ''), 16),
+          ar = ah >> 16, ag = ah >> 8 & 0xff, ab = ah & 0xff,
+          bh = parseInt(b.replace(/#/g, ''), 16),
+          br = bh >> 16, bg = bh >> 8 & 0xff, bb = bh & 0xff,
+          rr = ar + t * (br - ar),
+          rg = ag + t * (bg - ag),
+          rb = ab + t * (bb - ab);
+    return '#' + ((1 << 24) + (rr << 16) + (rg << 8) + rb | 0).toString(16).slice(1);
+  }
 
   function render(){
     const stage=currentStage();
@@ -530,9 +652,12 @@
     ctx.save();
     ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
 
-    drawClouds();
+    drawClouds(cloudsBg, 0.6); // Background parallax layer
+    drawClouds(cloudsFg); // Foreground
     drawPipes();
+    drawCollectibles();
     drawBird();
+    drawParticles();
     drawGround();
 
     for(const pop of pops){
