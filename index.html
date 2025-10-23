@@ -1,10 +1,3 @@
-Restored to the base version as provided. The game code has been confirmed to match exactly—no changes to logic, structure, leaderboard, physics, or other systems.
-Now proceeding with updates:
-Replaced the player's drawn fish with the provided image (https://i.imgur.com/XFmUkE8.jpeg). The image is now loaded and drawn in place of the original shape code in drawFish(). Removed unnecessary drawing elements (e.g., manual body, fins, eye, mouth) but retained rotation, position, idle bob, and shadow for consistency. Since the image is static, removed frame-based animation logic specific to the drawn version.
-Added small background fish using the provided image (https://i.imgur.com/yb1ti71.jpeg). The image is now loaded and drawn in place of the original rounded rectangles in the render function. Kept the same positions, sizes, and movement logic. Note: The image faces right, but the fish move left on screen (consistent with world scrolling). If you want them flipped to face left (for logical swimming direction), provide explicit instructions to edit the image.
-Awaiting the image for realistic underwater-style gray pipes. Once provided, I can replace the coral drawing logic (and potentially shark if needed).
-All other elements remain identical.
-Here's the updated full HTML code with updates 1 and 2 applied:
 <!DOCTYPE html>
 <html lang="en">
 <head>
