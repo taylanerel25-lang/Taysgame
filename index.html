@@ -63,7 +63,7 @@
 <div id="splash" class="splash">  
   <div class="splash-inner">  
     <div class="title">Swimming Fish</div>  
-    <div style="font-size:14px;opacity:.9">Made by Taylan&trade;</div>  
+    <div style="font-size:14px;opacity:.9;color:#000;">Made by Taylan&trade;</div>  
     <div class="subtitle">Tap / Click / Space to start</div>  
     <div style="margin-top:6px;font-size:14px;opacity:.9">Avoid the coral, collect shells. Good luck!</div>  
   </div>  
@@ -103,12 +103,6 @@
   <div id="toast" class="toast" role="status"></div>    <!-- ================== GAME CODE ================== -->    <script>  
 (() => {  
   'use strict';  
-const sharkImg = new Image();
-sharkImg.src = "https://pngimg.com/uploads/shark/shark_PNG18830.png";
-const fishImg = new Image();
-fishImg.src = "https://i.imgur.com/XFmUkE8.jpeg";
-const bgFishImg = new Image();
-bgFishImg.src = "https://i.imgur.com/yb1ti71.jpeg";
   
   /* ========= CONFIG ========= */  
   const CFG = {  
@@ -172,7 +166,7 @@ bgFishImg.src = "https://i.imgur.com/yb1ti71.jpeg";
   }  
   
   const BIRD_X = Math.round(W * 0.28);  
-  let bird = { x: BIRD_X, y: H*0.5, vy: 0, rot: 0 };  
+  let bird = { x: BIRD_X, y: H*0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };  
   
   const pipes = [];  
   const pops = [];  
@@ -239,7 +233,7 @@ bgFishImg.src = "https://i.imgur.com/yb1ti71.jpeg";
   function resetGame(){  
     score=0; multiplier=1; hudScore.textContent='0'; worldTime=0; spawnTimer=-0.5;  
     pipes.length=0; pops.length=0; collectibles.length=0; particles.length=0;  
-    bird={ x:BIRD_X, y:H*0.5, vy:0, rot:0 };  
+    bird={ x:BIRD_X, y:H*0.5, vy:0, rot:0, frame:0, frameTimer:0 };  
     sfx.swoosh(); lastStage=-1;  
     document.getElementById('bestHud').textContent=`Highest: ${storage.best}`;  
   }  
@@ -373,6 +367,9 @@ bgFishImg.src = "https://i.imgur.com/yb1ti71.jpeg";
       : Math.min(60*Math.PI/180, bird.vy/CFG.physics.maxFallSpeed*(60*Math.PI/180)); /* Less extreme rotation for gliding */  
     bird.rot = lerp(bird.rot, targetRot, 0.12);  
   
+    const animFps = bird.vy<0 ? 10 : 6; /* Faster animation for tail wiggle */  
+    bird.frameTimer+=dt; if(bird.frameTimer>=1/animFps){ bird.frame=(bird.frame+1)%3; bird.frameTimer=0; }  
+  
     for(const p of pipes){  
       p.x-=speed*dt;  
       const cx=p.x+p.w/2;  
@@ -424,29 +421,15 @@ bgFishImg.src = "https://i.imgur.com/yb1ti71.jpeg";
     }  
     collectibles = collectibles.filter(c => c.x > -20 && !c.collected);  
   
-    // Update background fish  
-    bgFishes.forEach(f => {  
-      f.x -= speed * 0.3 * dt; // Slower than main speed for parallax  
-      if (f.x + f.w < 0) f.x = W;  
-    });  
-  
     // Collisions  
     const r=CFG.bird.hitboxRadius;  
     const circle={ x:bird.x+2, y:bird.y, r };  
     const penetrationNeeded=0.1*r;  
     let hit=false;  
     for(const p of pipes){  
-      if(p.type === 'shark'){  
-        const sharkW = p.w * 1.2;  
-        const sharkH = sharkW * 0.6;  
-        const sharkY = p.gapY - sharkH / 2;  
-        const sharkRect = { x: p.x, y: sharkY, w: sharkW, h: sharkH };  
-        if(circleRectDeepOverlap(circle, sharkRect, penetrationNeeded)){ hit=true; break; }  
-      } else {  
-        const topRect={ x:p.x, y:-10000, w:p.w, h:(p.gapY-p.gap/2)+10000 };  
-        const botRect={ x:p.x, y:(p.gapY+p.gap/2), w:p.w, h:(groundY-(p.gapY+p.gap/2)) };  
-        if(circleRectDeepOverlap(circle,topRect,penetrationNeeded) || circleRectDeepOverlap(circle,botRect,penetrationNeeded)){ hit=true; break; }  
-      }  
+      const topRect={ x:p.x, y:-10000, w:p.w, h:(p.gapY-p.gap/2)+10000 };  
+      const botRect={ x:p.x, y:(p.gapY+p.gap/2), w:p.w, h:(groundY-(p.gapY+p.gap/2)) };  
+      if(circleRectDeepOverlap(circle,topRect,penetrationNeeded) || circleRectDeepOverlap(circle,botRect,penetrationNeeded)){ hit=true; break; }  
     }  
     if(circle.y+circle.r>=groundY){ die(); return; }  
     if(hit){ sfx.hit(); die(); }  
@@ -533,50 +516,61 @@ bgFishImg.src = "https://i.imgur.com/yb1ti71.jpeg";
       const botH=groundY-botY;  
       const persp = 8; // Perspective taper amount  
   
-      if (p.type === 'shark') {
-  // Draw shark image facing left
-  const sharkW = p.w * 1.2; // Slightly bigger than coral width
-  const sharkH = sharkW * 0.6; // Keep proportions
-  const sharkY = p.gapY - sharkH / 2;
-
-  if (sharkImg.complete && sharkImg.naturalWidth > 0) {
-    ctx.drawImage(sharkImg, p.x, sharkY, sharkW, sharkH);
-  } else {
-    // fallback placeholder if image not yet loaded
-    ctx.fillStyle = "#808080";
-    ctx.fillRect(p.x, sharkY, sharkW, sharkH);
-  }
-  // Add shadow for realism
-  ctx.save();
-  ctx.translate(p.x + sharkW / 2, sharkY + sharkH + 4);
-  ctx.fillStyle = 'rgba(0,0,0,0.15)';
-  ctx.beginPath();
-  ctx.ellipse(0, 0, sharkW / 3, 4, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-} else {  
-        // Pipes: metallic weathered look  
-        const grad = ctx.createLinearGradient(p.x, 0, p.x + p.w, 0);  
-        grad.addColorStop(0, '#696969');  
-        grad.addColorStop(0.3, '#a9a9a9');  
-        grad.addColorStop(0.5, '#ffffff');  
-        grad.addColorStop(0.7, '#a9a9a9');  
-        grad.addColorStop(1, '#696969');  
-        ctx.fillStyle = grad;   
-        // Top pipe  
-        ctx.fillRect(p.x, 0, p.w, topH);  
-        // Bottom pipe  
-        ctx.fillRect(p.x, botY, p.w, botH);  
-        // Add rust spots for weathered effect  
-        ctx.fillStyle = 'rgba(139,69,19,0.5)'; // rust color  
-        for(let i=0; i<5; i++){  
-          let rx = p.x + Math.random()*p.w;  
-          let ry = Math.random()*topH;  
-          ctx.beginPath(); ctx.arc(rx, ry, 3+Math.random()*3, 0, Math.PI*2); ctx.fill();  
-          rx = p.x + Math.random()*p.w;  
-          ry = botY + Math.random()*botH;  
-          ctx.beginPath(); ctx.arc(rx, ry, 3+Math.random()*3, 0, Math.PI*2); ctx.fill();  
+      if(p.type === 'shark'){  
+        // Draw shark: Simple triangle mouth as gap  
+        ctx.fillStyle = '#808080'; // Gray shark  
+        ctx.beginPath();  
+        ctx.moveTo(p.x, topH - 20);  
+        ctx.lineTo(p.x + p.w / 2, p.gapY);  
+        ctx.lineTo(p.x + p.w, topH - 20);  
+        ctx.fill(); // Top jaw  
+        ctx.beginPath();  
+        ctx.moveTo(p.x, botY + 20);  
+        ctx.lineTo(p.x + p.w / 2, p.gapY);  
+        ctx.lineTo(p.x + p.w, botY + 20);  
+        ctx.fill(); // Bottom jaw  
+        // Teeth  
+        ctx.fillStyle = '#fff';  
+        for(let i=0; i<3; i++){  
+          ctx.beginPath();  
+          ctx.moveTo(p.x + i*20, topH - 20);  
+          ctx.lineTo(p.x + i*20 + 10, topH - 10);  
+          ctx.lineTo(p.x + i*20 + 20, topH - 20);  
+          ctx.fill();  
+          ctx.beginPath();  
+          ctx.moveTo(p.x + i*20, botY + 20);  
+          ctx.lineTo(p.x + i*20 + 10, botY + 10);  
+          ctx.lineTo(p.x + i*20 + 20, botY + 20);  
+          ctx.fill();  
         }  
+      } else {  
+        // Coral: Wavy, organic shapes  
+        const grad = ctx.createRadialGradient(p.x + p.w/2, 0, p.w/2, p.x + p.w/2, 0, 0);  
+        grad.addColorStop(0, baseColor);  
+        grad.addColorStop(0.7, '#ffffff40'); // Highlight  
+        grad.addColorStop(1, dark); // Shadow  
+  
+        ctx.fillStyle=grad;   
+        // Top coral with wavy edges  
+        ctx.beginPath();  
+        ctx.moveTo(p.x, 0);  
+        for(let i=0; i<p.w; i+=10){  
+          ctx.quadraticCurveTo(p.x + i + 5, -10, p.x + i + 10, 0);  
+        }  
+        ctx.lineTo(p.x + p.w + persp, topH);  
+        ctx.lineTo(p.x - persp, topH);  
+        ctx.closePath();  
+        ctx.fill();  
+  
+        // Bottom coral wavy  
+        ctx.beginPath();  
+        ctx.moveTo(p.x - persp, botY);  
+        ctx.lineTo(p.x + p.w + persp, botY);  
+        for(let i=p.w; i>0; i-=10){  
+          ctx.quadraticCurveTo(p.x + i - 5, groundY + 10, p.x + i - 10, groundY);  
+        }  
+        ctx.closePath();  
+        ctx.fill();  
       }  
     }  
   }  
@@ -586,15 +580,42 @@ bgFishImg.src = "https://i.imgur.com/yb1ti71.jpeg";
     const idleBob=(state==='ready') ? Math.sin(worldTime*Math.PI*4)*CFG.birdIdleBobPx : 0;  
     ctx.translate(bird.x,bird.y+idleBob); ctx.rotate(bird.rot);  
   
-    // Draw fish image  
-    if (fishImg.complete && fishImg.naturalWidth > 0) {  
-      ctx.drawImage(fishImg, -w/2, -h/2, w, h);  
-    } else {  
-      // Fallback  
-      ctx.fillStyle = '#87cefa';  
-      roundedRect(-w/2, -h/2, w, h, 10);  
-      ctx.fill();  
+    // Fish body: Oval with gradient for 3D  
+    const bodyGrad = ctx.createLinearGradient(-w/2, -h/2, -w/2, h/2);  
+    bodyGrad.addColorStop(0, lerpColor('#87cefa', '#4682b4', Math.sin(bird.rot))); // Blue shades  
+    bodyGrad.addColorStop(1, '#add8e6'); // Lighter bottom  
+    ctx.fillStyle=bodyGrad;   
+    roundedRect(-w/2,-h/2,w,h,10); ctx.fill(); /* More rounded */  
+  
+    // Scales pattern for realism  
+    ctx.fillStyle='rgba(255,255,255,0.3)';   
+    for(let i=-w/2+5; i<w/2; i+=8){  
+      ctx.beginPath(); ctx.arc(i,0,4,Math.PI,2*Math.PI); ctx.fill();  
     }  
+  
+    // Eye  
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(w*0.1,-h*0.1,4,0,Math.PI*2); ctx.fill();  
+    ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(w*0.1+1,-h*0.1,2,0,Math.PI*2); ctx.fill();  
+  
+    // Mouth  
+    ctx.fillStyle='#ff69b4'; ctx.beginPath(); ctx.arc(w*0.3,0,3,0,Math.PI*2); ctx.fill();  
+  
+    // Fins with animation  
+    const f=bird.frame; const fy=f===0?-2:f===1?0:2;  
+    ctx.save(); ctx.translate(-w*0.3,fy);   
+    const finGrad = ctx.createLinearGradient(-5, -8, 10, 8);  
+    finGrad.addColorStop(0, '#87cefa');  
+    finGrad.addColorStop(1, '#4682b4');  
+    ctx.fillStyle=finGrad;   
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(15,-8); ctx.lineTo(15,8); ctx.closePath(); ctx.fill(); /* Dorsal fin */  
+    ctx.restore();  
+  
+    // Tail with wiggle  
+    const tailAngle = Math.sin(worldTime * 10) * 0.2; /* Wiggle */  
+    ctx.save(); ctx.translate(-w/2 + 5, 0); ctx.rotate(tailAngle);  
+    ctx.fillStyle=finGrad;   
+    ctx.beginPath(); ctx.moveTo(0, -h/2); ctx.lineTo(-15, 0); ctx.lineTo(0, h/2); ctx.closePath(); ctx.fill();  
+    ctx.restore();  
   
     ctx.restore();  
     // Shadow under fish  
@@ -603,6 +624,68 @@ bgFishImg.src = "https://i.imgur.com/yb1ti71.jpeg";
     ctx.translate(bird.x, groundY - 4);  
     ctx.fillStyle='rgba(0,0,0,0.15)';   
     ctx.beginPath(); ctx.ellipse(0, 0, (w/2 - 2) * shadowScale, 3 * shadowScale, 0, 0, Math.PI * 2); ctx.fill();  
+    ctx.restore();  
+  }  
+  function drawBgFish(f){  
+    ctx.save();  
+    const wiggle = Math.sin(worldTime * 5 + f.x * 0.05) * 0.05; // Wiggle rotation  
+    const bob = Math.sin(worldTime * 2 + f.x * 0.1) * 2; // Up-down bob  
+    ctx.translate(f.x, f.y + bob);  
+    ctx.rotate(wiggle);  
+    const scale = f.w / 40; // Scale relative to main fish size  
+  
+    // Body  
+    const bodyGrad = ctx.createLinearGradient(-f.w/2, -f.h/2, -f.w/2, f.h/2);  
+    bodyGrad.addColorStop(0, '#87cefa');  
+    bodyGrad.addColorStop(1, '#add8e6');  
+    ctx.fillStyle = bodyGrad;  
+    roundedRect(-f.w/2, -f.h/2, f.w, f.h, 5 * scale);  
+    ctx.fill();  
+  
+    // Scales  
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';  
+    for(let i = -f.w/2 + 2 * scale; i < f.w/2; i += 4 * scale){  
+      ctx.beginPath();  
+      ctx.arc(i, 0, 2 * scale, Math.PI, 2 * Math.PI);  
+      ctx.fill();  
+    }  
+  
+    // Eye  
+    ctx.fillStyle = '#fff';  
+    ctx.beginPath();  
+    ctx.arc(f.w * 0.1, -f.h * 0.1, 2 * scale, 0, Math.PI * 2);  
+    ctx.fill();  
+    ctx.fillStyle = '#000';  
+    ctx.beginPath();  
+    ctx.arc(f.w * 0.1 + 0.5 * scale, -f.h * 0.1, 1 * scale, 0, Math.PI * 2);  
+    ctx.fill();  
+  
+    // Fin  
+    const finGrad = ctx.createLinearGradient(-2 * scale, -4 * scale, 5 * scale, 4 * scale);  
+    finGrad.addColorStop(0, '#87cefa');  
+    finGrad.addColorStop(1, '#4682b4');  
+    ctx.fillStyle = finGrad;  
+    ctx.beginPath();  
+    ctx.moveTo(0, 0);  
+    ctx.lineTo(7 * scale, -4 * scale);  
+    ctx.lineTo(7 * scale, 4 * scale);  
+    ctx.closePath();  
+    ctx.fill();  
+  
+    // Tail  
+    const tailAngle = Math.sin(worldTime * 10 + f.x * 0.05) * 0.2;  
+    ctx.save();  
+    ctx.translate(-f.w/2 + 2 * scale, 0);  
+    ctx.rotate(tailAngle);  
+    ctx.fillStyle = finGrad;  
+    ctx.beginPath();  
+    ctx.moveTo(0, -f.h/2);  
+    ctx.lineTo(-7 * scale, 0);  
+    ctx.lineTo(0, f.h/2);  
+    ctx.closePath();  
+    ctx.fill();  
+    ctx.restore();  
+  
     ctx.restore();  
   }  
   function drawSeabed(){ /* Renamed from drawGround */  
@@ -661,12 +744,6 @@ bgFishImg.src = "https://i.imgur.com/yb1ti71.jpeg";
           rb = Math.round(ab + t * (bb - ab));  
     return '#' + ((1 << 24) + (rr << 16) + (rg << 8) + rb | 0).toString(16).slice(1);  
   }  
-const bgFishes = Array.from({length: 4}, () => ({  
-  x: Math.random() * W,  
-  y: Math.random() * (groundY - 200) + 100,  
-  w: 30 * (0.4 + Math.random() * 0.4),  
-  h: 15 * (0.4 + Math.random() * 0.4)  
-}));  
   
   function render(){  
     const stage=currentStage();  
@@ -687,37 +764,19 @@ const bgFishes = Array.from({length: 4}, () => ({
     // Additional ocean elements: Seaweed  
     ctx.strokeStyle='#228b22';  
     ctx.lineWidth=4;  
-    const swayAmount = 10;  
+    const sway = Math.sin(worldTime) * 5;  
     for(let x=0; x<W; x+=60){  
       ctx.beginPath();  
-      let currentY = groundY;  
-      let currentX = x;  
-      ctx.moveTo(currentX, currentY);  
-      for(let i = 0; i < 5; i++){  
-        currentY -= 20;  
-        const sway = Math.sin(worldTime + i) * swayAmount;  
-        ctx.quadraticCurveTo(currentX + sway, currentY + 10, currentX + sway/2, currentY);  
-        currentX += sway / 2;  
-      }  
+      ctx.moveTo(x + sway, groundY);  
+      ctx.quadraticCurveTo(x + 10 - sway, groundY - 50, x + sway * 0.5, groundY - 100);  
       ctx.stroke();  
     }  
   
     // Small background fish  
-    ctx.globalAlpha = 0.6; // Lightly transparent  
-    bgFishes.forEach(f => {  
-      if (bgFishImg.complete && bgFishImg.naturalWidth > 0) {  
-        ctx.save();  
-        ctx.translate(f.x + f.w, f.y);  
-        ctx.scale(-1, 1); // Flip to face right  
-        ctx.drawImage(bgFishImg, 0, 0, f.w, f.h);  
-        ctx.restore();  
-      } else {  
-        // Fallback  
-        ctx.fillStyle = '#ff4500';   
-        roundedRect(f.x, f.y, f.w, f.h, 4); ctx.fill();  
-      }  
-    });  
-    ctx.globalAlpha = 1;  
+    const fishX = (worldTime * speedBase() * 0.5) % (W + 50) - 50;  
+    ctx.fillStyle='#ff4500';   
+    roundedRect(W - fishX, H*0.3, 20, 10, 4); ctx.fill();  
+    roundedRect(W - fishX - 20, H*0.7, 15, 8, 3); ctx.fill();  
   
     for(const pop of pops){  
       const t=clamp(pop.t/pop.duration,0,1);  
@@ -762,13 +821,13 @@ const bgFishes = Array.from({length: 4}, () => ({
   init();  
 })();  
   </script>    <!-- =============== Firebase (Leaderboard + Remote Config + Analytics + Auth) =============== -->    <script type="module">  
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";  
-    import { getDatabase, ref, push, get, set, onValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";  
-    import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-analytics.js";  
-    import { getRemoteConfig, fetchAndActivate, getValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-remote-config.js";  
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";  
-
     try {  
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";  
+      import { getDatabase, ref, push, get, set, onValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";  
+      import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-analytics.js";  
+      import { getRemoteConfig, fetchAndActivate, getValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-remote-config.js";  
+      import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";  
+  
       // Your Firebase app config  
       const firebaseConfig = {  
         apiKey: "********",  
