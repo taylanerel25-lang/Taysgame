@@ -635,6 +635,37 @@
     await safeSubmitScore(name, scoreVal);
     updateLeaderboardDisplay();
   };
+  // === Show leaderboard on splash screen as well ===
+  window.addEventListener("DOMContentLoaded", () => {
+    const splash = document.getElementById("splash");
+    if (!splash) return;
+    const list = document.createElement("div");
+    list.id = "leaderboardListSplash";
+    list.style.marginTop = "14px";
+    list.style.fontSize = "16px";
+    list.style.background = "rgba(255,255,255,0.8)";
+    list.style.borderRadius = "10px";
+    list.style.padding = "8px";
+    list.innerHTML = "<h3 style='text-align:center;'>🏆 Leaderboard</h3><p style='text-align:center;'>Loading...</p>";
+    splash.appendChild(list);
+
+    async function loadSplashLeaderboard() {
+      const bestsRef = ref(db, "bests");
+      const snap = await get(bestsRef);
+      if (!snap.exists()) return;
+      const entries = Object.values(snap.val())
+        .map(e => ({ name: e.name || "Anonymous", score: Number(e.bestScore || 0) }))
+        .filter(e => Number.isFinite(e.score))
+        .sort((a,b)=>b.score - a.score)
+        .slice(0, 10);
+
+      list.innerHTML =
+        "<h3 style='text-align:center;'>🏆 Leaderboard</h3>" +
+        entries.map((e,i)=>`<div style='display:flex;justify-content:space-between;font-size:14px;'><span>${i+1}. ${e.name}</span><strong>${e.score}</strong></div>`).join("");
+    }
+
+    loadSplashLeaderboard();
+  });
 </script>
 
 </body>  
