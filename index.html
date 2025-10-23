@@ -2,17 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Tay's game</title>
+  <title>Shaebae’s Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <style>
     :root {
-      --bg: #87ceeb;
-      --bg-night: #0d1440;
+      --bg: #87ceeb;          /* default sky */
+      --bg-night: #0d1440;    /* not used now, but kept */
       --panel: rgba(255,255,255,0.9);
       --panel-dark: rgba(0,0,0,0.65);
       --text: #1d1d1f;
     }
-    html, body { height: 100%; margin: 0; background: #111; color: var(--text); font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans"; overscroll-behavior: none; }
+    html, body {
+      height: 100%; margin: 0; background: #111; color: var(--text);
+      font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";
+      overscroll-behavior: none;
+    }
     .wrap { position: fixed; inset: 0; display: grid; place-items: center; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
     canvas { background: var(--bg); box-shadow: 0 10px 40px rgba(0,0,0,0.35); border-radius: 16px; image-rendering: pixelated; touch-action: none; }
     .hud { position: fixed; inset: 0; pointer-events: none; display: grid; place-items: center; font-weight: 700; letter-spacing: 0.5px; user-select: none; }
@@ -31,14 +35,11 @@
     .panel .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
     .pill { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.08); padding: 4px 10px; border-radius: 999px; font-size: 14px; }
     .sr-only { position: absolute!important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-    .toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 8px 12px; border-radius: 10px; font-size: 14px; pointer-events: none; opacity: 0; transition: opacity .25s ease, transform .25s ease; }
+    .toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 8px 12px; border-radius: 10px; font-size: 14px; pointer-events: none; opacity: 0; transition: opacity .25s ease, transform .25s ease; }
     .toast.show { opacity: 1; transform: translate(-50%, -6px); }
     .high-contrast canvas { outline: 4px solid #000; }
     .high-contrast .btn, .high-contrast .toggle, .high-contrast .panel { border: 3px solid #000; }
     .paused-badge { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; color: #fff; font-size: 26px; text-shadow: 0 2px 0 rgba(0,0,0,0.6); }
-    /* jump scare overlay */
-    .js-overlay { position: fixed; inset: 0; background: #000; display: none; place-items: center; z-index: 9999; }
-    .js-overlay img { width: 100%; height: 100%; object-fit: cover; }
   </style>
 </head>
 <body>
@@ -49,7 +50,6 @@
   <div class="hud" aria-hidden="true">
     <div id="topbar" class="topbar">
       <button id="muteBtn" class="btn" aria-pressed="false" aria-label="Toggle sound">🔊 Sound</button>
-      <!-- Jump scare toggle REMOVED (always on) -->
       <label class="toggle"><input type="checkbox" id="casualToggle"> Casual</label>
       <label class="toggle"><input type="checkbox" id="hcToggle"> High contrast</label>
       <label class="toggle"><input type="checkbox" id="rmToggle"> Reduced motion</label>
@@ -58,7 +58,7 @@
     <div id="scoreHud" class="score">0</div>
     <div id="splash" class="splash">
       <div>
-        <div class="title">Tay's Game</div>
+        <div class="title">Shaebae’s Game ❤️</div>
         <div class="subtitle">Tap / Click / Space to start</div>
         <div style="margin-top:8px;font-size:14px;opacity:.9">Avoid the pipes. Good luck!</div>
       </div>
@@ -78,14 +78,8 @@
     </div>
   </div>
 
-  <!-- ARIA + Toast -->
   <div id="aria" class="sr-only" aria-live="polite"></div>
   <div id="toast" class="toast" role="status"></div>
-
-  <!-- Jump scare overlay (uses your image URL) -->
-  <div id="jsOverlay" class="js-overlay" aria-hidden="true">
-    <img id="jsImage" src="https://i.imgur.com/ryeWZ4R.jpeg" alt="" />
-  </div>
 
 <script>
 (() => {
@@ -96,11 +90,14 @@
     canvas: { width: 360, height: 640 },
     physics: { gravity: 1800, flapImpulse: -420, maxFallSpeed: 900 },
     world: { speedStart: 180, speedEnd: 240, speedEndScore: 30 },
-    pipes: { gapStart: 160, gapEnd: 135, gapEndScore: 20, spawnStart: 1.2, spawnEnd: 0.95, spawnEndScore: 25, minGapCenterY: 120, maxGapCenterYPaddingBottom: 120, width: 64 },
+    pipes: {
+      gapStart: 160, gapEnd: 135, gapEndScore: 20,
+      spawnStart: 1.2, spawnEnd: 0.95, spawnEndScore: 25,
+      minGapCenterY: 120, maxGapCenterYPaddingBottom: 120, width: 64
+    },
     bird: { size: { w: 34, h: 24 }, hitboxRadius: 12, idleBobPx: 4 },
     ground: { height: 112 },
-    scorePopup: { dy: 40, duration: 0.6 },
-    jumpScare: { durationMs: 1200 } // overlay visible time
+    scorePopup: { dy: 40, duration: 0.6 }
   };
 
   const DPR = Math.min(window.devicePixelRatio || 1, 3);
@@ -124,13 +121,10 @@
   const toast = document.getElementById('toast');
   const topbar = document.getElementById('topbar');
 
-  // Jump scare overlay elements
-  const jsOverlay = document.getElementById('jsOverlay');
-  const jsImage = document.getElementById('jsImage');
-
   /* ========= STATE ========= */
   const W = CFG.canvas.width, H = CFG.canvas.height;
   const groundY = H - CFG.ground.height;
+
   let state = 'ready'; // 'ready' | 'running' | 'dead'
   let paused = false;
   let worldTime = 0;
@@ -163,22 +157,17 @@
 
   let score = 0;
   const medalFor = (s) => s>=50?['🏆 Platinum','#e5e4e2']:s>=30?['🥇 Gold','#f7c32e']:s>=20?['🥈 Silver','#c0c0c0']:s>=10?['🥉 Bronze','#cd7f32']:null;
-  const isNight = () => Math.floor(score / 10) % 2 === 1;
+
+  /* ========= STAGES (every 10 points) ========= */
+  const stageSkies = ['#87ceeb', '#ffa366', '#9966cc', '#1a1a2e', '#ffe680']; // sky per stage
+  const stagePipes = ['#2fbf59', '#ff9933', '#aa66cc', '#e74c3c', '#ffcc00']; // pipe main color per stage
+  let lastStage = -1;
+  const currentStage = () => Math.min(Math.floor(score / 10), stageSkies.length - 1);
+  const onStageChange = () => { showToast(`Stage ${currentStage() + 1}!`); };
 
   /* ========= AUDIO ========= */
   let audioCtx = null;
   const ensureAudio = () => { if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch {} } };
-
-  const createDistortionCurve = (amount=200) => {
-    const n_samples = 44100, curve = new Float32Array(n_samples);
-    const deg = Math.PI / 180;
-    for (let i = 0; i < n_samples; ++i) {
-      const x = i * 2 / n_samples - 1;
-      curve[i] = (3 + amount) * x * 20 * deg / (Math.PI + amount * Math.abs(x));
-    }
-    return curve;
-  };
-
   const beep = (type, freq, dur, vol=0.2) => {
     if (!audioCtx || storage.muted) return;
     const o = audioCtx.createOscillator();
@@ -186,60 +175,14 @@
     o.type = type; o.frequency.value = freq; g.gain.value = vol;
     o.connect(g).connect(audioCtx.destination);
     const t = audioCtx.currentTime;
-    o.start(t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur*0.9);
-    o.stop(t + dur);
+    o.start(t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur*0.9); o.stop(t + dur);
   };
-
-  const createNoiseNode = (seconds=1.1) => {
-    if (!audioCtx) return null;
-    const buffer = audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate * seconds), audioCtx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i=0; i<data.length; i++) data[i] = (Math.random()*2-1) * (1 - i/data.length);
-    const src = audioCtx.createBufferSource();
-    src.buffer = buffer;
-    return src;
-  };
-
   const sfx = {
     flap: () => beep('square', 600, 0.08, 0.15),
     point: () => beep('triangle', 880, 0.07, 0.18),
     hit:   () => beep('sawtooth', 120, 0.15, 0.22),
     die:   () => beep('sine', 80, 0.35, 0.25),
-    swoosh:() => beep('triangle', 300, 0.1, 0.12),
-    scream: () => {
-      if (!audioCtx || storage.muted) return;
-
-      const t = audioCtx.currentTime;
-      const g = audioCtx.createGain();
-      const dist = audioCtx.createWaveShaper();
-      dist.curve = createDistortionCurve(600);  // crunchy distortion
-      dist.oversample = '4x';
-
-      // Route: osc/noise -> distortion -> gain -> destination
-      dist.connect(g).connect(audioCtx.destination);
-      g.gain.setValueAtTime(0.0001, t);
-
-      const mk = (type, f1, f2, dur) => {
-        const o = audioCtx.createOscillator();
-        o.type = type;
-        o.frequency.setValueAtTime(f1, t);
-        o.frequency.exponentialRampToValueAtTime(f2, t + dur);
-        o.connect(dist);
-        o.start(t);
-        o.stop(t + dur + 0.05);
-      };
-
-      // Detuned/harsh oscillators + noise
-      mk('sawtooth', 1600, 360, 1.1);
-      mk('square',    900, 200, 1.1);
-      mk('triangle',  520, 180, 1.1);
-      const n = createNoiseNode(1.1); if (n) { n.connect(dist); n.start(t); n.stop(t + 1.1); }
-
-      // Big punchy gain envelope (LOUD)
-      g.gain.exponentialRampToValueAtTime(1.8, t + 0.05);
-      g.gain.exponentialRampToValueAtTime(0.06, t + 1.15);
-    }
+    swoosh:() => beep('triangle', 300, 0.1, 0.12)
   };
 
   /* ========= HELPERS ========= */
@@ -260,6 +203,7 @@
     pipes.length = 0; pops.length = 0;
     bird = { x: BIRD_X, y: H*0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };
     sfx.swoosh();
+    lastStage = -1; // ensure Stage 1 popup appears when scoring starts
   }
 
   /* ========= DPR / RESIZE ========= */
@@ -278,7 +222,6 @@
 
   /* ========= UI SHOW/HIDE ========= */
   function refreshUI() {
-    // Show topbar only on splash/ready OR when paused mid-game
     const show = (state === 'ready') || (state === 'running' && paused);
     topbar.style.display = show ? '' : 'none';
   }
@@ -367,13 +310,18 @@
         pops.push({ x: cx, y: p.gapY, t: 0, duration: CFG.scorePopup.duration, text: '+1' });
         if (navigator.vibrate) navigator.vibrate(20);
         sfx.point(); announce(`Score ${score}`);
+
+        // Stage change check
+        const st = currentStage();
+        if (st !== lastStage) { lastStage = st; onStageChange(); }
       }
     }
     while (pipes.length && pipes[0].x + pipes[0].w < -20) pipes.shift();
 
+    // Collisions
     const r = CFG.bird.hitboxRadius;
     const circle = { x: bird.x + 2, y: bird.y, r };
-    const penetrationNeeded = 0.2 * r; // forgiving
+    const penetrationNeeded = 0.2 * r; // forgiving graze rule
     let hit = false;
     for (const p of pipes) {
       const topRect = { x: p.x, y: -10000, w: p.w, h: (p.gapY - p.gap/2) + 10000 };
@@ -394,53 +342,6 @@
     return overlap > needed;
   }
 
-  /* ========= JUMP SCARE (always on) ========= */
-  const jumpScare = { active: false, t: 0, dur: CFG.jumpScare.durationMs / 1000 };
-
-  function triggerJumpScare() {
-    // Show overlay with flicker/transform; respects Reduced Motion by disabling shakes
-    jumpScare.active = true; jumpScare.t = 0;
-
-    // play scream
-    sfx.scream();
-
-    // simple flicker loop
-    const start = performance.now();
-    jsOverlay.style.display = 'grid';
-
-    let frameId = 0;
-    const flicker = () => {
-      const now = performance.now();
-      const elapsed = now - start;
-
-      if (!storage.reduced) {
-        const jitter = (1 - Math.min(elapsed / CFG.jumpScare.durationMs, 1)) * 8;
-        const jx = (Math.random() * 2 - 1) * jitter;
-        const jy = (Math.random() * 2 - 1) * jitter;
-        const scale = 1 + (1 - Math.min(elapsed / CFG.jumpScare.durationMs, 1)) * 0.18;
-        jsImage.style.transform = `translate(${jx}px, ${jy}px) scale(${scale})`;
-        jsImage.style.filter = `contrast(1.2) saturate(1.1) brightness(${1 + Math.random()*0.1})`;
-      } else {
-        jsImage.style.transform = 'none';
-        jsImage.style.filter = 'none';
-      }
-
-      jsOverlay.style.opacity = 0.9 + Math.random()*0.1;
-
-      if (elapsed < CFG.jumpScare.durationMs) {
-        frameId = requestAnimationFrame(flicker);
-      } else {
-        cancelAnimationFrame(frameId);
-        jsOverlay.style.display = 'none';
-        jsImage.style.transform = 'none';
-        jsImage.style.filter = 'none';
-        jumpScare.active = false;
-        showGameOver();
-      }
-    };
-    flicker();
-  }
-
   function die() {
     state = 'dead';
     refreshUI(); // hide topbar on death
@@ -458,7 +359,7 @@
       bird.rot = lerp(bird.rot, 90*Math.PI/180, 0.12);
       render();
       if (bird.y + CFG.bird.hitboxRadius < groundY) requestAnimationFrame(fallUntil);
-      else { bird.y = groundY - CFG.bird.hitboxRadius; triggerJumpScare(); }
+      else { bird.y = groundY - CFG.bird.hitboxRadius; setTimeout(showGameOver, 800); } // smooth end, no jump scare
     };
     fallUntil();
   }
@@ -493,15 +394,20 @@
   }
 
   function drawPipes() {
+    const stage = currentStage();
+    const color = stagePipes[stage];
+    const dark = 'rgba(0,0,0,0.18)'; // subtle rim
     for (const p of pipes) {
       const topH = p.gapY - p.gap/2;
       const botY = p.gapY + p.gap/2;
       const botH = groundY - botY;
-      const color = '#2fbf59', dark = '#209745';
+
       ctx.fillStyle = color; ctx.fillRect(p.x, 0, p.w, topH);
       ctx.fillStyle = dark;  ctx.fillRect(p.x - 4, topH - 16, p.w + 8, 16);
+
       ctx.fillStyle = color; ctx.fillRect(p.x, botY, p.w, botH);
       ctx.fillStyle = dark;  ctx.fillRect(p.x - 4, botY, p.w + 8, 16);
+
       ctx.fillStyle = 'rgba(0,0,0,0.08)'; ctx.fillRect(p.x + 6, 0, 3, topH); ctx.fillRect(p.x + 6, botY, 3, botH);
     }
   }
@@ -536,8 +442,13 @@
   }
 
   function render() {
+    // Stage sky color
+    const stage = currentStage();
+    const sky = stageSkies[stage];
+    canvas.style.background = sky;
+
     ctx.save();
-    ctx.fillStyle = isNight() ? getComputedStyle(document.documentElement).getPropertyValue('--bg-night') : getComputedStyle(document.documentElement).getPropertyValue('--bg');
+    ctx.fillStyle = sky;
     ctx.fillRect(0,0,W,H);
 
     if (!storage.reduced) drawClouds();
@@ -545,6 +456,7 @@
     drawBird();
     drawGround();
 
+    // score pops
     for (const pop of pops) {
       const t = clamp(pop.t / pop.duration, 0, 1);
       const y = pop.y - t * CFG.scorePopup.dy;
@@ -554,7 +466,6 @@
       ctx.globalAlpha = 1;
     }
 
-    // No canvas-based jump scare drawing; handled by overlay element
     ctx.restore();
   }
 
