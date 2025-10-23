@@ -104,7 +104,7 @@
 (() => {  
   'use strict';  
 const sharkImg = new Image();
-sharkImg.src = "https://i.imgur.com/hpO2cQ6.jpeg";
+sharkImg.src = "https://pngimg.com/uploads/shark/shark_PNG18830.png";
   
   /* ========= CONFIG ========= */  
   const CFG = {  
@@ -429,9 +429,17 @@ sharkImg.src = "https://i.imgur.com/hpO2cQ6.jpeg";
     const penetrationNeeded=0.1*r;  
     let hit=false;  
     for(const p of pipes){  
-      const topRect={ x:p.x, y:-10000, w:p.w, h:(p.gapY-p.gap/2)+10000 };  
-      const botRect={ x:p.x, y:(p.gapY+p.gap/2), w:p.w, h:(groundY-(p.gapY+p.gap/2)) };  
-      if(circleRectDeepOverlap(circle,topRect,penetrationNeeded) || circleRectDeepOverlap(circle,botRect,penetrationNeeded)){ hit=true; break; }  
+      if(p.type === 'shark'){  
+        const sharkW = p.w * 1.2;  
+        const sharkH = sharkW * 0.6;  
+        const sharkY = p.gapY - sharkH / 2;  
+        const sharkRect = { x: p.x, y: sharkY, w: sharkW, h: sharkH };  
+        if(circleRectDeepOverlap(circle, sharkRect, penetrationNeeded)){ hit=true; break; }  
+      } else {  
+        const topRect={ x:p.x, y:-10000, w:p.w, h:(p.gapY-p.gap/2)+10000 };  
+        const botRect={ x:p.x, y:(p.gapY+p.gap/2), w:p.w, h:(groundY-(p.gapY+p.gap/2)) };  
+        if(circleRectDeepOverlap(circle,topRect,penetrationNeeded) || circleRectDeepOverlap(circle,botRect,penetrationNeeded)){ hit=true; break; }  
+      }  
     }  
     if(circle.y+circle.r>=groundY){ die(); return; }  
     if(hit){ sfx.hit(); die(); }  
@@ -525,11 +533,7 @@ sharkImg.src = "https://i.imgur.com/hpO2cQ6.jpeg";
   const sharkY = p.gapY - sharkH / 2;
 
   if (sharkImg.complete && sharkImg.naturalWidth > 0) {
-    ctx.save();
-    ctx.translate(p.x + sharkW, sharkY);
-    ctx.scale(-1, 1); // Flip to face left
-    ctx.drawImage(sharkImg, 0, 0, sharkW, sharkH);
-    ctx.restore();
+    ctx.drawImage(sharkImg, p.x, sharkY, sharkW, sharkH);
   } else {
     // fallback placeholder if image not yet loaded
     ctx.fillStyle = "#808080";
@@ -694,11 +698,18 @@ sharkImg.src = "https://i.imgur.com/hpO2cQ6.jpeg";
     // Additional ocean elements: Seaweed  
     ctx.strokeStyle='#228b22';  
     ctx.lineWidth=4;  
-    const sway = Math.sin(worldTime) * 5;  
+    const swayAmount = 10;  
     for(let x=0; x<W; x+=60){  
       ctx.beginPath();  
-      ctx.moveTo(x + sway, groundY);  
-      ctx.quadraticCurveTo(x + 10 - sway, groundY - 50, x + sway * 0.5, groundY - 100);  
+      let currentY = groundY;  
+      let currentX = x;  
+      ctx.moveTo(currentX, currentY);  
+      for(let i = 0; i < 5; i++){  
+        currentY -= 20;  
+        const sway = Math.sin(worldTime + i) * swayAmount;  
+        ctx.quadraticCurveTo(currentX + sway, currentY + 10, currentX + sway/2, currentY);  
+        currentX += sway / 2;  
+      }  
       ctx.stroke();  
     }  
   
