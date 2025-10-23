@@ -103,6 +103,12 @@
   <div id="toast" class="toast" role="status"></div>    <!-- ================== GAME CODE ================== -->    <script>  
 (() => {  
   'use strict';  
+const sharkImg = new Image();
+sharkImg.src = "https://pngimg.com/uploads/shark/shark_PNG18830.png";
+const mainFishImg = new Image();
+mainFishImg.src = "https://i.imgur.com/XFmUkE8.jpeg";
+const bgFishImg = new Image();
+bgFishImg.src = "https://i.imgur.com/yb1ti71.jpeg";
   
   /* ========= CONFIG ========= */  
   const CFG = {  
@@ -340,7 +346,7 @@
     const maxCenter=(groundY-padBottom)-gap/2;  
     const minCenter=minC+gap/2;  
     let gapY=Math.round(lerp(minCenter,maxCenter,Math.random()));  
-    pipes.push({ x:W+10, gapY, gap, w:CFG.pipes.width, scored:false, type: Math.random() > 0.7 ? 'shark' : 'pipe' }); /* Randomly shark or pipe */  
+    pipes.push({ x:W+10, gapY, gap, w:CFG.pipes.width, scored:false, type: Math.random() > 0.7 ? 'shark' : 'coral' }); /* Randomly shark or coral */  
   
     // Spawn collectible sometimes  
     if(Math.random() < CFG.collectibles.chance){  
@@ -427,9 +433,17 @@
     const penetrationNeeded=0.1*r;  
     let hit=false;  
     for(const p of pipes){  
-      const topRect={ x:p.x, y:-10000, w:p.w, h:(p.gapY-p.gap/2)+10000 };  
-      const botRect={ x:p.x, y:(p.gapY+p.gap/2), w:p.w, h:(groundY-(p.gapY+p.gap/2)) };  
-      if(circleRectDeepOverlap(circle,topRect,penetrationNeeded) || circleRectDeepOverlap(circle,botRect,penetrationNeeded)){ hit=true; break; }  
+      if(p.type === 'shark'){  
+        const sharkW = p.w * 1.2;  
+        const sharkH = sharkW * 0.6;  
+        const sharkY = p.gapY - sharkH / 2;  
+        const sharkRect = { x: p.x, y: sharkY, w: sharkW, h: sharkH };  
+        if(circleRectDeepOverlap(circle, sharkRect, penetrationNeeded)){ hit=true; break; }  
+      } else {  
+        const topRect={ x:p.x, y:-10000, w:p.w, h:(p.gapY-p.gap/2)+10000 };  
+        const botRect={ x:p.x, y:(p.gapY+p.gap/2), w:p.w, h:(groundY-(p.gapY+p.gap/2)) };  
+        if(circleRectDeepOverlap(circle,topRect,penetrationNeeded) || circleRectDeepOverlap(circle,botRect,penetrationNeeded)){ hit=true; break; }  
+      }  
     }  
     if(circle.y+circle.r>=groundY){ die(); return; }  
     if(hit){ sfx.hit(); die(); }  
@@ -516,34 +530,20 @@
       const botH=groundY-botY;  
       const persp = 8; // Perspective taper amount  
   
-      if(p.type === 'shark'){  
-        // Draw shark: Simple triangle mouth as gap  
-        ctx.fillStyle = '#808080'; // Gray shark  
-        ctx.beginPath();  
-        ctx.moveTo(p.x, topH - 20);  
-        ctx.lineTo(p.x + p.w / 2, p.gapY);  
-        ctx.lineTo(p.x + p.w, topH - 20);  
-        ctx.fill(); // Top jaw  
-        ctx.beginPath();  
-        ctx.moveTo(p.x, botY + 20);  
-        ctx.lineTo(p.x + p.w / 2, p.gapY);  
-        ctx.lineTo(p.x + p.w, botY + 20);  
-        ctx.fill(); // Bottom jaw  
-        // Teeth  
-        ctx.fillStyle = '#fff';  
-        for(let i=0; i<3; i++){  
-          ctx.beginPath();  
-          ctx.moveTo(p.x + i*20, topH - 20);  
-          ctx.lineTo(p.x + i*20 + 10, topH - 10);  
-          ctx.lineTo(p.x + i*20 + 20, topH - 20);  
-          ctx.fill();  
-          ctx.beginPath();  
-          ctx.moveTo(p.x + i*20, botY + 20);  
-          ctx.lineTo(p.x + i*20 + 10, botY + 10);  
-          ctx.lineTo(p.x + i*20 + 20, botY + 20);  
-          ctx.fill();  
-        }  
-      } else {  
+      if (p.type === 'shark') {
+  // Draw shark image facing left
+  const sharkW = p.w * 1.2; // Slightly bigger than coral width
+  const sharkH = sharkW * 0.6; // Keep proportions
+  const sharkY = p.gapY - sharkH / 2;
+
+  if (sharkImg.complete && sharkImg.naturalWidth > 0) {
+    ctx.drawImage(sharkImg, p.x, sharkY, sharkW, sharkH);
+  } else {
+    // fallback placeholder if image not yet loaded
+    ctx.fillStyle = "#808080";
+    ctx.fillRect(p.x, sharkY, sharkW, sharkH);
+  }
+} else {  
         // Coral: Wavy, organic shapes  
         const grad = ctx.createRadialGradient(p.x + p.w/2, 0, p.w/2, p.x + p.w/2, 0, 0);  
         grad.addColorStop(0, baseColor);  
@@ -626,68 +626,6 @@
     ctx.beginPath(); ctx.ellipse(0, 0, (w/2 - 2) * shadowScale, 3 * shadowScale, 0, 0, Math.PI * 2); ctx.fill();  
     ctx.restore();  
   }  
-  function drawBgFish(f){  
-    ctx.save();  
-    const wiggle = Math.sin(worldTime * 5 + f.x * 0.05) * 0.05; // Wiggle rotation  
-    const bob = Math.sin(worldTime * 2 + f.x * 0.1) * 2; // Up-down bob  
-    ctx.translate(f.x, f.y + bob);  
-    ctx.rotate(wiggle);  
-    const scale = f.w / 40; // Scale relative to main fish size  
-  
-    // Body  
-    const bodyGrad = ctx.createLinearGradient(-f.w/2, -f.h/2, -f.w/2, f.h/2);  
-    bodyGrad.addColorStop(0, '#87cefa');  
-    bodyGrad.addColorStop(1, '#add8e6');  
-    ctx.fillStyle = bodyGrad;  
-    roundedRect(-f.w/2, -f.h/2, f.w, f.h, 5 * scale);  
-    ctx.fill();  
-  
-    // Scales  
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';  
-    for(let i = -f.w/2 + 2 * scale; i < f.w/2; i += 4 * scale){  
-      ctx.beginPath();  
-      ctx.arc(i, 0, 2 * scale, Math.PI, 2 * Math.PI);  
-      ctx.fill();  
-    }  
-  
-    // Eye  
-    ctx.fillStyle = '#fff';  
-    ctx.beginPath();  
-    ctx.arc(f.w * 0.1, -f.h * 0.1, 2 * scale, 0, Math.PI * 2);  
-    ctx.fill();  
-    ctx.fillStyle = '#000';  
-    ctx.beginPath();  
-    ctx.arc(f.w * 0.1 + 0.5 * scale, -f.h * 0.1, 1 * scale, 0, Math.PI * 2);  
-    ctx.fill();  
-  
-    // Fin  
-    const finGrad = ctx.createLinearGradient(-2 * scale, -4 * scale, 5 * scale, 4 * scale);  
-    finGrad.addColorStop(0, '#87cefa');  
-    finGrad.addColorStop(1, '#4682b4');  
-    ctx.fillStyle = finGrad;  
-    ctx.beginPath();  
-    ctx.moveTo(0, 0);  
-    ctx.lineTo(7 * scale, -4 * scale);  
-    ctx.lineTo(7 * scale, 4 * scale);  
-    ctx.closePath();  
-    ctx.fill();  
-  
-    // Tail  
-    const tailAngle = Math.sin(worldTime * 10 + f.x * 0.05) * 0.2;  
-    ctx.save();  
-    ctx.translate(-f.w/2 + 2 * scale, 0);  
-    ctx.rotate(tailAngle);  
-    ctx.fillStyle = finGrad;  
-    ctx.beginPath();  
-    ctx.moveTo(0, -f.h/2);  
-    ctx.lineTo(-7 * scale, 0);  
-    ctx.lineTo(0, f.h/2);  
-    ctx.closePath();  
-    ctx.fill();  
-    ctx.restore();  
-  
-    ctx.restore();  
-  }  
   function drawSeabed(){ /* Renamed from drawGround */  
     const speed=speedBase();  
     const t=(worldTime*speed)%48;  
@@ -764,11 +702,18 @@
     // Additional ocean elements: Seaweed  
     ctx.strokeStyle='#228b22';  
     ctx.lineWidth=4;  
-    const sway = Math.sin(worldTime) * 5;  
+    const swayAmount = 10;  
     for(let x=0; x<W; x+=60){  
       ctx.beginPath();  
-      ctx.moveTo(x + sway, groundY);  
-      ctx.quadraticCurveTo(x + 10 - sway, groundY - 50, x + sway * 0.5, groundY - 100);  
+      let currentY = groundY;  
+      let currentX = x;  
+      ctx.moveTo(currentX, currentY);  
+      for(let i = 0; i < 5; i++){  
+        currentY -= 20;  
+        const sway = Math.sin(worldTime + i) * swayAmount;  
+        ctx.quadraticCurveTo(currentX + sway, currentY + 10, currentX + sway/2, currentY);  
+        currentX += sway / 2;  
+      }  
       ctx.stroke();  
     }  
   
