@@ -1,673 +1,357 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Tay’s Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Fishy Flip — v0.1 (Prototype, CSS‑only)</title>
   <style>
-    :root{
-      --bg:#87ceeb;
-      --panel:rgba(255,255,255,.9);
-      --panel-dark:rgba(0,0,0,.65);
-      --text:#1d1d1f;
-    }
-    html,body{
-      height:100%;
-      margin:0;
-      background:#111;
-      color:var(--text);
-      font-family:ui-rounded,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Noto Sans";
-      overscroll-behavior:none;
-    }
-    .wrap{position:fixed;inset:0;display:grid;place-items:center;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
-    canvas{background:var(--bg);box-shadow:0 10px 40px rgba(0,0,0,.35);border-radius:16px;image-rendering:pixelated;touch-action:none}
-    .hud{position:fixed;inset:0;pointer-events:none;display:grid;place-items:center;font-weight:700;letter-spacing:.5px;user-select:none}
-    .btn{appearance:none;border:0;background:var(--panel);color:#111;padding:8px 12px;border-radius:999px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.15);cursor:pointer}
-    .btn:focus{outline:3px solid #000;outline-offset:2px}
-    .score{position:fixed;top:18px;right:14px;font-size:28px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.6);pointer-events:none}
-    .best{position:fixed;top:18px;left:14px;font-size:16px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.6);pointer-events:none}
-    .splash{position:absolute;inset:0;pointer-events:none;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.5)}
-    .splash-inner{position:absolute;left:50%;transform:translateX(-50%);top:10%;width:min(92%,360px);text-align:center;pointer-events:none}
-    .title{font-size:36px;margin:2px 0 8px}
-    .subtitle{font-size:18px;opacity:.95}
-    .splash-board{position:absolute;left:50%;transform:translateX(-50%);bottom:18px;width:min(92%,360px);background:rgba(0,0,0,.65);color:#f0f0f0;border-radius:18px;padding:14px;box-shadow:0 8px 30px rgba(0,0,0,.25);pointer-events:auto}
-    .board-head{font-size:20px;font-weight:800;text-align:center;margin:0 0 6px}
-    .board-row{display:flex;justify-content:space-between;align-items:center;font-size:16px;padding:6px 0}
-    .panel{min-width:280px;max-width:90vw;background:var(--panel);color:#111;border-radius:18px;padding:16px;box-shadow:0 8px 30px rgba(0,0,0,.25);pointer-events:auto;transform:translateY(8px)}
-    .panel h2{margin:0 0 8px 0;font-size:22px;text-align:center}
-    .panel .row{display:flex;justify-content:space-between;align-items:center;font-size:18px;padding:6px 0}
-    .panel .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
-    .pill{display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.08);padding:4px 10px;border-radius:999px;font-size:14px}
-    .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-    .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:8px 12px;border-radius:10px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .25s ease,transform .25s ease}
-    .toast.show{opacity:1;transform:translate(-50%,-6px)}
-    /* Sound button – pinned top center */
-    .soundbar{position:fixed;top:12px;left:50%;transform:translateX(-50%);pointer-events:auto}
-    /* Name modal */
-    .name-modal{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.35)}
-    .name-card{width:min(92%,360px);background:#fff;color:#111;border-radius:18px;padding:16px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
-    .name-card h3{margin:0 0 8px 0;text-align:center}
-    .name-row{display:flex;gap:8px;margin-top:10px}
-    .name-row input{flex:1;border-radius:12px;border:2px solid #ddd;padding:10px 12px;font-size:16px}
-    .name-row button{white-space:nowrap}
+    /* ==========================================
+       Fishy Flip — Phase A (CSS-only prototype)
+       - 16:9 responsive play area
+       - Ocean gradient + subtle parallax
+       - Static fish with idle bobbing
+       - CSS-animated coral columns scrolling R→L
+       - Home + Game Over overlays (UI skeleton)
+       ========================================== *//* ---------- CSS variables (palette & layout) ---------- */
+:root {
+  /* Ocean palette */
+  --sea-top:  #7ad3ff;
+  --sea-mid:  #2aa8df;
+  --sea-deep: #0e6fae;
+  --coral-a:  #ff7f6e;
+  --coral-b:  #ffb86b;
+  --coral-c:  #ffdc6b;
+  --shark:    #4d5b6a;
+
+  --ui-bg: rgba(0,0,0,0.35);
+  --ui-text: #fff;
+  --shadow: rgba(0,0,0,0.25);
+
+  /* Logical playfield dimensions (for percentage math) */
+  --pw: 360; /* width units */
+  --ph: 640; /* height units */
+
+  /* Column & gap constants mapped to percentages */
+  --col-w:  calc(60 / var(--pw) * 100%);      /* 60/360 = 16.6667% */
+  --gap-h:  calc(140 / var(--ph) * 100%);     /* 140/640 = 21.875% */
+
+  /* Scroll speed proxy: smaller = faster */
+  --scroll-dur: 8s; /* tuned for ~2.4 u/f visual feel */
+}
+
+/* ---------- Reset & base ---------- */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  background: linear-gradient(180deg, var(--sea-top), var(--sea-mid) 45%, var(--sea-deep));
+  color: var(--ui-text);
+  display: grid;
+  place-items: center;
+}
+
+/* ---------- App frame ---------- */
+.app {
+  width: min(100vw, 100vh * 9 / 16);
+  aspect-ratio: 9 / 16;          /* 16:9 safe area */
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px var(--shadow);
+  background: radial-gradient(120% 120% at 50% 0%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 60%),
+              linear-gradient(180deg, var(--sea-top), var(--sea-mid) 45%, var(--sea-deep));
+  isolation: isolate;
+}
+
+/* ---------- Parallax layers (subtle) ---------- */
+.parallax {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-repeat: repeat;
+  pointer-events: none;
+}
+.parallax.layer1 { /* light caustics */
+  background-image: radial-gradient(60% 40% at 20% 10%, rgba(255,255,255,0.08) 0, rgba(255,255,255,0) 60%),
+                    radial-gradient(60% 40% at 80% 20%, rgba(255,255,255,0.06) 0, rgba(255,255,255,0) 60%);
+  animation: drift1 20s linear infinite;
+  mix-blend-mode: soft-light;
+}
+.parallax.layer2 { /* deeper shadows */
+  background-image: radial-gradient(50% 50% at 30% 70%, rgba(0,0,0,0.08) 0, rgba(0,0,0,0) 60%),
+                    radial-gradient(45% 60% at 70% 80%, rgba(0,0,0,0.06) 0, rgba(0,0,0,0) 60%);
+  animation: drift2 35s linear infinite;
+}
+@keyframes drift1 { from { transform: translateX(0) } to { transform: translateX(-8%) } }
+@keyframes drift2 { from { transform: translateX(0) } to { transform: translateX(6%) } }
+
+/* ---------- Playfield (logical 360 x 640 mapped to percent) ---------- */
+.playfield {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* ---------- Fish (32x24 units) ---------- */
+.fish {
+  --fw: calc(32 / var(--pw) * 100%); /* width % */
+  --fh: calc(24 / var(--ph) * 100%); /* height % */
+  position: absolute;
+  width: var(--fw);
+  height: var(--fh);
+  left: 28%; /* x-fixed feel */
+  top: 45%;
+  transform: translate(-50%, -50%);
+  border-radius: 10% 30% 30% 10% / 35% 50% 50% 35%;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  /* simple 2-tone fish body */
+  background:
+    radial-gradient(90% 90% at 60% 50%, rgba(0,0,0,0.07) 0, rgba(0,0,0,0) 60%),
+    linear-gradient(90deg, #ffd9d3 0 30%, #ffffff 30% 100%);
+  animation: bob 2s ease-in-out infinite;
+}
+.fish::before { /* tail */
+  content: "";
+  position: absolute;
+  right: -18%;
+  top: 50%;
+  width: 22%;
+  height: 50%;
+  transform: translateY(-50%);
+  background: #ffd9d3;
+  border-radius: 0 40% 40% 0;
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,0.04);
+}
+.fish::after { /* eye */
+  content: "";
+  position: absolute;
+  left: 22%;
+  top: 42%;
+  width: 12%;
+  height: 12%;
+  border-radius: 50%;
+  background: #1a2a3a;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.9);
+}
+@keyframes bob {
+  0%, 100% { transform: translate(-50%, -50%) translateY(-4%); }
+  50%      { transform: translate(-50%, -50%) translateY(4%); }
+}
+
+/* ---------- Coral columns (paired: top & bottom) ---------- */
+.columns {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+}
+.column {
+  --gap-center: 60%; /* % of height where the center of gap sits */
+  --gap-size: var(--gap-h);
+  position: absolute;
+  top: 0;
+  left: 100%;
+  width: var(--col-w);
+  height: 100%;
+  display: grid;
+  grid-template-rows: calc(var(--gap-center) - var(--gap-size) / 2) var(--gap-size) calc(100% - (var(--gap-center) + var(--gap-size) / 2));
+  animation: scroll var(--scroll-dur) linear infinite;
+  will-change: transform;
+  filter: drop-shadow(0 6px 8px rgba(0,0,0,0.25));
+}
+.column .top { background: linear-gradient(180deg, var(--coral-c), var(--coral-a)); border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; }
+.column .gap { background: transparent; }
+.column .bottom { background: linear-gradient(180deg, var(--coral-b), var(--coral-a)); border-top-left-radius: 16px; border-top-right-radius: 16px; }
+
+@keyframes scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-220%); } /* past left + buffer */
+}
+
+/* Stagger 6 columns for a repeating stream */
+.column:nth-child(1) { animation-delay: 0s;   --gap-center: 55%; }
+.column:nth-child(2) { animation-delay: 1.2s; --gap-center: 65%; }
+.column:nth-child(3) { animation-delay: 2.4s; --gap-center: 50%; }
+.column:nth-child(4) { animation-delay: 3.6s; --gap-center: 60%; }
+.column:nth-child(5) { animation-delay: 4.8s; --gap-center: 58%; }
+.column:nth-child(6) { animation-delay: 6.0s; --gap-center: 62%; }
+
+/* ---------- HUD (score placeholder) ---------- */
+.hud {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+.score {
+  margin-top: 12px;
+  text-align: center;
+  font-weight: 800;
+  font-size: clamp(24px, 4.5vw, 42px);
+  text-shadow: 0 2px 0 rgba(0,0,0,0.25);
+}
+
+/* ---------- Overlays ---------- */
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.55));
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+.panel {
+  width: min(90%, 520px);
+  background: rgba(10, 24, 40, 0.55);
+  border: 1px solid rgba(255,255,255,0.16);
+  backdrop-filter: blur(6px);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+.title {
+  margin: 0 0 12px 0;
+  font-size: clamp(28px, 5vw, 44px);
+  line-height: 1.06;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+.subtitle {
+  margin: 0 0 16px 0;
+  text-align: center;
+  opacity: 0.9;
+}
+.btnrow { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin: 16px 0; }
+.btn {
+  appearance: none; border: 0; cursor: pointer; color: #00243c; font-weight: 800;
+  background: #fff; padding: 12px 18px; border-radius: 12px; box-shadow: 0 6px 0 #9ad6ff;
+  transition: transform 120ms ease-out, box-shadow 120ms ease-out;
+}
+.btn:active { transform: translateY(3px); box-shadow: 0 3px 0 #9ad6ff; }
+.link { color: #fff; opacity: 0.9; text-decoration: underline; }
+
+/* Leaderboard widget (static placeholder) */
+.board { margin-top: 10px; background: rgba(255,255,255,0.06); border-radius: 12px; padding: 12px; }
+.board h3 { margin: 0 0 8px; font-size: 14px; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
+.board ol { margin: 0; padding-left: 18px; }
+.board li { padding: 4px 0; display: flex; justify-content: space-between; gap: 8px; }
+.board .name { opacity: 0.95; }
+.board .pts { font-weight: 800; opacity: 1; }
+
+/* Footer credit */
+.footer {
+  position: absolute; bottom: 8px; width: 100%; text-align: center; font-size: 12px; opacity: 0.85; z-index: 2;
+}
+
+/* Accessibility & Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .parallax, .column, .fish { animation-duration: calc(var(--scroll-dur) * 1.5); animation-iteration-count: infinite; }
+  .fish { animation-duration: 3s; }
+}
+
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <canvas id="game" width="360" height="640" aria-label="Tay’s Game canvas"></canvas>
-  </div>
-
-  <!-- HUD -->
-  <div class="hud" aria-hidden="true">
-    <div class="soundbar"><button id="muteBtn" class="btn" aria-pressed="false" aria-label="Toggle sound">🔊 Sound</button></div>
-    <div id="scoreHud" class="score">0</div>
-    <div id="bestHud" class="best">Highest: 0</div>
-
-    <!-- Splash (title + instructions) -->
-    <div id="splash" class="splash">
-      <div class="splash-inner">
-        <div class="title">Tay’s Game ❤️</div>
-        <div class="subtitle">Tap / Click / Space to start</div>
-        <div style="margin-top:6px;font-size:14px;opacity:.9">Avoid the pipes. Good luck!</div>
-      </div>
-
-      <!-- Leaderboard on splash (bottom) -->
-      <div id="splashBoard" class="splash-board">
-        <div class="board-head">🏆 Leaderboard</div>
-        <div id="leaderboardSplashBody" style="font-size:16px;text-align:center;">Loading...</div>
-      </div>
+  <main class="app" role="application" aria-label="Fishy Flip prototype">
+    <!-- Parallax water layers -->
+    <div class="parallax layer1" aria-hidden="true"></div>
+    <div class="parallax layer2" aria-hidden="true"></div><!-- Playfield -->
+<div class="playfield" aria-hidden="true">
+  <div class="columns">
+    <!-- Six repeating column sets with varied gap centers (pure CSS animation) -->
+    <div class="column" style="--gap-center: 55%">
+      <div class="top"></div><div class="gap"></div><div class="bottom"></div>
+    </div>
+    <div class="column" style="--gap-center: 65%">
+      <div class="top"></div><div class="gap"></div><div class="bottom"></div>
+    </div>
+    <div class="column" style="--gap-center: 50%">
+      <div class="top"></div><div class="gap"></div><div class="bottom"></div>
+    </div>
+    <div class="column" style="--gap-center: 60%">
+      <div class="top"></div><div class="gap"></div><div class="bottom"></div>
+    </div>
+    <div class="column" style="--gap-center: 58%">
+      <div class="top"></div><div class="gap"></div><div class="bottom"></div>
+    </div>
+    <div class="column" style="--gap-center: 62%">
+      <div class="top"></div><div class="gap"></div><div class="bottom"></div>
     </div>
   </div>
+  <div class="fish" aria-label="Fish"></div>
+</div>
 
-  <!-- Game Over panel -->
-  <div id="gameOver" class="hud" style="display:none;">
-    <div class="panel" role="dialog" aria-modal="true" aria-labelledby="overTitle">
-      <h2 id="overTitle">Game Over</h2>
-      <div class="row"><span>Your Score</span><strong id="scoreNow">0</strong></div>
-      <div class="row"><span>Highest Score</span><span><strong id="bestNow">0</strong> <span id="medal" class="pill" aria-label="medal" style="display:none;">🥉 Bronze</span></span></div>
-      <div class="actions">
-        <button id="againBtn" class="btn">Play Again</button>
-        <button id="shareBtn" class="btn">Share</button>
-      </div>
+<!-- HUD (placeholder) -->
+<div class="hud" aria-hidden="true">
+  <div class="score">0</div>
+</div>
 
-      <!-- Leaderboard inside Game Over -->
-      <div id="leaderboardOver" class="panel dark" style="margin-top:12px;padding:12px;">
-        <div style="text-align:center;font-weight:800;">🏆 Leaderboard</div>
-        <div id="leaderboardOverBody" style="margin-top:6px;font-size:16px;">Loading...</div>
-      </div>
+<!-- Home Overlay (visible by default in Phase A) -->
+<section class="overlay" id="home" aria-label="Home">
+  <div class="panel" role="dialog" aria-modal="true">
+    <h1 class="title">Fishy Flip</h1>
+    <p class="subtitle">Tap to swim. Dodge the coral. Score points.</p>
+    <div class="btnrow">
+      <!-- No JS yet: this button is decorative until Phase B -->
+      <button class="btn" aria-label="Play">Play</button>
+      <a class="btn" href="#howto" aria-label="How to play">How to Play</a>
+      <a class="btn" href="#leaderboard" aria-label="Leaderboard">Leaderboard</a>
+    </div>
+    <div class="board" id="leaderboard">
+      <h3>Top 10 (demo)</h3>
+      <ol>
+        <li><span class="name">Kai</span><span class="pts">42</span></li>
+        <li><span class="name">Mina</span><span class="pts">38</span></li>
+        <li><span class="name">Jax</span><span class="pts">33</span></li>
+        <li><span class="name">Rin</span><span class="pts">31</span></li>
+        <li><span class="name">Skye</span><span class="pts">28</span></li>
+        <li><span class="name">Noa</span><span class="pts">25</span></li>
+        <li><span class="name">Luca</span><span class="pts">22</span></li>
+        <li><span class="name">Zoe</span><span class="pts">19</span></li>
+        <li><span class="name">Ash</span><span class="pts">17</span></li>
+        <li><span class="name">Bo</span><span class="pts">15</span></li>
+      </ol>
+    </div>
+    <p id="howto" style="margin-top:12px; font-size:14px; opacity:0.9; text-align:center;">
+      Tap/Click/Space to swim upward. Avoid coral. Pass columns to score. Don’t touch anything!
+    </p>
+    <p style="text-align:center; margin: 10px 0 0; font-size: 12px; opacity: 0.8;">v0.1.0 — Prototype (No JS yet)</p>
+  </div>
+</section>
+
+<!-- Game Over overlay (hidden placeholder for Phase B/C) -->
+<section class="overlay" id="gameover" hidden aria-label="Game Over">
+  <div class="panel" role="dialog" aria-modal="true">
+    <h2 class="title">Game Over</h2>
+    <p class="subtitle">Score: <strong>0</strong></p>
+    <div class="btnrow">
+      <button class="btn" aria-label="Restart">Restart</button>
+      <button class="btn" aria-label="Home">Home</button>
+    </div>
+    <div class="board">
+      <h3>Top 10 (demo)</h3>
+      <ol>
+        <li><span class="name">Kai</span><span class="pts">42</span></li>
+        <li><span class="name">Mina</span><span class="pts">38</span></li>
+        <li><span class="name">Jax</span><span class="pts">33</span></li>
+        <li><span class="name">Rin</span><span class="pts">31</span></li>
+        <li><span class="name">Skye</span><span class="pts">28</span></li>
+        <li><span class="name">Noa</span><span class="pts">25</span></li>
+        <li><span class="name">Luca</span><span class="pts">22</span></li>
+        <li><span class="name">Zoe</span><span class="pts">19</span></li>
+        <li><span class="name">Ash</span><span class="pts">17</span></li>
+        <li><span class="name">Bo</span><span class="pts">15</span></li>
+      </ol>
     </div>
   </div>
+</section>
 
-  <!-- Name modal (first run or if name cleared) -->
-  <div id="nameModal" class="name-modal" role="dialog" aria-modal="true" aria-labelledby="nameTitle">
-    <div class="name-card">
-      <h3 id="nameTitle">Welcome! Enter your name</h3>
-      <p style="margin:0 0 6px 0;text-align:center;opacity:.8;font-size:14px;">It’ll appear on the leaderboard across all devices.</p>
-    <div class="name-row">
-        <input id="playerNameInput" type="text" placeholder="e.g. Tay" maxlength="24" />
-        <button id="saveNameBtn" class="btn">Save</button>
-      </div>
-    </div>
-  </div>
+<div class="footer">Fishy Flip • © You • v0.1.0</div>
 
-  <div id="aria" class="sr-only" aria-live="polite"></div>
-  <div id="toast" class="toast" role="status"></div>
-
-  <!-- ================== GAME CODE ================== -->
-  <script>
-(() => {
-  'use strict';
-
-  /* ========= CONFIG ========= */
-  const CFG = {
-    canvas: { width: 360, height: 640 },
-    physics: { gravity: 1800, flapImpulse: -420, maxFallSpeed: 900 },
-    world: { speedStart: 180, speedEnd: 240, speedEndScore: 30 },
-    pipes: {
-      gapStart: 160, gapEnd: 135, gapEndScore: 20,
-      spawnStart: 1.2, spawnEnd: 0.95, spawnEndScore: 25,
-      minGapCenterY: 120, maxGapCenterYPaddingBottom: 120, width: 64
-    },
-    bird: { size: { w: 34, h: 24 }, hitboxRadius: 12 },
-    ground: { height: 112 },
-    scorePopup: { dy: 40, duration: 0.6 },
-    birdIdleBobPx: 4
-  };
-
-  const DPR = Math.min(window.devicePixelRatio || 1, 3);
-
-  /* ========= DOM ========= */
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
-  const splashEl = document.getElementById('splash');
-  const hudScore = document.getElementById('scoreHud');
-  const overPanel = document.getElementById('gameOver');
-  const scoreNow = document.getElementById('scoreNow');
-  const bestNow = document.getElementById('bestNow');
-  const medalEl = document.getElementById('medal');
-  const muteBtn = document.getElementById('muteBtn');
-  const ariaLive = document.getElementById('aria');
-  const toast = document.getElementById('toast');
-
-  const nameModal = document.getElementById('nameModal');
-  const nameInput = document.getElementById('playerNameInput');
-  const saveNameBtn = document.getElementById('saveNameBtn');
-
-  /* ========= STATE ========= */
-  const W = CFG.canvas.width, H = CFG.canvas.height;
-  const groundY = H - CFG.ground.height;
-
-  let state = 'ready'; // 'ready' | 'running' | 'dead'
-  let paused = false;
-  let worldTime = 0;
-  let spawnTimer = 0;
-  let lastMs = performance.now();
-
-  const storage = {
-    best: Number(localStorage.getItem('sb_best') || 0),
-    muted: localStorage.getItem('sb_muted') === '1'
-  };
-
-  if (storage.muted){
-    muteBtn.setAttribute('aria-pressed','true');
-    muteBtn.textContent='🔇 Muted';
-  }
-
-  const BIRD_X = Math.round(W * 0.28);
-  let bird = { x: BIRD_X, y: H*0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };
-
-  const pipes = [];
-  const pops = [];
-  const clouds = [
-    { x: 40,  y: 100, s: 0.30 },
-    { x: 240, y: 60,  s: 0.25 },
-    { x: 170, y: 140, s: 0.22 }
-  ];
-
-  let score = 0;
-  window.score = 0; // expose for Firebase block
-
-  const medalFor = (s) => s>=50?['🏆 Platinum','#e5e4e2']:s>=30?['🥇 Gold','#f7c32e']:s>=20?['🥈 Silver','#c0c0c0']:s>=10?['🥉 Bronze','#cd7f32']:null;
-
-  /* ========= STAGES ========= */
-  const stageSkies = ['#87ceeb','#ffa366','#9966cc','#1a1a2e','#ffe680'];
-  const stagePipes = ['#2fbf59','#ff9933','#aa66cc','#e74c3c','#ffcc00'];
-  let lastStage = -1;
-  const currentStage = () => Math.min(Math.floor(score/10), stageSkies.length-1);
-  const onStageChange = () => { showToast(`Stage ${currentStage()+1}!`); };
-
-  /* ========= AUDIO ========= */
-  let audioCtx = null;
-  const ensureAudio = () => { if (!audioCtx) { try { audioCtx = new (window.AudioContext||window.webkitAudioContext)(); } catch {} } };
-  const beep = (type,freq,dur,vol=0.2)=>{
-    if(!audioCtx || storage.muted) return;
-    const o=audioCtx.createOscillator(), g=audioCtx.createGain();
-    o.type=type; o.frequency.value=freq; g.gain.value=vol;
-    o.connect(g).connect(audioCtx.destination);
-    const t=audioCtx.currentTime;
-    o.start(t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur*0.9); o.stop(t+dur);
-  };
-  const sfx = {
-    flap: ()=>beep('square',600,0.08,0.15),
-    point:()=>beep('triangle',880,0.07,0.18),
-    hit:  ()=>beep('sawtooth',120,0.15,0.22),
-    die:  ()=>beep('sine',80,0.35,0.25),
-    swoosh:()=>beep('triangle',300,0.1,0.12)
-  };
-
-  /* ========= HELPERS ========= */
-  const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
-  const lerp=(a,b,t)=>a+(b-a)*t;
-  const easeT=(s,end)=>clamp(s/end,0,1);
-  const pipeGap = ()=> (window.dynamicPipeGap ?? lerp(CFG.pipes.gapStart, CFG.pipes.gapEnd, easeT(score, CFG.pipes.gapEndScore)));
-  const spawnInterval = ()=> lerp(CFG.pipes.spawnStart, CFG.pipes.spawnEnd, easeT(score, CFG.pipes.spawnEndScore));
-  const speedBase = ()=> lerp(CFG.world.speedStart, CFG.world.speedEnd, easeT(score, CFG.world.speedEndScore));
-  const showToast = (msg)=>{ toast.textContent=msg; toast.classList.add('show'); clearTimeout(showToast._t); showToast._t=setTimeout(()=>toast.classList.remove('show'),1200); };
-  const announce=(msg)=>{ const a=document.getElementById('aria'); a.textContent=''; setTimeout(()=>a.textContent=msg,30); };
-
-  function resetGame(){
-    score=0; hudScore.textContent='0'; worldTime=0; spawnTimer=-0.5;
-    pipes.length=0; pops.length=0;
-    bird={ x:BIRD_X, y:H*0.5, vy:0, rot:0, frame:0, frameTimer:0 };
-    sfx.swoosh(); lastStage=-1;
-    document.getElementById('bestHud').textContent=`Highest: ${storage.best}`;
-  }
-
-  /* ========= DPR / RESIZE ========= */
-  function fitCanvas(){
-    const aspect=W/H;
-    const vw=innerWidth, vh=innerHeight;
-    let cssW, cssH;
-    if(vw/vh<aspect){ cssW=Math.min(vw,W*2.5); cssH=Math.round(cssW/aspect); }
-    else { cssH=Math.min(vh,H*2.5); cssW=Math.round(cssH*aspect); }
-    canvas.style.width=cssW+'px'; canvas.style.height=cssH+'px';
-    canvas.width=Math.round(W*DPR); canvas.height=Math.round(H*DPR);
-    ctx.setTransform(1,0,0,1,0,0); ctx.scale(DPR,DPR); ctx.imageSmoothingEnabled=false;
-  }
-  addEventListener('resize',fitCanvas,{passive:true}); fitCanvas();
-
-  /* ========= INPUT ========= */
-  const flap=()=>{
-    if(state==='dead') return;
-    ensureAudio();
-
-    // Require name before first play
-    if(!localStorage.getItem('player_name')){
-      openNameModal();
-      return;
-    }
-
-    if(state==='ready'){
-      state='running';
-      announce('Game started');
-      splashEl.style.display='none';
-    }
-    bird.vy=CFG.physics.flapImpulse; sfx.flap();
-  };
-  canvas.addEventListener('mousedown',e=>{e.preventDefault();flap();});
-  canvas.addEventListener('touchstart',e=>{e.preventDefault();flap();},{passive:false});
-  addEventListener('keydown',e=>{
-    const k=e.key.toLowerCase();
-    if([' ','w','arrowup'].includes(k)){e.preventDefault();flap();}
-    if(k==='p' && state==='running'){ paused=!paused; showToast(paused?'Paused':'Resumed'); }
-  },{passive:false});
-
-  /* ========= UI ========= */
-  muteBtn.addEventListener('click',()=>{
-    storage.muted=!storage.muted; localStorage.setItem('sb_muted',storage.muted?'1':'0');
-    muteBtn.setAttribute('aria-pressed',storage.muted?'true':'false');
-    muteBtn.textContent=storage.muted ? '🔇 Muted' : '🔊 Sound';
-  });
-
-  document.getElementById('againBtn').addEventListener('click',()=>{
-    overPanel.style.display='none'; splashEl.style.display='';
-    state='ready'; resetGame(); announce('Back to splash');
-  });
-  document.getElementById('shareBtn').addEventListener('click',async()=>{
-    const text=`I scored ${scoreNow.textContent} in Tay’s Game! Can you beat me?`;
-    try{ if(navigator.share) await navigator.share({text,title:"Tay’s Game"}); else { await navigator.clipboard.writeText(text); showToast('Copied to clipboard!'); } } catch {}
-  });
-
-  /* ========= NAME MODAL ========= */
-  function openNameModal(){
-    nameModal.style.display='grid';
-    nameInput.value=localStorage.getItem('player_name')||'';
-    setTimeout(()=>nameInput.focus(),10);
-  }
-  function saveName(){
-    const raw=(nameInput.value||'').trim();
-    const clean = raw.replace(/[.#$/\[\]\/]/g,'').slice(0,24); // sanitize for RTDB key
-    if(!clean){ showToast('Please enter a name'); nameInput.focus(); return; }
-    localStorage.setItem('player_name',clean);
-    nameModal.style.display='none';
-    showToast(`Hi, ${clean}!`);
-  }
-  saveNameBtn.addEventListener('click',saveName);
-  nameInput.addEventListener('keydown',e=>{ if(e.key==='Enter') saveName(); });
-
-  /* ========= GAME LOGIC ========= */
-  function spawnPipe(){
-    const gap=pipeGap();
-    const padBottom=CFG.pipes.maxGapCenterYPaddingBottom;
-    const minC=CFG.pipes.minGapCenterY;
-    const maxCenter=(groundY-padBottom)-gap/2;
-    const minCenter=minC+gap/2;
-    let gapY=Math.round(lerp(minCenter,maxCenter,Math.random()));
-    pipes.push({ x:W+10, gapY, gap, w:CFG.pipes.width, scored:false });
-  }
-
-  function update(dt){
-    if(state!=='running' || paused) return;
-    const speed=speedBase();
-    worldTime+=dt; spawnTimer+=dt;
-
-    if(spawnTimer>=spawnInterval()){ spawnTimer=0; spawnPipe(); }
-
-    for(const c of clouds){ c.x-=speed*c.s*dt; if(c.x<-80) c.x+=W+160; }
-
-    bird.vy+=CFG.physics.gravity*dt;
-    bird.vy=clamp(bird.vy,-9999,CFG.physics.maxFallSpeed);
-    bird.y+=bird.vy*dt; bird.y=clamp(bird.y,2,H+1000);
-
-    const targetRot = bird.vy<0 ? -25*Math.PI/180
-      : Math.min(90*Math.PI/180, bird.vy/CFG.physics.maxFallSpeed*(90*Math.PI/180));
-    bird.rot = lerp(bird.rot, targetRot, 0.12);
-
-    const animFps = bird.vy<0 ? 8 : 4;
-    bird.frameTimer+=dt; if(bird.frameTimer>=1/animFps){ bird.frame=(bird.frame+1)%3; bird.frameTimer=0; }
-
-    for(const p of pipes){
-      p.x-=speed*dt;
-      const cx=p.x+p.w/2;
-      if(!p.scored && cx<bird.x){
-        p.scored=true; score++; hudScore.textContent=String(score);
-        window.score=score;
-
-        if(score>storage.best){
-          storage.best=score;
-          localStorage.setItem('sb_best',String(score));
-          document.getElementById('bestHud').textContent=`Highest: ${storage.best}`;
-        }
-
-        pops.push({ x:cx, y:p.gapY, t:0, duration:CFG.scorePopup.duration, text:'+1' });
-        if(navigator.vibrate) navigator.vibrate(20);
-        sfx.point(); announce(`Score ${score}`);
-
-        const st=currentStage(); if(st!==lastStage){ lastStage=st; onStageChange(); }
-      }
-    }
-    while(pipes.length && pipes[0].x+pipes[0].w<-20) pipes.shift();
-
-    // Collisions
-    const r=CFG.bird.hitboxRadius;
-    const circle={ x:bird.x+2, y:bird.y, r };
-    const penetrationNeeded=0.2*r;
-    let hit=false;
-    for(const p of pipes){
-      const topRect={ x:p.x, y:-10000, w:p.w, h:(p.gapY-p.gap/2)+10000 };
-      const botRect={ x:p.x, y:(p.gapY+p.gap/2), w:p.w, h:(groundY-(p.gapY+p.gap/2)) };
-      if(circleRectDeepOverlap(circle,topRect,penetrationNeeded) || circleRectDeepOverlap(circle,botRect,penetrationNeeded)){ hit=true; break; }
-    }
-    if(circle.y+circle.r>=groundY){ die(); return; }
-    if(hit){ sfx.hit(); die(); }
-
-    for(let i=pops.length-1;i>=0;i--){ const pop=pops[i]; pop.t+=dt; if(pop.t>=pop.duration) pops.splice(i,1); }
-  }
-
-  function circleRectDeepOverlap(circ,rect,needed){
-    const nx=clamp(circ.x,rect.x,rect.x+rect.w);
-    const ny=clamp(circ.y,rect.y,rect.y+rect.h);
-    const dx=circ.x-nx, dy=circ.y-ny;
-    const dist=Math.hypot(dx,dy);
-    const overlap=circ.r-dist;
-    return overlap>needed;
-  }
-
-  function die(){
-    state='dead'; paused=false;
-    if(navigator.vibrate) navigator.vibrate(80);
-    sfx.die();
-
-    const fallUntil=()=>{
-      const now=performance.now();
-      const dt=Math.min((now-lastMs)/1000,1/30);
-      lastMs=now;
-      bird.vy+=CFG.physics.gravity*dt;
-      bird.vy=Math.min(bird.vy,CFG.physics.maxFallSpeed);
-      bird.y+=bird.vy*dt;
-      bird.rot=lerp(bird.rot,90*Math.PI/180,0.12);
-      render();
-      if(bird.y+CFG.bird.hitboxRadius<groundY) requestAnimationFrame(fallUntil);
-      else { bird.y=groundY-CFG.bird.hitboxRadius; setTimeout(showGameOver,800); }
-    };
-    fallUntil();
-  }
-
-  function showGameOver(){
-    scoreNow.textContent=String(score);
-    if(score>storage.best){ storage.best=score; localStorage.setItem('sb_best',String(score)); }
-    bestNow.textContent=String(storage.best);
-    document.getElementById('bestHud').textContent=`Highest: ${storage.best}`;
-    const m=medalFor(storage.best); if(m){ medalEl.style.display=''; medalEl.textContent=m[0]; } else medalEl.style.display='none';
-    overPanel.style.display='';
-  }
-  window.showGameOver=showGameOver;
-
-  /* ========= RENDER ========= */
-  function roundedRect(x,y,w,h,r){
-    ctx.beginPath();
-    ctx.moveTo(x+r,y);
-    ctx.arcTo(x+w,y,x+w,y+h,r);
-    ctx.arcTo(x+w,y+h,x,y+h,r);
-    ctx.arcTo(x,y+h,x,y,r);
-    ctx.arcTo(x,y,x+w,y,r);
-    ctx.closePath();
-  }
-  function drawClouds(){
-    for(const c of clouds){
-      ctx.save(); ctx.translate(c.x,c.y);
-      ctx.fillStyle='rgba(255,255,255,.9)';
-      roundedRect(-20,-10,40,20,8); roundedRect(5,-14,30,18,8); roundedRect(-35,-8,26,16,8);
-      ctx.fill(); ctx.restore();
-    }
-  }
-  function drawPipes(){
-    const stage=currentStage();
-    const color=stagePipes[stage]; const dark='rgba(0,0,0,.18)';
-    for(const p of pipes){
-      const topH=p.gapY-p.gap/2;
-      const botY=p.gapY+p.gap/2;
-      const botH=groundY-botY;
-      ctx.fillStyle=color; ctx.fillRect(p.x,0,p.w,topH);
-      ctx.fillStyle=dark;  ctx.fillRect(p.x-4,topH-16,p.w+8,16);
-      ctx.fillStyle=color; ctx.fillRect(p.x,botY,p.w,botH);
-      ctx.fillStyle=dark;  ctx.fillRect(p.x-4,botY,p.w+8,16);
-      ctx.fillStyle='rgba(0,0,0,.08)'; ctx.fillRect(p.x+6,0,3,topH); ctx.fillRect(p.x+6,botY,3,botH);
-    }
-  }
-  function drawBird(){
-    ctx.save();
-    const w=CFG.bird.size.w, h=CFG.bird.size.h, r=CFG.bird.hitboxRadius;
-    const idleBob=(state==='ready') ? Math.sin(worldTime*Math.PI*4)*CFG.birdIdleBobPx : 0;
-    ctx.translate(bird.x,bird.y+idleBob); ctx.rotate(bird.rot);
-
-    ctx.fillStyle='#ffd84a'; roundedRect(-w/2,-h/2,w,h,6); ctx.fill();
-    ctx.fillStyle='#fff2b2'; roundedRect(-w*0.2,-h*0.15,w*0.8,h*0.7,6); ctx.fill();
-    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(w*0.1,-h*0.1,4,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(w*0.1+1,-h*0.1,2,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#ff9a00'; ctx.beginPath(); ctx.moveTo(w*0.45,0); ctx.lineTo(w*0.25,-3); ctx.lineTo(w*0.25,3); ctx.closePath(); ctx.fill();
-
-    const f=bird.frame; const wy=f===0?-2:f===1?0:2;
-    ctx.save(); ctx.translate(-4,wy); ctx.fillStyle='#f7bf3c'; roundedRect(-10,-6,18,12,6); ctx.fill(); ctx.restore();
-
-    ctx.restore();
-  }
-  function drawGround(){
-    const speed=speedBase();
-    const t=(worldTime*speed)%48;
-    const y=groundY;
-    ctx.fillStyle='#e6a65d'; ctx.fillRect(0,y,W,H-y);
-    ctx.fillStyle='#68c151'; ctx.fillRect(0,y-8,W,8);
-    ctx.fillStyle='rgba(0,0,0,.06)';
-    for(let x=-t;x<W;x+=48){ ctx.fillRect(x,y+6,24,6); ctx.fillRect(x+24,y+16,24,6); }
-  }
-
-  function render(){
-    const stage=currentStage();
-    const sky=stageSkies[stage];
-    canvas.style.background=sky;
-
-    ctx.save();
-    ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
-
-    drawClouds();
-    drawPipes();
-    drawBird();
-    drawGround();
-
-    for(const pop of pops){
-      const t=clamp(pop.t/pop.duration,0,1);
-      const y=pop.y - t*CFG.scorePopup.dy;
-      ctx.globalAlpha=1-t;
-      ctx.fillStyle='#fff'; ctx.font='bold 20px ui-rounded, system-ui, sans-serif'; ctx.textAlign='center';
-      ctx.fillText(pop.text,pop.x,y);
-      ctx.globalAlpha=1;
-    }
-
-    ctx.restore();
-  }
-
-  /* ========= LOOP ========= */
-  function loop(now){
-    const dt=clamp((now-lastMs)/1000,0,1/30);
-    lastMs=now;
-    if(state==='ready') worldTime+=dt;
-    else if(state==='running' && !paused){ worldTime+=dt; update(dt); }
-    render();
-    requestAnimationFrame(loop);
-  }
-
-  /* ========= INIT ========= */
-  function init(){
-    resetGame();
-    splashEl.style.display='';
-    hudScore.textContent='0';
-    document.getElementById('bestHud').textContent=`Highest: ${storage.best}`;
-    bestNow.textContent=String(storage.best);
-    overPanel.style.display='none';
-    lastMs=performance.now();
-    requestAnimationFrame(loop);
-
-    // If no name, prompt on splash
-    if(!localStorage.getItem('player_name')) openNameModal();
-  }
-  init();
-})();
-  </script>
-  <!-- =============== Firebase (Leaderboard + Remote Config + Analytics + Auth) =============== -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-    import { getDatabase, ref, push, get, set, onValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
-    import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-analytics.js";
-    import { getRemoteConfig, fetchAndActivate, getValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-remote-config.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
-
-    // Your Firebase app config
-    const firebaseConfig = {
-      apiKey: "AIzaSyCaLNISayGYJoiPdXPajHKFjCwvolkZQno",
-      authDomain: "tay-s-game.firebaseapp.com",
-      databaseURL: "https://tay-s-game-default-rtdb.firebaseio.com",
-      projectId: "tay-s-game",
-      storageBucket: "tay-s-game.firebasestorage.app",
-      messagingSenderId: "562563277539",
-      appId: "1:562563277539:web:83f23217bde8543d19dbd6",
-      measurementId: "G-LHR4F18RTJ"
-    };
-
-    // Init
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const analytics = getAnalytics(app);
-
-    // ---------- Auth: sign in anonymously (ensures write access if rules require auth) ----------
-    const auth = getAuth(app);
-    const authReady = new Promise((resolve) => {
-      onAuthStateChanged(auth, (user) => {
-        if (user) { resolve(user); }
-      });
-    });
-    // Kick off anon sign-in if needed
-    signInAnonymously(auth).catch((e)=>console.warn("Anonymous auth failed:", e));
-
-    // ---------- Remote Config: dynamic pipe gap (optional) ----------
-    const rc = getRemoteConfig(app);
-    rc.settings.minimumFetchIntervalMillis = 60000;
-    rc.defaultConfig = { current_pipe_gap_size: 160 };
-    async function loadAdaptiveDifficulty(){
-      try{
-        await fetchAndActivate(rc);
-        const val = Number(getValue(rc,"current_pipe_gap_size")._value);
-        if(!Number.isNaN(val) && val>60 && val<400){
-          window.dynamicPipeGap = val;
-          console.log("Remote pipe gap:", val);
-        }
-      }catch(e){ console.warn("Remote Config failed", e); }
-    }
-    loadAdaptiveDifficulty();
-
-    // ---------- Leaderboard helpers ----------
-    const sanitize = (name)=> String(name||"Anonymous").trim().replace(/[.#$/\[\]\/]/g,"_").toLowerCase();
-
-    async function updatePlayerBest(name, score){
-      const cleanKey = sanitize(name);
-      const bestRef = ref(db, "bests/" + cleanKey);
-      try {
-        const snap = await get(bestRef);
-        const prev = snap.exists() ? Number(snap.val().bestScore||0) : 0;
-        if(score > prev){
-          await set(bestRef, { name: name || "Anonymous", bestScore: score, updatedAt: Date.now() });
-        }
-      } catch (e) {
-        console.warn("updatePlayerBest failed:", e);
-      }
-    }
-
-    function renderBoard(container, entries){
-      if(!container) return;
-      if(!entries.length){
-        container.innerHTML = "<div style='text-align:center;opacity:.9'>No scores yet</div>";
-        return;
-      }
-      container.innerHTML = entries
-        .map((e,i)=>`<div class="board-row"><span>${i+1}. ${e.name}</span><strong>${e.score}</strong></div>`).join("");
-    }
-
-    function convertBestsToList(obj){
-      if(!obj) return [];
-      return Object.values(obj)
-        .map(e=>({ name: e.name || "Anonymous", score: Number(e.bestScore||0) }))
-        .filter(e=>Number.isFinite(e.score))
-        .sort((a,b)=>b.score-a.score)
-        .slice(0,10);
-    }
-
-    // Live listeners (so all devices see updates instantly)
-    function startLiveLeaderboards(){
-      const splashBody = document.getElementById("leaderboardSplashBody");
-      const overBody = document.getElementById("leaderboardOverBody");
-      const bestsRef = ref(db, "bests");
-      onValue(bestsRef, (snap)=>{
-        try{
-          const top = convertBestsToList(snap.val());
-          renderBoard(splashBody, top);
-          renderBoard(overBody, top);
-        }catch(e){
-          console.warn("Render leaderboard failed:", e);
-          if(splashBody) splashBody.innerHTML = "<div style='text-align:center;opacity:.9'>Couldn’t load leaderboard</div>";
-          if(overBody) overBody.innerHTML = "<div style='text-align:center;opacity:.9'>Couldn’t load leaderboard</div>";
-        }
-      }, (err)=>{
-        console.warn("Leaderboard listener error:", err);
-        const splashBody = document.getElementById("leaderboardSplashBody");
-        const overBody = document.getElementById("leaderboardOverBody");
-        if(splashBody) splashBody.innerHTML = "<div style='text-align:center;opacity:.9'>Couldn’t load leaderboard</div>";
-        if(overBody) overBody.innerHTML = "<div style='text-align:center;opacity:.9'>Couldn’t load leaderboard</div>";
-      });
-    }
-
-    // Start listeners right away
-    startLiveLeaderboards();
-
-    // ---------- Submit on Game Over ----------
-    const originalShowGameOver = window.showGameOver;
-    window.showGameOver = async function(...args){
-      if (typeof originalShowGameOver === "function") originalShowGameOver(...args);
-
-      const scoreVal = Number(window.score || 0);
-      try { logEvent(analytics, "game_over", { score: scoreVal }); } catch {}
-
-      let name = localStorage.getItem("player_name") || "";
-      if(!name){
-        // Fallback prompt if name modal wasn’t used for some reason
-        name = prompt("Enter your name for the leaderboard:") || "Anonymous";
-        localStorage.setItem("player_name", name.replace(/[.#$/\[\]\/]/g,"").slice(0,24));
-      }
-
-      try{
-        // Ensure auth is ready in case rules require it
-        await authReady;
-
-        // Save a raw row in /leaderboard (history) and update best
-        await push(ref(db, "leaderboard"), { name: name || "Anonymous", score: scoreVal, date: Date.now() });
-        await updatePlayerBest(name, scoreVal);
-        // live listeners will refresh the UI automatically
-      }catch(e){
-        console.warn("Score submit failed:", e);
-        const toast=document.getElementById("toast");
-        toast.textContent="Couldn’t submit score"; toast.classList.add("show");
-        setTimeout(()=>toast.classList.remove("show"),1500);
-      }
-    };
-  </script>
+  </main>
 </body>
 </html>
