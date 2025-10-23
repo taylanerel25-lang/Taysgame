@@ -103,6 +103,8 @@
   <div id="toast" class="toast" role="status"></div>    <!-- ================== GAME CODE ================== -->    <script>  
 (() => {  
   'use strict';  
+const sharkImg = new Image();
+sharkImg.src = "https://i.imgur.com/hpO2cQ6.jpeg";
   
   /* ========= CONFIG ========= */  
   const CFG = {  
@@ -516,34 +518,24 @@
       const botH=groundY-botY;  
       const persp = 8; // Perspective taper amount  
   
-      if(p.type === 'shark'){  
-        // Draw shark: Simple triangle mouth as gap  
-        ctx.fillStyle = '#808080'; // Gray shark  
-        ctx.beginPath();  
-        ctx.moveTo(p.x, topH - 20);  
-        ctx.lineTo(p.x + p.w / 2, p.gapY);  
-        ctx.lineTo(p.x + p.w, topH - 20);  
-        ctx.fill(); // Top jaw  
-        ctx.beginPath();  
-        ctx.moveTo(p.x, botY + 20);  
-        ctx.lineTo(p.x + p.w / 2, p.gapY);  
-        ctx.lineTo(p.x + p.w, botY + 20);  
-        ctx.fill(); // Bottom jaw  
-        // Teeth  
-        ctx.fillStyle = '#fff';  
-        for(let i=0; i<3; i++){  
-          ctx.beginPath();  
-          ctx.moveTo(p.x + i*20, topH - 20);  
-          ctx.lineTo(p.x + i*20 + 10, topH - 10);  
-          ctx.lineTo(p.x + i*20 + 20, topH - 20);  
-          ctx.fill();  
-          ctx.beginPath();  
-          ctx.moveTo(p.x + i*20, botY + 20);  
-          ctx.lineTo(p.x + i*20 + 10, botY + 10);  
-          ctx.lineTo(p.x + i*20 + 20, botY + 20);  
-          ctx.fill();  
-        }  
-      } else {  
+      if (p.type === 'shark') {
+  // Draw shark image facing left
+  const sharkW = p.w * 1.2; // Slightly bigger than coral width
+  const sharkH = sharkW * 0.6; // Keep proportions
+  const sharkY = p.gapY - sharkH / 2;
+
+  if (sharkImg.complete && sharkImg.naturalWidth > 0) {
+    ctx.save();
+    ctx.translate(p.x + sharkW, sharkY);
+    ctx.scale(-1, 1); // Flip to face left
+    ctx.drawImage(sharkImg, 0, 0, sharkW, sharkH);
+    ctx.restore();
+  } else {
+    // fallback placeholder if image not yet loaded
+    ctx.fillStyle = "#808080";
+    ctx.fillRect(p.x, sharkY, sharkW, sharkH);
+  }
+} else {  
         // Coral: Wavy, organic shapes  
         const grad = ctx.createRadialGradient(p.x + p.w/2, 0, p.w/2, p.x + p.w/2, 0, 0);  
         grad.addColorStop(0, baseColor);  
