@@ -1,7 +1,7 @@
 <!DOCTYPE html>  <html lang="en">  
 <head>  
   <meta charset="utf-8" />  
-  <title>Tays Flappy Bird</title>  
+  <title>Tay’s Game</title>  
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />  
   <style>  
     :root {  
@@ -24,6 +24,8 @@
     .toggle { display: flex; gap: 6px; align-items: center; }  
     .btn:focus, .toggle:focus { outline: 3px solid #000; outline-offset: 2px; }  
     .score { position: fixed; top: 18px; right: 14px; font-size: 28px; color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,0.6); pointer-events: none; }  
+    /* NEW: Highest score HUD (top-left, smaller) */  
+    .best { position: fixed; top: 18px; left: 14px; font-size: 16px; color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,0.6); pointer-events: none; }  
     .splash { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; text-align: center; color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,0.5); }  
     .splash .title { font-size: 34px; margin-bottom: 8px; }  
     .splash .subtitle { font-size: 18px; opacity: 0.9; }  
@@ -43,8 +45,9 @@
 </head>  
 <body>  
   <div class="wrap">  
-    <canvas id="game" width="360" height="640" aria-label="Shaebae’s Game canvas"></canvas>  
-  </div>    <div class="hud" aria-hidden="true">  
+    <canvas id="game" width="360" height="640" aria-label="Tay’s Game canvas"></canvas>  
+  </div>  
+  <div class="hud" aria-hidden="true">  
     <div id="topbar" class="topbar">  
       <button id="muteBtn" class="btn" aria-pressed="false" aria-label="Toggle sound">🔊 Sound</button>  
       <label class="toggle"><input type="checkbox" id="casualToggle"> Casual</label>  
@@ -53,26 +56,33 @@
       <button id="pauseBtn" class="btn" aria-label="Pause (P)">⏸️ Pause</button>  
     </div>  
     <div id="scoreHud" class="score">0</div>  
+    <!-- NEW: Highest score HUD element -->  
+    <div id="bestHud" class="best">Highest: 0</div>  
     <div id="splash" class="splash">  
       <div>  
-        <div class="title">Tay's Flappy Bird</div>  
+        <div class="title">Tay’s Game ❤️</div>  
         <div class="subtitle">Tap / Click / Space to start</div>  
         <div style="margin-top:8px;font-size:14px;opacity:.9">Avoid the pipes. Good luck!</div>  
       </div>  
     </div>  
     <div id="pausedBadge" class="paused-badge" style="display:none;">Paused</div>  
-  </div>    <div id="gameOver" class="hud" style="display:none;">  
+  </div>  
+  <div id="gameOver" class="hud" style="display:none;">  
     <div class="panel" role="dialog" aria-modal="true" aria-labelledby="overTitle">  
       <h2 id="overTitle">Game Over</h2>  
-      <div class="row"><span>Score</span><strong id="scoreNow">0</strong></div>  
-      <div class="row"><span>Best</span><span><strong id="bestNow">0</strong> <span id="medal" class="pill" aria-label="medal" style="display:none;">🥉 Bronze</span></span></div>  
+      <div class="row"><span>Your Score</span><strong id="scoreNow">0</strong></div>  
+      <div class="row"><span>Highest Score</span><span><strong id="bestNow">0</strong> <span id="medal" class="pill" aria-label="medal" style="display:none;">🥉 Bronze</span></span></div>  
       <div class="actions">  
         <button id="againBtn" class="btn">Play Again</button>  
         <button id="shareBtn" class="btn">Share</button>  
       </div>  
+      <!-- Leaderboard list will be injected here by Firebase script -->  
     </div>  
-  </div>    <div id="aria" class="sr-only" aria-live="polite"></div>  
-  <div id="toast" class="toast" role="status"></div>  <script>  
+  </div>  
+  <div id="aria" class="sr-only" aria-live="polite"></div>  
+  <div id="toast" class="toast" role="status"></div>  
+
+  <script>  
 (() => {  
   'use strict';  
   
@@ -147,9 +157,9 @@
   ];  
   
   let score = 0;  
-  // ADD: let Firebase (and other scripts) read the live score
-  window.score = 0;
-
+  // ADD 1a: expose live score globally so Firebase can read it  
+  window.score = 0;  
+  
   const medalFor = (s) => s>=50?['🏆 Platinum','#e5e4e2']:s>=30?['🥇 Gold','#f7c32e']:s>=20?['🥈 Silver','#c0c0c0']:s>=10?['🥉 Bronze','#cd7f32']:null;  
   
   /* ========= STAGES (every 10 points) ========= */  
@@ -183,8 +193,8 @@
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));  
   const lerp = (a, b, t) => a + (b - a) * t;  
   const easeT = (s, end) => clamp(s / end, 0, 1);  
-  // REPLACE (allows Remote Config to override when available)
-  const pipeGap = () => (window.dynamicPipeGap ?? lerp(CFG.pipes.gapStart, CFG.pipes.gapEnd, easeT(score, CFG.pipes.gapEndScore)));
+  // 2) REPLACE: allow Remote Config to override pipe gap when available  
+  const pipeGap = () => (window.dynamicPipeGap ?? lerp(CFG.pipes.gapStart, CFG.pipes.gapEnd, easeT(score, CFG.pipes.gapEndScore)));  
   const spawnInterval = () => lerp(CFG.pipes.spawnStart, CFG.pipes.spawnEnd, easeT(score, CFG.pipes.spawnEndScore));  
   const speedBase = () => {  
     const base = lerp(CFG.world.speedStart, CFG.world.speedEnd, easeT(score, CFG.world.speedEndScore));  
@@ -198,7 +208,9 @@
     pipes.length = 0; pops.length = 0;  
     bird = { x: BIRD_X, y: H*0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };  
     sfx.swoosh();  
-    lastStage = -1; // ensure Stage 1 popup appears when scoring starts  
+    lastStage = -1;  
+    // update HUD highest on reset too  
+    document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;  
   }  
   
   /* ========= DPR / RESIZE ========= */  
@@ -261,8 +273,8 @@
     state = 'ready'; resetGame(); announce('Back to splash'); refreshUI();  
   });  
   document.getElementById('shareBtn').addEventListener('click', async () => {  
-    const text = `I scored ${scoreNow.textContent} in Shaebae’s Game! Can you beat me?`;  
-    try { if (navigator.share) await navigator.share({ text, title: 'Shaebae’s Game' }); else { await navigator.clipboard.writeText(text); showToast('Copied to clipboard!'); } } catch {}  
+    const text = `I scored ${scoreNow.textContent} in Tay’s Game! Can you beat me?`;  
+    try { if (navigator.share) await navigator.share({ text, title: 'Tay’s Game' }); else { await navigator.clipboard.writeText(text); showToast('Copied to clipboard!'); } } catch {}  
   });  
   
   /* ========= GAME LOGIC ========= */  
@@ -302,9 +314,15 @@
       const cx = p.x + p.w/2;  
       if (!p.scored && cx < bird.x) {  
         p.scored = true; score++; hudScore.textContent = String(score);  
-        // ADD: keep global score in sync
-        window.score = score;
-
+        // 1b) keep global score in sync  
+        window.score = score;  
+        // Update personal highest immediately when surpassed (also persists)  
+        if (score > storage.best) {  
+          storage.best = score;  
+          localStorage.setItem('sb_best', String(score));  
+          document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;  
+        }  
+  
         pops.push({ x: cx, y: p.gapY, t: 0, duration: CFG.scorePopup.duration, text: '+1' });  
         if (navigator.vibrate) navigator.vibrate(20);  
         sfx.point(); announce(`Score ${score}`);  
@@ -342,7 +360,7 @@
   
   function die() {  
     state = 'dead';  
-    refreshUI(); // hide topbar on death  
+    refreshUI();  
     paused = false; pausedBadge.style.display = 'none';  
     if (navigator.vibrate) navigator.vibrate(80);  
     sfx.die();  
@@ -357,7 +375,7 @@
       bird.rot = lerp(bird.rot, 90*Math.PI/180, 0.12);  
       render();  
       if (bird.y + CFG.bird.hitboxRadius < groundY) requestAnimationFrame(fallUntil);  
-      else { bird.y = groundY - CFG.bird.hitboxRadius; setTimeout(showGameOver, 800); } // smooth end, no jump scare  
+      else { bird.y = groundY - CFG.bird.hitboxRadius; setTimeout(showGameOver, 800); }  
     };  
     fallUntil();  
   }  
@@ -366,12 +384,13 @@
     scoreNow.textContent = String(score);  
     if (score > storage.best) { storage.best = score; localStorage.setItem('sb_best', String(score)); }  
     bestNow.textContent = String(storage.best);  
+    document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;  
     const m = medalFor(storage.best);  
     if (m) { medalEl.style.display = ''; medalEl.textContent = m[0]; } else { medalEl.style.display = 'none'; }  
     overPanel.style.display = '';  
   }  
-  // ADD: expose the function so Firebase can hook it
-  window.showGameOver = showGameOver;
+  // 1c) expose showGameOver so Firebase can hook it  
+  window.showGameOver = showGameOver;  
   
   /* ========= RENDER ========= */  
   function roundedRect(x,y,w,h,r) {  
@@ -396,18 +415,15 @@
   function drawPipes() {  
     const stage = currentStage();  
     const color = stagePipes[stage];  
-    const dark = 'rgba(0,0,0,0.18)'; // subtle rim  
+    const dark = 'rgba(0,0,0,0.18)';  
     for (const p of pipes) {  
       const topH = p.gapY - p.gap/2;  
       const botY = p.gapY + p.gap/2;  
       const botH = groundY - botY;  
-  
       ctx.fillStyle = color; ctx.fillRect(p.x, 0, p.w, topH);  
       ctx.fillStyle = dark;  ctx.fillRect(p.x - 4, topH - 16, p.w + 8, 16);  
-  
       ctx.fillStyle = color; ctx.fillRect(p.x, botY, p.w, botH);  
       ctx.fillStyle = dark;  ctx.fillRect(p.x - 4, botY, p.w + 8, 16);  
-  
       ctx.fillStyle = 'rgba(0,0,0,0.08)'; ctx.fillRect(p.x + 6, 0, 3, topH); ctx.fillRect(p.x + 6, botY, 3, botH);  
     }  
   }  
@@ -417,16 +433,13 @@
     const w = CFG.bird.size.w, h = CFG.bird.size.h, r = CFG.bird.hitboxRadius;  
     const idleBob = (state === 'ready' && !storage.reduced) ? Math.sin(worldTime * Math.PI * 2 * 2) * CFG.bird.idleBobPx : 0;  
     ctx.translate(bird.x, bird.y + idleBob); ctx.rotate(bird.rot);  
-  
     ctx.fillStyle = '#ffd84a'; roundedRect(-w/2, -h/2, w, h, 6); ctx.fill();  
     ctx.fillStyle = '#fff2b2'; roundedRect(-w*0.2, -h*0.15, w*0.8, h*0.7, 6); ctx.fill();  
     ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(w*0.1, -h*0.1, 4, 0, Math.PI*2); ctx.fill();  
     ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(w*0.1+1, -h*0.1, 2, 0, Math.PI*2); ctx.fill();  
     ctx.fillStyle = '#ff9a00'; ctx.beginPath(); ctx.moveTo(w*0.45, 0); ctx.lineTo(w*0.25, -3); ctx.lineTo(w*0.25, 3); ctx.closePath(); ctx.fill();  
-  
     const f = bird.frame; const wy = f===0?-2:f===1?0:2;  
     ctx.save(); ctx.translate(-4, wy); ctx.fillStyle = '#f7bf3c'; roundedRect(-10, -6, 18, 12, 6); ctx.fill(); ctx.restore();  
-  
     if (document.body.classList.contains('high-contrast')) { ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(2,0,r,0,Math.PI*2); ctx.stroke(); }  
     ctx.restore();  
   }  
@@ -442,20 +455,16 @@
   }  
   
   function render() {  
-    // Stage sky color  
     const stage = currentStage();  
     const sky = stageSkies[stage];  
     canvas.style.background = sky;  
-  
     ctx.save();  
     ctx.fillStyle = sky;  
     ctx.fillRect(0,0,W,H);  
-  
     if (!storage.reduced) drawClouds();  
     drawPipes();  
     drawBird();  
     drawGround();  
-  
     // score pops  
     for (const pop of pops) {  
       const t = clamp(pop.t / pop.duration, 0, 1);  
@@ -465,7 +474,6 @@
       ctx.fillText(pop.text, pop.x, y);  
       ctx.globalAlpha = 1;  
     }  
-  
     ctx.restore();  
   }  
   
@@ -473,10 +481,8 @@
   function loop(now) {  
     const dt = clamp((now - lastMs) / 1000, 0, 1/30);  
     lastMs = now;  
-  
     if (state === 'ready') worldTime += dt;  
     else if (state === 'running' && !paused) { worldTime += dt; update(dt); }  
-  
     render();  
     requestAnimationFrame(loop);  
   }  
@@ -486,9 +492,11 @@
     resetGame();  
     splashEl.style.display = '';  
     hudScore.textContent = '0';  
+    document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;  
+    bestNow.textContent = String(storage.best);  
     overPanel.style.display = 'none';  
     lastMs = performance.now();  
-    refreshUI(); // show topbar on splash  
+    refreshUI();  
     requestAnimationFrame(loop);  
   }  
   init();  
@@ -500,11 +508,11 @@
 <script type="module">
   // Firebase SDKs (CDN)
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-  import { getDatabase, ref, push, query, orderByChild, limitToLast, get } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
+  import { getDatabase, ref, push, query, orderByChild, limitToLast, get, set, child } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
   import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-analytics.js";
   import { getRemoteConfig, fetchAndActivate, getValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-remote-config.js";
 
-  // ✅ Your Firebase project config (public by design for client apps)
+  // ✅ Your Firebase project config (public for client apps)
   const firebaseConfig = {
     apiKey: "AIzaSyCaLNISayGYJoiPdXPajHKFjCwvolkZQno",
     authDomain: "tay-s-game.firebaseapp.com",
@@ -541,13 +549,37 @@
   }
   loadAdaptiveDifficulty();
 
-  // === Leaderboard UI helper (render under Game Over panel) ===
+  // === Leaderboard helpers ===
+  // We will:
+  //  - push raw scores to /leaderboard (audit/history)
+  //  - also maintain per-player best in /bests/{safeName}: { name, bestScore, updatedAt }
+
+  function safeKey(name) {
+    // Firebase key-safe: replace forbidden characters . # $ [ ] / with _
+    return String(name || "Anonymous").trim().toLowerCase().replace(/[.#$/\[\]\/]/g, "_");
+  }
+
+  async function updatePlayerBest(name, score) {
+    const key = safeKey(name);
+    const bestRef = ref(db, "bests/" + key);
+    const snap = await get(bestRef);
+    if (!snap.exists() || Number(snap.val().bestScore || 0) < score) {
+      await set(bestRef, { name, bestScore: score, updatedAt: Date.now() });
+    }
+  }
+
   async function updateLeaderboardDisplay() {
-    const lbRef = query(ref(db, "leaderboard"), orderByChild("score"), limitToLast(10));
-    const snap = await get(lbRef);
+    // Read top ~50 bests and then display top 10
+    const bestsRef = ref(db, "bests");
+    const snap = await get(bestsRef);
     if (!snap.exists()) return;
 
-    const entries = Object.values(snap.val()).sort((a,b)=>b.score - a.score);
+    const entries = Object.values(snap.val())
+      .map(e => ({ name: e.name || "Anonymous", score: Number(e.bestScore || 0) }))
+      .filter(e => Number.isFinite(e.score))
+      .sort((a,b)=>b.score - a.score)
+      .slice(0, 10);
+
     const panel = document.querySelector("#gameOver .panel");
     let list = document.getElementById("leaderboardList");
     if (!list) {
@@ -558,8 +590,9 @@
       list.innerHTML = "<h3 style='text-align:center;'>🏆 Leaderboard</h3>";
       panel.appendChild(list);
     }
-    list.innerHTML = "<h3 style='text-align:center;'>🏆 Leaderboard</h3>" +
-      entries.map((e,i)=>`<div class='row'><span>${i+1}. ${e.name||"Anonymous"}</span><strong>${e.score}</strong></div>`).join("");
+    list.innerHTML =
+      "<h3 style='text-align:center;'>🏆 Leaderboard</h3>" +
+      entries.map((e,i)=>`<div class='row'><span>${i+1}. ${e.name}</span><strong>${e.score}</strong></div>`).join("");
   }
 
   // === Score submit + anti-spam (30s) ===
@@ -567,6 +600,7 @@
   async function submitScore(name, score) {
     const lbRef = ref(db, "leaderboard");
     await push(lbRef, { name: name || "Anonymous", score, date: Date.now() });
+    await updatePlayerBest(name || "Anonymous", score);
     await updateLeaderboardDisplay();
   }
   async function safeSubmitScore(name, score) {
@@ -586,14 +620,14 @@
   // === Hook into your existing Game Over ===
   const originalShowGameOver = window.showGameOver; // exposed in main script
   window.showGameOver = async function(...args) {
-    // Call your original UI
+    // Call original UI
     if (typeof originalShowGameOver === "function") originalShowGameOver(...args);
 
     // Read current score (from window.score)
     const scoreVal = Number(window.score || 0);
     logEvent(analytics, "game_over", { score: scoreVal });
 
-    // Ask name (first time, or when matching local best)
+    // Ask name (first time, or when matching/setting local best)
     let name = localStorage.getItem("player_name") || "";
     const localBest = Number(localStorage.getItem("sb_best") || 0);
     if (!name || scoreVal >= localBest) {
