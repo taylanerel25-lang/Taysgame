@@ -1,281 +1,836 @@
-<!DOCTYPE html><html lang="en">
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>Fishy Flip — Phase B (Playable)</title>
-  <style>
-    :root {
-      --sea-top: #7ad3ff;
-      --sea-mid: #2aa8df;
-      --sea-deep: #0e6fae;
-      --coral-1: #ff7f6e;
-      --coral-2: #ffb86b;
-      --coral-3: #ffdc6b;
-      --ui: #fff;
-      --shadow: rgba(0, 0, 0, 0.25);
-      --world-w: 360;
-      --world-h: 640;
-    }* {
-  box-sizing: border-box;
-}
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Fishy Flip — v1.0</title>
+<meta name="description" content="Fishy Flip — flappy-style fish game with global leaderboard (Firestore)." />
+<style>
+  /* ===== Fishy Flip v1.0 — styles (fully self-contained) =====
+     - Mobile-first responsive
+     - Playfield scales to maintain a 16:9-ish area but logical coords are 360x640
+     - Clean flat art; will-change & transforms for perf
+  ============================================================*/
 
-html,
-body {
-  height: 100%;
-}
+  :root{
+    --sea-top:#7ad3ff;
+    --sea-mid:#2aa8df;
+    --sea-deep:#0e6fae;
+    --coral-1:#ff7f6e;
+    --coral-2:#ffb86b;
+    --coral-3:#ffdc6b;
+    --shark:#4d5b6a;
+    --ui-text:#ffffff;
+    --shadow: rgba(0,0,0,0.25);
+    --pw:360;   /* logical width units */
+    --ph:640;   /* logical height units */
+    --col-w:60; /* column width in units */
+  }
 
-body {
-  margin: 0;
-  background: radial-gradient(120% 120% at 50% 0%, var(--sea-top) 0%, var(--sea-mid) 40%, var(--sea-deep) 100%);
-  font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji';
-  color: var(--ui);
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: none;
-}
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    display:grid;
+    place-items:center;
+    background:linear-gradient(180deg,var(--sea-top),var(--sea-mid) 45%,var(--sea-deep));
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    -webkit-tap-highlight-color: transparent;
+  }
 
-.frame {
-  position: relative;
-  width: min(92vw, 48rem);
-  aspect-ratio: 9 / 16;
-  border-radius: 20px;
-  box-shadow: 0 20px 50px var(--shadow);
-  overflow: hidden;
-  outline: 1px solid rgba(255, 255, 255, 0.08);
-  background: linear-gradient(180deg, var(--sea-top), var(--sea-mid) 45%, var(--sea-deep));
-}
+  /* App frame */
+  .app{
+    width: min(100vw, 100vh * 9 / 16);
+    aspect-ratio: 9/16;
+    position: relative;
+    overflow: hidden;
+    border-radius: 18px;
+    box-shadow: 0 24px 48px var(--shadow);
+    background:
+      radial-gradient(120% 110% at 50% 0%, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 45%),
+      linear-gradient(180deg,var(--sea-top),var(--sea-mid) 40%,var(--sea-deep));
+    touch-action: none;
+  }
 
-.fish {
-  position: absolute;
-  left: 22%;
-  top: 45%;
-  width: 32px;
-  height: 24px;
-  transform: translate(-50%, -50%);
-  border-radius: 60% 40% 45% 55% / 60% 55% 45% 40%;
-  background: linear-gradient(90deg, #ffd9d3 0%, #fff 60%);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.25);
-}
+  /* Playfield: we'll map logical 360x640 to this container with a scale transform */
+  #play-wrap{ position:absolute; inset:0; display:block; }
+  #playfield{
+    position:absolute;
+    left:0; top:0;
+    width:100%; height:100%;
+    transform-origin: top left;
+    overflow: hidden;
+  }
 
-.columns {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
+  /* Parallax layers (CSS only background layers) */
+  .parallax{
+    position:absolute; inset:0; z-index:0; pointer-events:none;
+    background-repeat:repeat;
+    opacity:0.9;
+  }
+  .parallax.layer1{
+    background-image:
+      radial-gradient(80% 30% at 20% 10%, rgba(255,255,255,0.06), rgba(255,255,255,0) 60%),
+      radial-gradient(80% 30% at 80% 20%, rgba(255,255,255,0.04), rgba(255,255,255,0) 60%);
+    animation: p1 20s linear infinite;
+    mix-blend-mode: soft-light;
+  }
+  .parallax.layer2{
+    background-image:
+      radial-gradient(50% 50% at 30% 70%, rgba(0,0,0,0.06), rgba(0,0,0,0) 60%);
+    animation: p2 28s linear infinite;
+  }
+  @keyframes p1 { from{transform:translateX(0)} to{transform:translateX(-8%)} }
+  @keyframes p2 { from{transform:translateX(0)} to{transform:translateX(6%)} }
 
-.column {
-  position: absolute;
-  top: 0;
-  width: 60px;
-  display: grid;
-  grid-template-rows: 1fr auto 1fr;
-}
+  /* HUD / UI */
+  .hud{ position:absolute; inset:0; z-index:5; pointer-events:none; display:flex; flex-direction:column; align-items:center; }
+  .hud .top{ margin-top:10px; font-weight:900; font-size:clamp(18px,4.2vw,36px); text-shadow:0 3px 0 rgba(0,0,0,0.25); color:var(--ui-text); }
+  .hud .left-controls{ position:absolute; left:8px; top:8px; display:flex; gap:8px; pointer-events:auto; }
 
-.column .top {
-  background: var(--coral-1);
-  border-bottom-left-radius: 16px;
-  border-bottom-right-radius: 16px;
-}
+  button.icon{
+    appearance:none; border:0; padding:8px 10px; border-radius:10px; background:rgba(255,255,255,0.9); color:#08324f; font-weight:800; box-shadow:0 6px 0 #9ad6ff; cursor:pointer;
+  }
 
-.column .gap {
-  background: transparent;
-}
+  /* Fish sprite container (we will either draw with CSS or swap to an image) */
+  .fish{
+    position:absolute;
+    width: calc(32 / var(--pw) * 100%);
+    height: calc(24 / var(--ph) * 100%);
+    left: calc(100 * 100% / 360 * 28%); /* fallback, we'll set via JS */
+    transform-origin: 50% 50%;
+    will-change: transform;
+    z-index:3;
+  }
 
-.column .bottom {
-  background: var(--coral-2);
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
-}
+  .fish .img{
+    position:absolute; inset:0; background: linear-gradient(90deg,#ffd9d3 0%, #fff 50%); border-radius: 12px; box-shadow:0 6px 12px rgba(0,0,0,0.18);
+  }
+  .fish.tilt-up .img{ transform: rotate(-12deg) }
+  .fish.tilt-down .img{ transform: rotate(18deg) }
 
-.hud {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding-top: 1rem;
-  font-size: 2rem;
-  font-weight: 800;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
-}
+  /* columns (obstacles) container — we dynamically create columns as needed */
+  .columns{ position:absolute; inset:0; z-index:2; pointer-events:none; }
 
-.overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(6px);
-  display: grid;
-  place-items: center;
-  z-index: 5;
-}
+  .column {
+    position:absolute;
+    width: calc(var(--col-w) / var(--pw) * 100%);
+    height: 100%;
+    display:grid;
+    grid-template-rows: 1fr auto 1fr; /* top, gap, bottom */
+    will-change: transform;
+    filter: drop-shadow(0 8px 10px rgba(0,0,0,0.18));
+  }
+  .column .top{ background: linear-gradient(180deg,var(--coral-3),var(--coral-1)); border-bottom-left-radius:14px; border-bottom-right-radius:14px; }
+  .column .gap{ background: transparent; }
+  .column .bottom{ background: linear-gradient(180deg,var(--coral-2),var(--coral-1)); border-top-left-radius:14px; border-top-right-radius:14px; }
 
-.panel {
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 16px;
-  padding: 1.5rem;
-  text-align: center;
-  color: #fff;
-  max-width: 26rem;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
-}
+  /* overlays */
+  .overlay { position:absolute; inset:0; display:grid; place-items:center; z-index:6; background: linear-gradient(180deg, rgba(0,0,0,0.3), rgba(0,0,0,0.45)); }
+  .panel { background: rgba(10,24,40,0.6); padding:20px; border-radius:14px; max-width:520px; width:92%; color: #fff; text-align:center; box-shadow:0 12px 30px rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.08) }
 
-.btn {
-  appearance: none;
-  border: 0;
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  color: #08324f;
-  background: #fff;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
-  margin: 0.5rem;
-}
+  .panel h1{ font-size: clamp(20px,4.5vw,34px); margin:0 0 8px; }
+  .panel p{ margin:8px 0; opacity:0.95; }
 
-  </style>
+  .btn { appearance:none; border:0; padding:12px 18px; background:#fff; color:#07324f; font-weight:900; border-radius:12px; cursor:pointer; box-shadow:0 6px 0 #9ad6ff; margin:6px; }
+  .small { padding:8px 10px; font-weight:700; }
+
+  /* leaderboard list */
+  .leaderboard { text-align:left; margin-top:10px; max-height:240px; overflow:auto; padding:8px; border-radius:10px; background:rgba(255,255,255,0.03) }
+  .leaderboard li { display:flex; justify-content:space-between; padding:6px 8px; border-bottom:1px solid rgba(255,255,255,0.03); font-weight:700; }
+
+  /* Game over name input */
+  input.name { display:block; width:100%; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.08); margin-top:8px; font-weight:700; }
+
+  .toast { position: absolute; left:50%; transform:translateX(-50%); bottom:10px; background:rgba(0,0,0,0.6); color:#fff; padding:8px 12px; border-radius:999px; z-index:8; box-shadow:0 6px 18px rgba(0,0,0,0.35) }
+
+  /* responsive tweaks */
+  @media (min-width:720px){
+    .panel{ padding:26px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .parallax, .fish, .column { animation: none !important; transition: none !important; }
+  }
+
+</style>
 </head>
 <body>
-  <div class="frame">
-    <div class="columns" id="columns"></div>
-    <div class="fish" id="fish"></div>
-    <div class="hud"><span id="score">0</span></div><div class="overlay" id="home">
-  <div class="panel">
-    <h1>Fishy Flip</h1>
-    <p>Tap/Click/Space to swim upward. Dodge coral. Pass columns to score.</p>
-    <button class="btn" id="playBtn">Play</button>
-  </div>
-</div>
+  <main class="app" role="application" aria-label="Fishy Flip game">
+    <div id="play-wrap">
+      <div class="parallax layer1" aria-hidden="true"></div>
+      <div class="parallax layer2" aria-hidden="true"></div>
 
-<div class="overlay" id="gameover" hidden>
-  <div class="panel">
-    <h2>Game Over</h2>
-    <p>Score: <strong id="finalScore">0</strong></p>
-    <p>Best: <strong id="bestScore">0</strong></p>
-    <button class="btn" id="restartBtn">Restart</button>
-  </div>
-</div>
+      <div id="playfield">
+        <div class="columns" id="columns"></div>
+        <div class="fish" id="fish" aria-hidden="true">
+          <div class="img" id="fishImg"></div>
+        </div>
+      </div>
 
-  </div>  <script>
-    const GRAVITY = 0.5;
-    const FLAP = -8;
-    const GAP = 150;
-    const SPEED = 2.5;
+      <!-- HUD -->
+      <div class="hud" aria-hidden="false">
+        <div class="left-controls" style="pointer-events:auto;">
+          <button id="muteBtn" class="icon" title="Mute/unmute">🔊</button>
+          <button id="pauseBtn" class="icon" title="Pause">⏸</button>
+        </div>
+        <div class="top" id="scoreDisplay">0</div>
+      </div>
 
-    const fish = document.getElementById('fish');
-    const columnsEl = document.getElementById('columns');
-    const scoreEl = document.getElementById('score');
-    const homeEl = document.getElementById('home');
-    const overEl = document.getElementById('gameover');
-    const finalEl = document.getElementById('finalScore');
-    const bestEl = document.getElementById('bestScore');
-    const playBtn = document.getElementById('playBtn');
-    const restartBtn = document.getElementById('restartBtn');
+      <!-- Home overlay -->
+      <div class="overlay" id="homeOverlay" role="dialog" aria-modal="true">
+        <div class="panel">
+          <h1>Fishy Flip</h1>
+          <p>Tap / Click / Space to swim. Dodge coral and hazards. Pass columns to score.</p>
+          <div style="margin-top:12px">
+            <button id="startBtn" class="btn">Play</button>
+            <button id="howBtn" class="btn small">How to Play</button>
+          </div>
 
-    let y = 320, vy = 0, score = 0, best = +localStorage.getItem('fishyBest') || 0, cols = [];
+          <div style="margin-top:12px; text-align:left;">
+            <h3 style="margin:.6rem 0 6px">Leaderboard (Top 10)</h3>
+            <ol id="homeLeaderboard" class="leaderboard" aria-live="polite"> <li>Loading...</li></ol>
+          </div>
 
-    function start() {
-      homeEl.hidden = true;
-      overEl.hidden = true;
-      y = 320; vy = 0; score = 0; scoreEl.textContent = 0;
-      cols = [];
-      columnsEl.innerHTML = '';
-      for (let i = 0; i < 3; i++) addColumn(400 + i * 200);
-      requestAnimationFrame(loop);
+          <p style="opacity:.9; margin-top:10px; font-size:13px">v1.0 • Single-file prototype • Firebase leaderboard</p>
+        </div>
+      </div>
+
+      <!-- HowTo overlay -->
+      <div class="overlay" id="howOverlay" style="display:none; z-index:7">
+        <div class="panel">
+          <h1>How to Play</h1>
+          <p>Tap anywhere (mobile) or press Space / Up Arrow (desktop) to flap. Avoid touching coral and the top/bottom. Each passed column = +1 point. Difficulty increases over time.</p>
+          <div style="margin-top:10px">
+            <button id="howCloseBtn" class="btn">Close</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Game Over overlay -->
+      <div class="overlay" id="gameOverOverlay" style="display:none;">
+        <div class="panel">
+          <h1>Game Over</h1>
+          <p style="font-size:20px">Score: <strong id="finalScore">0</strong></p>
+          <p>Best (local): <strong id="localBest">0</strong></p>
+
+          <div style="margin-top:6px">
+            <label for="playerName" style="display:block; text-align:left; margin-bottom:6px; opacity:.95">Enter name (3–12 chars) to submit to the global leaderboard:</label>
+            <input id="playerName" class="name" maxlength="12" placeholder="Your name" />
+            <div style="display:flex; gap:8px; margin-top:10px; justify-content:center">
+              <button id="submitScoreBtn" class="btn">Submit Score</button>
+              <button id="restartBtn" class="btn">Restart</button>
+              <button id="homeBtn" class="btn">Home</button>
+            </div>
+          </div>
+
+          <div style="margin-top:12px; text-align:left">
+            <h3 style="margin:.6rem 0 6px">Top 10 Global</h3>
+            <ol id="gameoverLeaderboard" class="leaderboard" aria-live="polite"> <li>Loading...</li></ol>
+          </div>
+        </div>
+      </div>
+
+      <div id="toast" class="toast" style="display:none">Hello</div>
+    </div>
+  </main>
+
+  <!-- ====================================================
+       Full JS: game engine, UI, Firebase hooks (placeholder)
+       ==================================================== -->
+  <script type="module">
+  /* =========================
+     Fishy Flip v1.0 — JS
+     Single-file game with Firebase Firestore leaderboard.
+     Paste your Firebase config object in the marked section below.
+     ========================= */
+
+  // Logical world dimensions (matching spec)
+  const WORLD_W = 360;
+  const WORLD_H = 640;
+
+  // Gameplay constants (from spec §15)
+  const FISH_W = 32, FISH_H = 24;
+  const FISH_HIT_INSET = { x: 2, y: 2 };
+  const GRAVITY = 0.45;
+  const FLAP_IMPULSE = -7.5;
+  const VY_MAX = 10;
+  const SCROLL_SPEED_BASE = 2.4;
+  const COLUMN_WIDTH = 60;
+  const GAP_START = 140;
+  const GAP_MIN = 95;
+  const SPACING_X = 200;
+  const RAMP_EVERY = 5;
+  const SPEED_INC = 0.1;
+  const GAP_DEC = 5;
+  const RAND_CENTER_MIN = 200;
+  const RAND_CENTER_MAX = 440;
+
+  // DOM
+  const app = document.querySelector('.app');
+  const playfield = document.getElementById('playfield');
+  const columnsContainer = document.getElementById('columns');
+  const fishEl = document.getElementById('fish');
+  const fishImg = document.getElementById('fishImg');
+  const scoreDisplay = document.getElementById('scoreDisplay');
+  const startBtn = document.getElementById('startBtn');
+  const howBtn = document.getElementById('howBtn');
+  const howOverlay = document.getElementById('howOverlay');
+  const howCloseBtn = document.getElementById('howCloseBtn');
+  const homeOverlay = document.getElementById('homeOverlay');
+  const gameOverOverlay = document.getElementById('gameOverOverlay');
+  const finalScoreEl = document.getElementById('finalScore');
+  const localBestEl = document.getElementById('localBest');
+  const playerNameInput = document.getElementById('playerName');
+  const submitScoreBtn = document.getElementById('submitScoreBtn');
+  const restartBtn = document.getElementById('restartBtn');
+  const homeBtn = document.getElementById('homeBtn');
+  const homeLeaderboard = document.getElementById('homeLeaderboard');
+  const gameoverLeaderboard = document.getElementById('gameoverLeaderboard');
+  const toastEl = document.getElementById('toast');
+  const muteBtn = document.getElementById('muteBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+
+  // Audio assets (optional / can be replaced by files in /sounds)
+  const SOUND_FLAP = 'https://actions.google.com/sounds/v1/animals/fish_swim.ogg'; // short placeholder
+  const SOUND_SCORE = 'https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg';
+  const SOUND_HIT = 'https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg';
+  const MUSIC_LOOP = 'https://cdn.pixabay.com/download/audio/2022/02/08/audio_2d3b9c5b9a.mp3?filename=calm-ocean-ambience-9635.mp3'; // free ambient loop
+
+  // Game state
+  let state = 'HOME'; // HOME | PLAY | PAUSE | GAME_OVER
+  let scale = 1;      // pixels per logical unit
+  let offsetX = 0, offsetY = 0;
+
+  let fish = { x: 100, y: WORLD_H/2, vy: 0 };
+  let score = 0, localBest = 0;
+  let columns = []; // pool of column objects: {x, gapCenter, passed, el}
+  let columnPoolSize = 6; // number of columns to keep
+  let gapSize = GAP_START;
+  let scrollSpeed = SCROLL_SPEED_BASE;
+  let raf = null, lastT = 0;
+  let muted = false;
+  let musicPlaying = false;
+  let audioCtx = null;
+
+  // Firebase placeholders — you will paste your firebaseConfig object below
+  // =======================================================================
+  // ------------- FIREBASE CONFIG: PASTE YOUR CONFIG OBJECT HERE -------------
+  // Example (DO NOT include this example in the file; paste your real object):
+  // const firebaseConfig = {
+  //   apiKey: "AIzaSy....",
+  //   authDomain: "your-project.firebaseapp.com",
+  //   projectId: "your-project",
+  //   storageBucket: "your-project.appspot.com",
+  //   messagingSenderId: "....",
+  //   appId: "1:....:web:....",
+  //   measurementId: "G-...."
+  // };
+  //
+  // ----------------------------------------------------------------------------
+  // Paste YOUR config object exactly here, then remove these comments.
+  //
+  // After you paste, the rest of the Firebase init code below will run.
+  let firebaseInitialized = false;
+  let firestore = null;
+  // =======================================================================
+
+  // --- Helper: show toast ---
+  function showToast(text, ms = 2000){
+    toastEl.innerText = text;
+    toastEl.style.display = 'block';
+    clearTimeout(toastEl._t);
+    toastEl._t = setTimeout(()=> toastEl.style.display = 'none', ms);
+  }
+
+  // --- Resize & scale playfield (map logical 360x640) ---
+  function computeScale(){
+    const rect = app.getBoundingClientRect();
+    // want logical WORLD_W x WORLD_H to fit in rect width/height
+    const sx = rect.width / WORLD_W;
+    const sy = rect.height / WORLD_H;
+    scale = Math.min(sx, sy);
+    // ensure CSS transform
+    playfield.style.transform = `scale(${scale})`;
+    // center if there's extra space (shouldn't usually happen because aspect ratio matches)
+    const realW = WORLD_W * scale;
+    const realH = WORLD_H * scale;
+    const padX = (rect.width - realW) / 2;
+    const padY = (rect.height - realH) / 2;
+    playfield.style.left = padX + 'px';
+    playfield.style.top = padY + 'px';
+  }
+
+  window.addEventListener('resize', computeScale);
+  computeScale();
+
+  // --- Sound handling (simple) ---
+  function safePlay(url, vol=1.0){
+    if(muted) return;
+    try{
+      const a = new Audio(url);
+      a.volume = clamp(vol, 0, 1);
+      a.play().catch(()=>{/* play prevented on mobile; ok */});
+    }catch(e){}
+  }
+  // Music (loop) using HTMLAudioElement so we can pause/resume
+  let musicAudio = null;
+  function startMusic(){
+    if(muted) return;
+    if(!musicAudio){
+      musicAudio = new Audio(MUSIC_LOOP);
+      musicAudio.loop = true;
+      musicAudio.volume = 0.45;
+      musicAudio.play().catch(()=>{/* autoplay may fail; will play on user interaction */});
+    } else {
+      musicAudio.play().catch(()=>{});
     }
+    musicPlaying = true;
+  }
+  function stopMusic(){
+    if(musicAudio){ musicAudio.pause(); musicPlaying = false; }
+  }
 
-    function addColumn(x) {
-      const gapY = Math.random() * 300 + 150;
-      const c = document.createElement('div');
-      c.className = 'column';
-      const top = document.createElement('div');
-      const gap = document.createElement('div');
-      const bot = document.createElement('div');
-      top.className = 'top'; gap.className = 'gap'; bot.className = 'bottom';
-      c.append(top, gap, bot);
-      columnsEl.append(c);
-      cols.push({ el: c, x, gapY, passed: false });
-      updateColumn(c, x, gapY);
+  // --- Utility functions ---
+  function clamp(v,a,b){ return v<a?a:v>b?b:v; }
+  function rand(a,b){ return Math.random()*(b-a)+a; }
+
+  // --- DOM helpers for columns ---
+  function makeColumnElement(){
+    const el = document.createElement('div');
+    el.className = 'column';
+    const top = document.createElement('div'); top.className='top';
+    const gap = document.createElement('div'); gap.className='gap';
+    const bot = document.createElement('div'); bot.className='bottom';
+    el.append(top,gap,bot);
+    columnsContainer.appendChild(el);
+    return el;
+  }
+
+  // --- Column pool management ---
+  function resetColumns(){
+    columnsContainer.innerHTML = '';
+    columns = [];
+    for(let i=0;i<columnPoolSize;i++){
+      const el = makeColumnElement();
+      const x = WORLD_W + i*SPACING_X;
+      const gapCenter = rand(RAND_CENTER_MIN, RAND_CENTER_MAX);
+      const col = { x, gapCenter, passed:false, el };
+      updateColumnDom(col);
+      columns.push(col);
     }
+  }
 
-    function updateColumn(el, x, gapY) {
-      el.style.left = x + 'px';
-      const gapPct = (GAP / 640) * 100;
-      const centerPct = (gapY / 640) * 100;
-      const topH = Math.max(0, centerPct - gapPct / 2);
-      const botH = Math.max(0, 100 - (centerPct + gapPct / 2));
-      el.style.gridTemplateRows = `${topH}% ${gapPct}% ${botH}%`;
-    }
+  function recycleColumn(col){
+    const maxX = Math.max(...columns.map(c => c.x));
+    col.x = maxX + SPACING_X;
+    col.gapCenter = rand(RAND_CENTER_MIN, RAND_CENTER_MAX);
+    col.passed = false;
+    updateColumnDom(col);
+  }
 
-    function loop() {
-      vy += GRAVITY; y += vy;
-      fish.style.top = (y / 640) * 100 + '%';
+  function updateColumnDom(col){
+    const leftPct = (col.x / WORLD_W) * 100;
+    col.el.style.left = leftPct + '%';
+    // create grid template rows proportional to gap
+    const gapPct = (gapSize / WORLD_H) * 100;
+    const centerPct = (col.gapCenter / WORLD_H) * 100;
+    const topH = Math.max(0, centerPct - gapPct/2);
+    const botH = Math.max(0, 100 - (centerPct + gapPct/2));
+    col.el.style.gridTemplateRows = `${topH}% ${gapPct}% ${botH}%`;
+  }
 
-      cols.forEach(c => {
-        c.x -= SPEED;
-        updateColumn(c.el, c.x, c.gapY);
-        if (!c.passed && c.x + 60 < 80) {
-          c.passed = true;
-          score++;
-          scoreEl.textContent = score;
+  // --- Fish DOM update ---
+  function updateFishDom(){
+    const leftPct = (fish.x / WORLD_W) * 100;
+    const topPct = (fish.y / WORLD_H) * 100;
+    fishEl.style.left = leftPct + '%';
+    fishEl.style.top = topPct + '%';
+    // tilt by vy
+    fishEl.classList.remove('tilt-up','tilt-down');
+    if(fish.vy < -2) fishEl.classList.add('tilt-up');
+    else if(fish.vy > 2) fishEl.classList.add('tilt-down');
+  }
+
+  // --- AABB collision ---
+  function rectsOverlap(a,b){
+    return !(a.x2 < b.x1 || a.x1 > b.x2 || a.y2 < b.y1 || a.y1 > b.y2);
+  }
+  function getFishHitbox(){
+    const w = FISH_W - 2*FISH_HIT_INSET.x;
+    const h = FISH_H - 2*FISH_HIT_INSET.y;
+    const x1 = fish.x - w/2;
+    const y1 = fish.y - h/2;
+    return { x1, y1, x2: x1 + w, y2: y1 + h };
+  }
+
+  // --- Game loop ---
+  function resetGame(){
+    fish = { x: FISH_W + 68, y: WORLD_H * 0.45, vy: 0 };
+    score = 0;
+    gapSize = GAP_START;
+    scrollSpeed = SCROLL_SPEED_BASE;
+    resetColumns();
+    updateFishDom();
+    scoreDisplay.innerText = String(score);
+    localBest = Number(localStorage.getItem('ff_best') || 0);
+    localBestEl.textContent = localBest;
+  }
+
+  function startPlay(){
+    state = 'PLAY';
+    resetGame();
+    hide(homeOverlay);
+    hide(gameOverOverlay);
+    // resume music on user interaction
+    if(!muted) startMusic();
+    lastT = performance.now();
+    raf = requestAnimationFrame(loop);
+  }
+
+  function endPlay(){
+    state = 'GAME_OVER';
+    cancelAnimationFrame(raf);
+    raf = null;
+    finalScoreEl.textContent = String(score);
+    if(score > localBest){ localBest = score; localStorage.setItem('ff_best', String(localBest)); }
+    localBestEl.textContent = localBest;
+    show(gameOverOverlay);
+    // stop music if playing
+    stopMusic();
+  }
+
+  function pausePlay(){
+    if(state !== 'PLAY') return;
+    state = 'PAUSE';
+    cancelAnimationFrame(raf);
+    raf = null;
+    showToast('Paused');
+  }
+
+  function resumePlay(){
+    if(state !== 'PAUSE') return;
+    state = 'PLAY';
+    lastT = performance.now();
+    raf = requestAnimationFrame(loop);
+    showToast('Resumed');
+  }
+
+  function loop(now){
+    if(state !== 'PLAY') return;
+    const dt = Math.min(40, now - lastT) / (1000/60); // normalized to ~16.67ms per frame
+    lastT = now;
+
+    // physics
+    fish.vy += GRAVITY * dt;
+    fish.vy = clamp(fish.vy, -999, VY_MAX);
+    fish.y += fish.vy * dt;
+    fish.y = clamp(fish.y, 0, WORLD_H);
+
+    // columns
+    const fishBox = getFishHitbox();
+    for(const c of columns){
+      c.x -= scrollSpeed * dt;
+      // score check
+      if(!c.passed && (c.x + COLUMN_WIDTH) < fish.x){
+        c.passed = true;
+        score++;
+        scoreDisplay.innerText = String(score);
+        // ramp difficulty
+        if(score % RAMP_EVERY === 0){
+          gapSize = Math.max(GAP_MIN, gapSize - GAP_DEC);
+          scrollSpeed += SPEED_INC;
         }
-        if (c.x + 60 < 0) {
-          c.x = Math.max(...cols.map(k => k.x)) + 200;
-          c.gapY = Math.random() * 300 + 150;
-          c.passed = false;
-        }
-      });
-
-      if (hit()) {
-        gameOver();
+      }
+      // recycle
+      if(c.x + COLUMN_WIDTH < 0){
+        recycleColumn(c);
+      } else {
+        updateColumnDom(c);
+      }
+      // collision rects for top/bottom
+      const topRect = { x1: c.x, x2: c.x + COLUMN_WIDTH, y1: 0, y2: c.gapCenter - gapSize/2 };
+      const botRect = { x1: c.x, x2: c.x + COLUMN_WIDTH, y1: c.gapCenter + gapSize/2, y2: WORLD_H };
+      if(rectsOverlap(fishBox, topRect) || rectsOverlap(fishBox, botRect)){
+        // collision!
+        safePlay(SOUND_HIT, 0.8);
+        endPlay();
         return;
       }
+    }
 
-      if (y > 640 || y < 0) {
-        gameOver();
-        return;
+    // world bounds
+    if(fish.y <= 0 || fish.y >= WORLD_H){
+      safePlay(SOUND_HIT, 0.8);
+      endPlay();
+      return;
+    }
+
+    updateFishDom();
+
+    raf = requestAnimationFrame(loop);
+  }
+
+  // --- Input ---
+  function flap(){
+    if(state !== 'PLAY') return;
+    fish.vy = FLAP_IMPULSE;
+    safePlay(SOUND_FLAP, 0.9);
+    updateFishDom();
+  }
+
+  // Attach input handlers
+  window.addEventListener('keydown', (e)=>{
+    if(e.code === 'Space' || e.code === 'ArrowUp'){ e.preventDefault(); flap(); }
+    else if(e.code === 'Escape'){ if(state==='PLAY') pausePlay(); else if(state==='PAUSE') resumePlay(); }
+  });
+  window.addEventListener('mousedown', (e)=>{ // left click -> flap
+    // ignore UI clicks that are part of overlays
+    flap();
+  }, { passive:false });
+  window.addEventListener('touchstart', (e)=>{
+    flap(); e.preventDefault();
+  }, { passive:false });
+
+  // UI buttons
+  startBtn.addEventListener('click', ()=> startPlay());
+  howBtn.addEventListener('click', ()=> { howOverlay.style.display = 'grid'; });
+  howCloseBtn.addEventListener('click', ()=> { howOverlay.style.display = 'none'; });
+  pauseBtn.addEventListener('click', ()=>{ if(state==='PLAY') pausePlay(); else if(state==='PAUSE') resumePlay(); });
+
+  restartBtn.addEventListener('click', ()=> { startPlay(); });
+  homeBtn.addEventListener('click', ()=> { show(homeOverlay); hide(gameOverOverlay); state='HOME'; });
+
+  muteBtn.addEventListener('click', ()=>{
+    muted = !muted;
+    muteBtn.innerText = muted ? '🔇' : '🔊';
+    if(muted){ stopMusic(); } else { if(state==='PLAY') startMusic(); }
+    localStorage.setItem('ff_muted', String(muted));
+  });
+
+  // submit score handling (Firestore)
+  submitScoreBtn.addEventListener('click', async ()=>{
+    const name = (playerNameInput.value || '').trim();
+    if(!name || name.length < 3 || name.length > 12){
+      showToast('Name must be 3–12 characters');
+      return;
+    }
+    // optimistic local UI
+    submitScoreBtn.disabled = true;
+    submitScoreBtn.textContent = 'Submitting...';
+    try{
+      if(firebaseInitialized && firestore){
+        // Use Firestore: add document { name, score, createdAt: serverTimestamp() }
+        const { addDoc, collection, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js');
+        const ref = collection(firestore, 'scores');
+        await addDoc(ref, { name, score, createdAt: serverTimestamp() });
+        showToast('Score submitted!');
+        // refresh leaderboard
+        await fetchTopScores();
+      } else {
+        // offline fallback: store locally in top scores array
+        saveLocalScore(name, score);
+        showToast('Saved locally (no Firebase).');
+        renderLocalLeaderboard();
       }
-
-      requestAnimationFrame(loop);
+    }catch(err){
+      console.error('submit failed', err);
+      showToast('Submit failed — try again');
+    }finally{
+      submitScoreBtn.disabled = false;
+      submitScoreBtn.textContent = 'Submit Score';
     }
+  });
 
-    function hit() {
-      const fishRect = { x1: 80 - 16, x2: 80 + 16, y1: y - 12, y2: y + 12 };
-      for (const c of cols) {
-        const top = { x1: c.x, x2: c.x + 60, y1: 0, y2: c.gapY - GAP / 2 };
-        const bot = { x1: c.x, x2: c.x + 60, y1: c.gapY + GAP / 2, y2: 640 };
-        if (overlap(fishRect, top) || overlap(fishRect, bot)) return true;
-      }
-      return false;
+  // Local leaderboard fallback (keeps top-10 locally)
+  function saveLocalScore(name, scoreVal){
+    const arr = JSON.parse(localStorage.getItem('ff_scores') || '[]');
+    arr.push({ name, score: scoreVal, t: Date.now() });
+    arr.sort((a,b)=> b.score - a.score || a.t - b.t);
+    arr.splice(10);
+    localStorage.setItem('ff_scores', JSON.stringify(arr));
+  }
+
+  function renderLocalLeaderboardTo(elId){
+    const el = document.getElementById(elId);
+    el.innerHTML = '';
+    const arr = JSON.parse(localStorage.getItem('ff_scores') || '[]');
+    if(arr.length === 0){
+      const li = document.createElement('li'); li.textContent = 'No entries yet'; el.appendChild(li); return;
     }
-
-    function overlap(a, b) {
-      return !(a.x2 < b.x1 || a.x1 > b.x2 || a.y2 < b.y1 || a.y1 > b.y2);
-    }
-
-    function gameOver() {
-      overEl.hidden = false;
-      finalEl.textContent = score;
-      if (score > best) {
-        best = score;
-        localStorage.setItem('fishyBest', best);
-      }
-      bestEl.textContent = best;
-    }
-
-    function flap() {
-      vy = FLAP;
-    }
-
-    document.addEventListener('mousedown', flap);
-    document.addEventListener('touchstart', flap, { passive: true });
-    document.addEventListener('keydown', e => {
-      if (e.code === 'Space' || e.code === 'ArrowUp') flap();
+    arr.forEach((r, i) => {
+      const li = document.createElement('li');
+      li.innerHTML = `<span>#${i+1} ${escapeHtml(r.name)}</span><span>${r.score}</span>`;
+      el.appendChild(li);
     });
+  }
+  function renderLocalLeaderboard(){ renderLocalLeaderboardTo('homeLeaderboard'); renderLocalLeaderboardTo('gameoverLeaderboard'); }
+  renderLocalLeaderboard();
 
-    playBtn.onclick = start;
-    restartBtn.onclick = start;
-  </script></body>
+  // Firestore reading: fetch top 10
+  async function fetchTopScores(){
+    if(!firebaseInitialized || !firestore) { renderLocalLeaderboard(); return; }
+    try{
+      const { collection, query, orderBy, limit, getDocs } = await import('https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js');
+      const q = query(collection(firestore, 'scores'), orderBy('score','desc'), orderBy('createdAt','asc'), limit(10));
+      const snap = await getDocs(q);
+      const list = [];
+      snap.forEach(doc => { const d = doc.data(); list.push({ name: d.name || 'Anon', score: d.score || 0 }); });
+      renderListTo('homeLeaderboard', list);
+      renderListTo('gameoverLeaderboard', list);
+    }catch(err){
+      console.warn('fetchTopScores failed', err);
+      renderLocalLeaderboard();
+    }
+  }
+  function renderListTo(elId, arr){
+    const el = document.getElementById(elId);
+    el.innerHTML = '';
+    if(!arr || arr.length === 0){
+      const li = document.createElement('li'); li.textContent = 'No entries yet'; el.appendChild(li); return;
+    }
+    arr.forEach((r,i)=>{
+      const li = document.createElement('li'); li.innerHTML = `<span>#${i+1} ${escapeHtml(r.name)}</span><span>${r.score}</span>`;
+      el.appendChild(li);
+    });
+  }
+
+  // Escape for safety in DOM
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, (m)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+  // Toast convenience
+  function show(el){ el.style.display = 'grid'; }
+  function hide(el){ el.style.display = 'none'; }
+
+  // clamp
+  function clamp(v,a,b){ return v<a?a: v>b?b: v; }
+
+  // -------- FIREBASE INIT (dynamic import) --------
+  // IMPORTANT: paste your firebaseConfig object into the placeholder above.
+  // Then uncomment (or ensure) the lines below will initialize the SDK.
+  // We'll attempt to import compat libraries and initialize Firestore.
+
+  async function initFirebaseIfConfigured(){
+    // if there's a global `firebaseConfig` variable (user-pasted), use it.
+    if(typeof window.firebaseConfig === 'object' && window.firebaseConfig !== null && !firebaseInitialized){
+      try{
+        // initialize app & firestore using compat (simple)
+        // We dynamically import compat libraries for ease-of-use in single-file
+        const { initializeApp } = await import('https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js');
+        const { getFirestore } = await import('https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js');
+        const app = initializeApp(window.firebaseConfig);
+        firestore = getFirestore(app);
+        firebaseInitialized = true;
+        // after init, fetch leaderboard
+        fetchTopScores();
+      }catch(err){
+        console.warn('Firebase init failed', err);
+        firebaseInitialized = false;
+      }
+    } else {
+      // firebase not configured on page (placeholder not changed). Use local only.
+      firebaseInitialized = false;
+    }
+  }
+
+  // Try to initialize (if user pasted config, they must set window.firebaseConfig = {...});
+  await initFirebaseIfConfigured();
+
+  // If the user didn't paste config yet, provide instructions in console
+  if(!firebaseInitialized){
+    console.info('Firebase not initialized. To enable global leaderboard, paste your firebase config object into the code where instructed and set window.firebaseConfig = yourConfig;');
+  }
+
+  // Utility: set up audio context/resume on first user gesture (for mobile)
+  function ensureAudioContext(){
+    if(!audioCtx){
+      try{
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // resume on user gesture
+        const resume = ()=> {
+          audioCtx.resume().catch(()=>{});
+          window.removeEventListener('pointerdown', resume);
+        };
+        window.addEventListener('pointerdown', resume);
+      }catch(e){ audioCtx = null; }
+    }
+  }
+
+  // Load preferences
+  (function loadPrefs(){
+    muted = String(localStorage.getItem('ff_muted')) === 'true';
+    muteBtn.innerText = muted ? '🔇' : '🔊';
+  })();
+
+  // initial render
+  resetGame();
+  show(homeOverlay);
+  fetchTopScores().catch(()=>{ /* ignore */ });
+
+  // For safety: expose a small debug helper to paste your config at runtime:
+  // In the console, do: window.firebaseConfig = { apiKey: '...', ... }; initFirebaseIfConfigured();
+  // This allows you to paste without editing the file if testing locally.
+
+  // End of module
+  </script>
+
+  <!-- =========================
+       End of game file
+       ========================= -->
+
+  <!-- =================================================
+       Deployment & config instructions (copy/paste)
+       =================================================
+
+  1) Paste Firebase config:
+     - Open the file in an editor.
+     - Find the big comment block near the top that says:
+         // ------------- FIREBASE CONFIG: PASTE YOUR CONFIG OBJECT HERE -------------
+     - Paste your config object THERE as:
+         window.firebaseConfig = {
+           apiKey: "...",
+           authDomain: "...",
+           projectId: "...",
+           storageBucket: "...",
+           messagingSenderId: "...",
+           appId: "...",
+           measurementId: "..."
+         };
+       (Make sure the variable name is exactly `window.firebaseConfig`.)
+
+  2) Firestore Rules (for dev):
+     - In Firebase Console → Firestore → Rules, use development rules:
+         rules_version = '2';
+         service cloud.firestore {
+           match /databases/{database}/documents {
+             match /scores/{docId} {
+               allow read: if true;
+               allow create: if request.resource.data.name is string &&
+                             request.resource.data.score is number &&
+                             request.resource.data.name.size() >= 3 &&
+                             request.resource.data.name.size() <= 12 &&
+                             request.resource.data.score >= 0 &&
+                             request.resource.data.score <= 100000;
+             }
+           }
+         }
+     - This is a starting point. For production, tighten the rules (rate-limiting, require auth, etc).
+
+  3) Upload file to GitHub:
+     - Add this file to your repo as index.html (or replace existing).
+     - Commit & push.
+     - GitHub Pages should serve it (Settings → Pages → main branch → root).
+
+  4) Optional: add sounds:
+     - Put flap.mp3, score.mp3, crash.mp3 and music.mp3 in a /sounds folder in your site root.
+     - Update SOUND_* constants at top of the module to point to those files.
+
+  5) Testing:
+     - Open page, click Play, test flaps with space/click/tap.
+     - On Game Over enter a name (3–12 chars) and click Submit — if Firebase configured properly it will submit and update Top 10.
+
+  ================================================= -->
+
+</body>
 </html>
