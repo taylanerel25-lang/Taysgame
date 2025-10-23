@@ -209,7 +209,14 @@
 
   /* ========= AUDIO ========= */
   let audioCtx = null;
-  const ensureAudio = () => { if (!audioCtx) { try { audioCtx = new (window.AudioContext||window.webkitAudioContext)(); } catch {} } };
+  const ensureAudio = () => { 
+    if (!audioCtx) { 
+      try { 
+        audioCtx = new (window.AudioContext||window.webkitAudioContext)(); 
+        audioCtx.resume().catch(() => {}); // Explicit resume to handle suspended state on mobile
+      } catch {} 
+    } 
+  };
   const beep = (type,freq,dur,vol=0.2)=>{
     if(!audioCtx || storage.muted) return;
     const o=audioCtx.createOscillator(), g=audioCtx.createGain();
