@@ -711,6 +711,52 @@
       loadSplashLeaderboard();
     });
   </script>
+<!-- Firebase Setup -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+  import { getDatabase, ref, push, set, onValue } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-database.js";
 
+  const firebaseConfig = {
+    apiKey: "AIzaSyCaLNISayGYJoiPdXPajHKFjCwvolkZQno",
+    authDomain: "tay-s-game.firebaseapp.com",
+    databaseURL: "https://tay-s-game-default-rtdb.firebaseio.com",
+    projectId: "tay-s-game",
+    storageBucket: "tay-s-game.firebasestorage.app",
+    messagingSenderId: "562563277539",
+    appId: "1:562563277539:web:83f23217bde8543d19dbd6",
+    measurementId: "G-LHR4F18RTJ"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  function saveScore(name, score) {
+    const entryRef = push(ref(db, "leaderboard"));
+    set(entryRef, { name: name, score: score, date: new Date().toISOString() });
+  }
+
+  function showLeaderboard() {
+    const leaderboardRef = ref(db, "leaderboard");
+    onValue(leaderboardRef, (snapshot) => {
+      const data = snapshot.val();
+      const list = document.getElementById("leaderboardList");
+      if (!list) return;
+      list.innerHTML = "";
+      if (data) {
+        const sorted = Object.values(data).sort((a, b) => b.score - a.score);
+        sorted.slice(0, 10).forEach((item) => {
+          const li = document.createElement("li");
+          li.textContent = `${item.name}: ${item.score}`;
+          list.appendChild(li);
+        });
+      } else {
+        list.innerHTML = "<li>No scores yet</li>";
+      }
+    });
+  }
+
+  window.saveScore = saveScore;
+  window.showLeaderboard = showLeaderboard;
+</script>
 </body>
 </html>
