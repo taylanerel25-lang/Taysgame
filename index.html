@@ -1,337 +1,610 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Tay’s Flapping Bird</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
-  <style>
-    :root {
-      --sky:#87ceeb;
-      --ground:#ded895;
-      --pipe:#2fbf59;
-      --panel:rgba(255,255,255,0.9);
-      --shadow:rgba(0,0,0,0.25);
-    }
-    html,body{margin:0;height:100%;background:#111;font-family:system-ui,sans-serif;overflow:hidden}
-    .wrap{position:fixed;inset:0;display:grid;place-items:center}
-    canvas{background:var(--sky);border-radius:16px;box-shadow:0 10px 40px var(--shadow);touch-action:none}
-    .hud{position:fixed;inset:0;pointer-events:none;display:grid;place-items:center;font-weight:700;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,0.5)}
-    .score{position:fixed;top:18px;right:14px;font-size:28px}
-    .splash{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
-    .splash .title{font-size:34px;margin-bottom:8px}
-    .panel{min-width:260px;max-width:90vw;background:var(--panel);color:#111;border-radius:18px;padding:16px;box-shadow:0 8px 30px var(--shadow);pointer-events:auto}
-    .panel h2{margin:0 0 8px 0;text-align:center}
-    .panel .row{display:flex;justify-content:space-between;padding:4px 0}
-    .panel .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
-    .btn{appearance:none;border:0;background:#fff;padding:8px 12px;border-radius:999px;font-weight:700;cursor:pointer}
-    .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:#fff;padding:8px 12px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .25s,transform .25s}
-    .toast.show{opacity:1;transform:translate(-50%,-6px)}
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <canvas id="game" width="360" height="640"></canvas>
-  </div>
+<!DOCTYPE html>  <html lang="en">  
+<head>  
+  <meta charset="utf-8" />  
+  <title>Shaebae’s Game</title>  
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />  
+  <style>  
+    :root {  
+      --bg: #87ceeb;          /* default sky */  
+      --bg-night: #0d1440;    /* not used now, but kept */  
+      --panel: rgba(255,255,255,0.9);  
+      --panel-dark: rgba(0,0,0,0.65);  
+      --text: #1d1d1f;  
+    }  
+    html, body {  
+      height: 100%; margin: 0; background: #111; color: var(--text);  
+      font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";  
+      overscroll-behavior: none;  
+    }  
+    .wrap { position: fixed; inset: 0; display: grid; place-items: center; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }  
+    canvas { background: var(--bg); box-shadow: 0 10px 40px rgba(0,0,0,0.35); border-radius: 16px; image-rendering: pixelated; touch-action: none; }  
+    .hud { position: fixed; inset: 0; pointer-events: none; display: grid; place-items: center; font-weight: 700; letter-spacing: 0.5px; user-select: none; }  
+    .topbar { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; pointer-events: auto; flex-wrap: wrap; justify-content: center; }  
+    .btn, .toggle { appearance: none; border: 0; background: var(--panel); color: #111; padding: 8px 12px; border-radius: 999px; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer; }  
+    .toggle { display: flex; gap: 6px; align-items: center; }  
+    .btn:focus, .toggle:focus { outline: 3px solid #000; outline-offset: 2px; }  
+    .score { position: fixed; top: 18px; right: 14px; font-size: 28px; color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,0.6); pointer-events: none; }  
+    .splash { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; text-align: center; color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,0.5); }  
+    .splash .title { font-size: 34px; margin-bottom: 8px; }  
+    .splash .subtitle { font-size: 18px; opacity: 0.9; }  
+    .panel { min-width: 280px; max-width: 90vw; background: var(--panel); color: #111; border-radius: 18px; padding: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.25); pointer-events: auto; transform: translateY(8px); }  
+    .panel.dark { background: var(--panel-dark); color: #f0f0f0; }  
+    .panel h2 { margin: 0 0 8px 0; font-size: 22px; text-align: center; }  
+    .panel .row { display: flex; justify-content: space-between; align-items: center; font-size: 18px; padding: 6px 0; }  
+    .panel .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }  
+    .pill { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.08); padding: 4px 10px; border-radius: 999px; font-size: 14px; }  
+    .sr-only { position: absolute!important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }  
+    .toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 8px 12px; border-radius: 10px; font-size: 14px; pointer-events: none; opacity: 0; transition: opacity .25s ease, transform .25s ease; }  
+    .toast.show { opacity: 1; transform: translate(-50%, -6px); }  
+    .high-contrast canvas { outline: 4px solid #000; }  
+    .high-contrast .btn, .high-contrast .toggle, .high-contrast .panel { border: 3px solid #000; }  
+    .paused-badge { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; color: #fff; font-size: 26px; text-shadow: 0 2px 0 rgba(0,0,0,0.6); }  
+  </style>  
+</head>  
+<body>  
+  <div class="wrap">  
+    <canvas id="game" width="360" height="640" aria-label="Shaebae’s Game canvas"></canvas>  
+  </div>    <div class="hud" aria-hidden="true">  
+    <div id="topbar" class="topbar">  
+      <button id="muteBtn" class="btn" aria-pressed="false" aria-label="Toggle sound">🔊 Sound</button>  
+      <label class="toggle"><input type="checkbox" id="casualToggle"> Casual</label>  
+      <label class="toggle"><input type="checkbox" id="hcToggle"> High contrast</label>  
+      <label class="toggle"><input type="checkbox" id="rmToggle"> Reduced motion</label>  
+      <button id="pauseBtn" class="btn" aria-label="Pause (P)">⏸️ Pause</button>  
+    </div>  
+    <div id="scoreHud" class="score">0</div>  
+    <div id="splash" class="splash">  
+      <div>  
+        <div class="title">Shaebae’s Game ❤️</div>  
+        <div class="subtitle">Tap / Click / Space to start</div>  
+        <div style="margin-top:8px;font-size:14px;opacity:.9">Avoid the pipes. Good luck!</div>  
+      </div>  
+    </div>  
+    <div id="pausedBadge" class="paused-badge" style="display:none;">Paused</div>  
+  </div>    <div id="gameOver" class="hud" style="display:none;">  
+    <div class="panel" role="dialog" aria-modal="true" aria-labelledby="overTitle">  
+      <h2 id="overTitle">Game Over</h2>  
+      <div class="row"><span>Score</span><strong id="scoreNow">0</strong></div>  
+      <div class="row"><span>Best</span><span><strong id="bestNow">0</strong> <span id="medal" class="pill" aria-label="medal" style="display:none;">🥉 Bronze</span></span></div>  
+      <div class="actions">  
+        <button id="againBtn" class="btn">Play Again</button>  
+        <button id="shareBtn" class="btn">Share</button>  
+      </div>  
+    </div>  
+  </div>    <div id="aria" class="sr-only" aria-live="polite"></div>  
+  <div id="toast" class="toast" role="status"></div>  <script>  
+(() => {  
+  'use strict';  
+  
+  /* ========= CONFIG ========= */  
+  const CFG = {  
+    canvas: { width: 360, height: 640 },  
+    physics: { gravity: 1800, flapImpulse: -420, maxFallSpeed: 900 },  
+    world: { speedStart: 180, speedEnd: 240, speedEndScore: 30 },  
+    pipes: {  
+      gapStart: 160, gapEnd: 135, gapEndScore: 20,  
+      spawnStart: 1.2, spawnEnd: 0.95, spawnEndScore: 25,  
+      minGapCenterY: 120, maxGapCenterYPaddingBottom: 120, width: 64  
+    },  
+    bird: { size: { w: 34, h: 24 }, hitboxRadius: 12, idleBobPx: 4 },  
+    ground: { height: 112 },  
+    scorePopup: { dy: 40, duration: 0.6 }  
+  };  
+  
+  const DPR = Math.min(window.devicePixelRatio || 1, 3);  
+  
+  /* ========= DOM ========= */  
+  const canvas = document.getElementById('game');  
+  const ctx = canvas.getContext('2d');  
+  const splashEl = document.getElementById('splash');  
+  const hudScore = document.getElementById('scoreHud');  
+  const overPanel = document.getElementById('gameOver');  
+  const scoreNow = document.getElementById('scoreNow');  
+  const bestNow = document.getElementById('bestNow');  
+  const medalEl = document.getElementById('medal');  
+  const muteBtn = document.getElementById('muteBtn');  
+  const casualToggle = document.getElementById('casualToggle');  
+  const hcToggle = document.getElementById('hcToggle');  
+  const rmToggle = document.getElementById('rmToggle');  
+  const pauseBtn = document.getElementById('pauseBtn');  
+  const pausedBadge = document.getElementById('pausedBadge');  
+  const ariaLive = document.getElementById('aria');  
+  const toast = document.getElementById('toast');  
+  const topbar = document.getElementById('topbar');  
+  
+  /* ========= STATE ========= */  
+  const W = CFG.canvas.width, H = CFG.canvas.height;  
+  const groundY = H - CFG.ground.height;  
+  
+  let state = 'ready'; // 'ready' | 'running' | 'dead'  
+  let paused = false;  
+  let worldTime = 0;  
+  let spawnTimer = 0;  
+  let lastMs = performance.now();  
+  
+  const storage = {  
+    best: Number(localStorage.getItem('sb_best') || 0),  
+    muted: localStorage.getItem('sb_muted') === '1',  
+    reduced: localStorage.getItem('sb_reduced') === '1',  
+    highContrast: localStorage.getItem('sb_highcontrast') === '1',  
+    casual: localStorage.getItem('sb_casual') === '1'  
+  };  
+  
+  if (storage.muted) muteBtn.setAttribute('aria-pressed', 'true'), muteBtn.textContent = '🔇 Muted';  
+  if (storage.highContrast) document.body.classList.add('high-contrast'), hcToggle.checked = true;  
+  if (storage.reduced) rmToggle.checked = true;  
+  if (storage.casual) casualToggle.checked = true;  
+  
+  const BIRD_X = Math.round(W * 0.28);  
+  let bird = { x: BIRD_X, y: H * 0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };  
+  
+  const pipes = [];  
+  const pops = [];  
+  const clouds = [  
+    { x: 40, y: 100, s: 0.3 },  
+    { x: 240, y: 60, s: 0.25 },  
+    { x: 170, y: 140, s: 0.22 }  
+  ];  
+  
+  let score = 0;  
+  // ADD: let Firebase (and other scripts) read the live score
+  window.score = 0;
 
-  <div class="hud">
-    <div id="scoreHud" class="score">0</div>
-    <div id="splash" class="splash">
-      <div>
-        <div class="title">Tay’s Flapping Bird</div>
-        <div>Tap / Click / Space to start</div>
-      </div>
-    </div>
-  </div>
+  const medalFor = (s) => s>=50?['🏆 Platinum','#e5e4e2']:s>=30?['🥇 Gold','#f7c32e']:s>=20?['🥈 Silver','#c0c0c0']:s>=10?['🥉 Bronze','#cd7f32']:null;  
+  
+  /* ========= STAGES (every 10 points) ========= */  
+  const stageSkies = ['#87ceeb', '#ffa366', '#9966cc', '#1a1a2e', '#ffe680']; // sky per stage  
+  const stagePipes = ['#2fbf59', '#ff9933', '#aa66cc', '#e74c3c', '#ffcc00']; // pipe main color per stage  
+  let lastStage = -1;  
+  const currentStage = () => Math.min(Math.floor(score / 10), stageSkies.length - 1);  
+  const onStageChange = () => { showToast(`Stage ${currentStage() + 1}!`); };  
+  
+  /* ========= AUDIO ========= */  
+  let audioCtx = null;  
+  const ensureAudio = () => { if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch {} } };  
+  const beep = (type, freq, dur, vol=0.2) => {  
+    if (!audioCtx || storage.muted) return;  
+    const o = audioCtx.createOscillator();  
+    const g = audioCtx.createGain();  
+    o.type = type; o.frequency.value = freq; g.gain.value = vol;  
+    o.connect(g).connect(audioCtx.destination);  
+    const t = audioCtx.currentTime;  
+    o.start(t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur*0.9); o.stop(t + dur);  
+  };  
+  const sfx = {  
+    flap: () => beep('square', 600, 0.08, 0.15),  
+    point: () => beep('triangle', 880, 0.07, 0.18),  
+    hit:   () => beep('sawtooth', 120, 0.15, 0.22),  
+    die:   () => beep('sine', 80, 0.35, 0.25),  
+    swoosh:() => beep('triangle', 300, 0.1, 0.12)  
+  };  
+  
+  /* ========= HELPERS ========= */  
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));  
+  const lerp = (a, b, t) => a + (b - a) * t;  
+  const easeT = (s, end) => clamp(s / end, 0, 1);  
+  // REPLACE (allows Remote Config to override when available)
+  const pipeGap = () => (window.dynamicPipeGap ?? lerp(CFG.pipes.gapStart, CFG.pipes.gapEnd, easeT(score, CFG.pipes.gapEndScore)));
+  const spawnInterval = () => lerp(CFG.pipes.spawnStart, CFG.pipes.spawnEnd, easeT(score, CFG.pipes.spawnEndScore));  
+  const speedBase = () => {  
+    const base = lerp(CFG.world.speedStart, CFG.world.speedEnd, easeT(score, CFG.world.speedEndScore));  
+    return storage.casual ? Math.max(150, base - 30) : base;  
+  };  
+  const showToast = (msg) => { toast.textContent = msg; toast.classList.add('show'); clearTimeout(showToast._t); showToast._t = setTimeout(()=>toast.classList.remove('show'),1200); };  
+  const announce = (msg) => { ariaLive.textContent = ''; setTimeout(()=> ariaLive.textContent = msg, 30); };  
+  
+  function resetGame() {  
+    score = 0; hudScore.textContent = '0'; worldTime = 0; spawnTimer = -0.5;  
+    pipes.length = 0; pops.length = 0;  
+    bird = { x: BIRD_X, y: H*0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };  
+    sfx.swoosh();  
+    lastStage = -1; // ensure Stage 1 popup appears when scoring starts  
+  }  
+  
+  /* ========= DPR / RESIZE ========= */  
+  function fitCanvas() {  
+    const aspect = W / H;  
+    const vw = window.innerWidth, vh = window.innerHeight;  
+    let cssW, cssH;  
+    if (vw / vh < aspect) { cssW = Math.min(vw, W*2.5); cssH = Math.round(cssW / aspect); }  
+    else { cssH = Math.min(vh, H*2.5); cssW = Math.round(cssH * aspect); }  
+    canvas.style.width = cssW + 'px'; canvas.style.height = cssH + 'px';  
+    canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);  
+    ctx.setTransform(1,0,0,1,0,0); ctx.scale(DPR, DPR); ctx.imageSmoothingEnabled = false;  
+  }  
+  window.addEventListener('resize', fitCanvas, { passive: true });  
+  fitCanvas();  
+  
+  /* ========= UI SHOW/HIDE ========= */  
+  function refreshUI() {  
+    const show = (state === 'ready') || (state === 'running' && paused);  
+    topbar.style.display = show ? '' : 'none';  
+  }  
+  
+  /* ========= INPUT ========= */  
+  const flap = () => {  
+    if (state === 'dead') return;  
+    ensureAudio();  
+    if (state === 'ready') {  
+      state = 'running';  
+      announce('Game started');  
+      splashEl.style.display = 'none';  
+      refreshUI();  
+    }  
+    if (paused) return;  
+    bird.vy = CFG.physics.flapImpulse; sfx.flap();  
+  };  
+  canvas.addEventListener('mousedown', (e) => { e.preventDefault(); flap(); });  
+  canvas.addEventListener('touchstart', (e) => { e.preventDefault(); flap(); }, { passive: false });  
+  window.addEventListener('keydown', (e) => {  
+    const k = e.key.toLowerCase();  
+    if ([' ', 'w', 'arrowup'].includes(k)) { e.preventDefault(); flap(); }  
+    if (k === 'p') togglePause();  
+  }, { passive: false });  
+  
+  document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'running') setPause(true); });  
+  function setPause(p) { if (state !== 'running') return; paused = p; pausedBadge.style.display = p ? '' : 'none'; announce(p?'Paused':'Resumed'); refreshUI(); }  
+  function togglePause() { setPause(!paused); }  
+  
+  /* ========= UI TOGGLES ========= */  
+  muteBtn.addEventListener('click', () => {  
+    storage.muted = !storage.muted; localStorage.setItem('sb_muted', storage.muted?'1':'0');  
+    muteBtn.setAttribute('aria-pressed', storage.muted?'true':'false');  
+    muteBtn.textContent = storage.muted ? '🔇 Muted' : '🔊 Sound';  
+  });  
+  hcToggle.addEventListener('change', () => { storage.highContrast = hcToggle.checked; localStorage.setItem('sb_highcontrast', storage.highContrast?'1':'0'); document.body.classList.toggle('high-contrast', storage.highContrast); });  
+  rmToggle.addEventListener('change', () => { storage.reduced = rmToggle.checked; localStorage.setItem('sb_reduced', storage.reduced?'1':'0'); });  
+  casualToggle.addEventListener('change', () => { storage.casual = casualToggle.checked; localStorage.setItem('sb_casual', storage.casual?'1':'0'); showToast(storage.casual ? 'Casual Mode ON' : 'Casual Mode OFF'); });  
+  
+  document.getElementById('againBtn').addEventListener('click', () => {  
+    overPanel.style.display = 'none'; splashEl.style.display = '';  
+    state = 'ready'; resetGame(); announce('Back to splash'); refreshUI();  
+  });  
+  document.getElementById('shareBtn').addEventListener('click', async () => {  
+    const text = `I scored ${scoreNow.textContent} in Shaebae’s Game! Can you beat me?`;  
+    try { if (navigator.share) await navigator.share({ text, title: 'Shaebae’s Game' }); else { await navigator.clipboard.writeText(text); showToast('Copied to clipboard!'); } } catch {}  
+  });  
+  
+  /* ========= GAME LOGIC ========= */  
+  function spawnPipe() {  
+    const gap = pipeGap();  
+    const padBottom = CFG.pipes.maxGapCenterYPaddingBottom;  
+    const minC = CFG.pipes.minGapCenterY;  
+    const maxCenter = (groundY - padBottom) - gap/2;  
+    const minCenter = minC + gap/2;  
+    let gapY = Math.round(lerp(minCenter, maxCenter, Math.random()));  
+    pipes.push({ x: W + 10, gapY, gap, w: CFG.pipes.width, scored: false });  
+  }  
+  
+  function update(dt) {  
+    if (state !== 'running' || paused) return;  
+    const speed = speedBase();  
+    worldTime += dt; spawnTimer += dt;  
+  
+    if (spawnTimer >= spawnInterval()) { spawnTimer = 0; spawnPipe(); }  
+  
+    if (!storage.reduced) {  
+      for (const c of clouds) { c.x -= speed * c.s * dt; if (c.x < -80) c.x += W + 160; }  
+    }  
+  
+    bird.vy += CFG.physics.gravity * dt;  
+    bird.vy = clamp(bird.vy, -9999, CFG.physics.maxFallSpeed);  
+    bird.y += bird.vy * dt; bird.y = clamp(bird.y, 2, H + 1000);  
+  
+    const targetRot = bird.vy < 0 ? -25 * Math.PI/180 : Math.min(90 * Math.PI/180, bird.vy / CFG.physics.maxFallSpeed * (90*Math.PI/180));  
+    bird.rot = lerp(bird.rot, targetRot, 0.12);  
+  
+    const animFps = bird.vy < 0 ? 8 : 4;  
+    bird.frameTimer += dt; if (bird.frameTimer >= 1/animFps) { bird.frame = (bird.frame + 1) % 3; bird.frameTimer = 0; }  
+  
+    for (const p of pipes) {  
+      p.x -= speed * dt;  
+      const cx = p.x + p.w/2;  
+      if (!p.scored && cx < bird.x) {  
+        p.scored = true; score++; hudScore.textContent = String(score);  
+        // ADD: keep global score in sync
+        window.score = score;
 
-  <div id="gameOver" class="hud" style="display:none;">
-    <div class="panel">
-      <h2>Game Over</h2>
-      <div class="row"><span>Score</span><strong id="scoreNow">0</strong></div>
-      <div class="row"><span>Best</span><strong id="bestNow">0</strong></div>
-      <div class="actions">
-        <button id="againBtn" class="btn">Play Again</button>
-        <button id="shareBtn" class="btn">Share</button>
-      </div>
-      <!-- leaderboard will appear here -->
-    </div>
-  </div>
+        pops.push({ x: cx, y: p.gapY, t: 0, duration: CFG.scorePopup.duration, text: '+1' });  
+        if (navigator.vibrate) navigator.vibrate(20);  
+        sfx.point(); announce(`Score ${score}`);  
+  
+        // Stage change check  
+        const st = currentStage();  
+        if (st !== lastStage) { lastStage = st; onStageChange(); }  
+      }  
+    }  
+    while (pipes.length && pipes[0].x + pipes[0].w < -20) pipes.shift();  
+  
+    // Collisions  
+    const r = CFG.bird.hitboxRadius;  
+    const circle = { x: bird.x + 2, y: bird.y, r };  
+    const penetrationNeeded = 0.2 * r; // forgiving graze rule  
+    let hit = false;  
+    for (const p of pipes) {  
+      const topRect = { x: p.x, y: -10000, w: p.w, h: (p.gapY - p.gap/2) + 10000 };  
+      const botRect = { x: p.x, y: (p.gapY + p.gap/2), w: p.w, h: (groundY - (p.gapY + p.gap/2)) };  
+      if (circleRectDeepOverlap(circle, topRect, penetrationNeeded) || circleRectDeepOverlap(circle, botRect, penetrationNeeded)) { hit = true; break; }  
+    }  
+    if (circle.y + circle.r >= groundY) { die(); return; }  
+    if (hit) { sfx.hit(); die(); }  
+    for (let i=pops.length-1; i>=0; i--) { const pop = pops[i]; pop.t += dt; if (pop.t >= pop.duration) pops.splice(i,1); }  
+  }  
+  
+  function circleRectDeepOverlap(circ, rect, needed) {  
+    const nx = clamp(circ.x, rect.x, rect.x + rect.w);  
+    const ny = clamp(circ.y, rect.y, rect.y + rect.h);  
+    const dx = circ.x - nx, dy = circ.y - ny;  
+    const dist = Math.hypot(dx, dy);  
+    const overlap = circ.r - dist;  
+    return overlap > needed;  
+  }  
+  
+  function die() {  
+    state = 'dead';  
+    refreshUI(); // hide topbar on death  
+    paused = false; pausedBadge.style.display = 'none';  
+    if (navigator.vibrate) navigator.vibrate(80);  
+    sfx.die();  
+  
+    const fallUntil = () => {  
+      const now = performance.now();  
+      const dt = Math.min((now - lastMs)/1000, 1/30);  
+      lastMs = now;  
+      bird.vy += CFG.physics.gravity * dt;  
+      bird.vy = Math.min(bird.vy, CFG.physics.maxFallSpeed);  
+      bird.y += bird.vy * dt;  
+      bird.rot = lerp(bird.rot, 90*Math.PI/180, 0.12);  
+      render();  
+      if (bird.y + CFG.bird.hitboxRadius < groundY) requestAnimationFrame(fallUntil);  
+      else { bird.y = groundY - CFG.bird.hitboxRadius; setTimeout(showGameOver, 800); } // smooth end, no jump scare  
+    };  
+    fallUntil();  
+  }  
+  
+  function showGameOver() {  
+    scoreNow.textContent = String(score);  
+    if (score > storage.best) { storage.best = score; localStorage.setItem('sb_best', String(score)); }  
+    bestNow.textContent = String(storage.best);  
+    const m = medalFor(storage.best);  
+    if (m) { medalEl.style.display = ''; medalEl.textContent = m[0]; } else { medalEl.style.display = 'none'; }  
+    overPanel.style.display = '';  
+  }  
+  // ADD: expose the function so Firebase can hook it
+  window.showGameOver = showGameOver;
+  
+  /* ========= RENDER ========= */  
+  function roundedRect(x,y,w,h,r) {  
+    ctx.beginPath();  
+    ctx.moveTo(x+r, y);  
+    ctx.arcTo(x+w, y, x+w, y+h, r);  
+    ctx.arcTo(x+w, y+h, x, y+h, r);  
+    ctx.arcTo(x, y+h, x, y, r);  
+    ctx.arcTo(x, y, x+w, y, r);  
+    ctx.closePath();  
+  }  
+  
+  function drawClouds() {  
+    for (const c of clouds) {  
+      ctx.save(); ctx.translate(c.x, c.y);  
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';  
+      roundedRect(-20, -10, 40, 20, 8); roundedRect(5, -14, 30, 18, 8); roundedRect(-35, -8, 26, 16, 8);  
+      ctx.fill(); ctx.restore();  
+    }  
+  }  
+  
+  function drawPipes() {  
+    const stage = currentStage();  
+    const color = stagePipes[stage];  
+    const dark = 'rgba(0,0,0,0.18)'; // subtle rim  
+    for (const p of pipes) {  
+      const topH = p.gapY - p.gap/2;  
+      const botY = p.gapY + p.gap/2;  
+      const botH = groundY - botY;  
+  
+      ctx.fillStyle = color; ctx.fillRect(p.x, 0, p.w, topH);  
+      ctx.fillStyle = dark;  ctx.fillRect(p.x - 4, topH - 16, p.w + 8, 16);  
+  
+      ctx.fillStyle = color; ctx.fillRect(p.x, botY, p.w, botH);  
+      ctx.fillStyle = dark;  ctx.fillRect(p.x - 4, botY, p.w + 8, 16);  
+  
+      ctx.fillStyle = 'rgba(0,0,0,0.08)'; ctx.fillRect(p.x + 6, 0, 3, topH); ctx.fillRect(p.x + 6, botY, 3, botH);  
+    }  
+  }  
+  
+  function drawBird() {  
+    ctx.save();  
+    const w = CFG.bird.size.w, h = CFG.bird.size.h, r = CFG.bird.hitboxRadius;  
+    const idleBob = (state === 'ready' && !storage.reduced) ? Math.sin(worldTime * Math.PI * 2 * 2) * CFG.bird.idleBobPx : 0;  
+    ctx.translate(bird.x, bird.y + idleBob); ctx.rotate(bird.rot);  
+  
+    ctx.fillStyle = '#ffd84a'; roundedRect(-w/2, -h/2, w, h, 6); ctx.fill();  
+    ctx.fillStyle = '#fff2b2'; roundedRect(-w*0.2, -h*0.15, w*0.8, h*0.7, 6); ctx.fill();  
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(w*0.1, -h*0.1, 4, 0, Math.PI*2); ctx.fill();  
+    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(w*0.1+1, -h*0.1, 2, 0, Math.PI*2); ctx.fill();  
+    ctx.fillStyle = '#ff9a00'; ctx.beginPath(); ctx.moveTo(w*0.45, 0); ctx.lineTo(w*0.25, -3); ctx.lineTo(w*0.25, 3); ctx.closePath(); ctx.fill();  
+  
+    const f = bird.frame; const wy = f===0?-2:f===1?0:2;  
+    ctx.save(); ctx.translate(-4, wy); ctx.fillStyle = '#f7bf3c'; roundedRect(-10, -6, 18, 12, 6); ctx.fill(); ctx.restore();  
+  
+    if (document.body.classList.contains('high-contrast')) { ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(2,0,r,0,Math.PI*2); ctx.stroke(); }  
+    ctx.restore();  
+  }  
+  
+  function drawGround() {  
+    const speed = speedBase();  
+    const t = (worldTime * speed) % 48;  
+    const y = groundY;  
+    ctx.fillStyle = '#e6a65d'; ctx.fillRect(0, y, W, H - y);  
+    ctx.fillStyle = '#68c151'; ctx.fillRect(0, y-8, W, 8);  
+    ctx.fillStyle = 'rgba(0,0,0,0.06)';  
+    for (let x=-t; x < W; x += 48) { ctx.fillRect(x, y+6, 24, 6); ctx.fillRect(x+24, y+16, 24, 6); }  
+  }  
+  
+  function render() {  
+    // Stage sky color  
+    const stage = currentStage();  
+    const sky = stageSkies[stage];  
+    canvas.style.background = sky;  
+  
+    ctx.save();  
+    ctx.fillStyle = sky;  
+    ctx.fillRect(0,0,W,H);  
+  
+    if (!storage.reduced) drawClouds();  
+    drawPipes();  
+    drawBird();  
+    drawGround();  
+  
+    // score pops  
+    for (const pop of pops) {  
+      const t = clamp(pop.t / pop.duration, 0, 1);  
+      const y = pop.y - t * CFG.scorePopup.dy;  
+      ctx.globalAlpha = 1 - t;  
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 20px ui-rounded, system-ui, sans-serif'; ctx.textAlign = 'center';  
+      ctx.fillText(pop.text, pop.x, y);  
+      ctx.globalAlpha = 1;  
+    }  
+  
+    ctx.restore();  
+  }  
+  
+  /* ========= LOOP ========= */  
+  function loop(now) {  
+    const dt = clamp((now - lastMs) / 1000, 0, 1/30);  
+    lastMs = now;  
+  
+    if (state === 'ready') worldTime += dt;  
+    else if (state === 'running' && !paused) { worldTime += dt; update(dt); }  
+  
+    render();  
+    requestAnimationFrame(loop);  
+  }  
+  
+  /* ========= INIT ========= */  
+  function init() {  
+    resetGame();  
+    splashEl.style.display = '';  
+    hudScore.textContent = '0';  
+    overPanel.style.display = 'none';  
+    lastMs = performance.now();  
+    refreshUI(); // show topbar on splash  
+    requestAnimationFrame(loop);  
+  }  
+  init();  
+  
+})();  
+</script>  
 
-  <div id="toast" class="toast"></div>
-  <script>
-  (() => {
-    'use strict';
-    const canvas = document.getElementById('game');
-    const ctx = canvas.getContext('2d');
-    const splash = document.getElementById('splash');
-    const scoreHud = document.getElementById('scoreHud');
-    const overPanel = document.getElementById('gameOver');
-    const scoreNow = document.getElementById('scoreNow');
-    const bestNow = document.getElementById('bestNow');
-    const againBtn = document.getElementById('againBtn');
-    const shareBtn = document.getElementById('shareBtn');
-    const toast = document.getElementById('toast');
+<!-- === Firebase Integration (Leaderboard + Remote Config + Analytics) === -->
+<script type="module">
+  // Firebase SDKs (CDN)
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+  import { getDatabase, ref, push, query, orderByChild, limitToLast, get } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
+  import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-analytics.js";
+  import { getRemoteConfig, fetchAndActivate, getValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-remote-config.js";
 
-    const W = canvas.width;
-    const H = canvas.height;
-    const GROUND_H = 100;
-    const PIPE_W = 64;
-    const BASE_GAP = 160;
-    let dynamicGap = window.dynamicPipeGap || BASE_GAP;
+  // ✅ Your Firebase project config (public by design for client apps)
+  const firebaseConfig = {
+    apiKey: "AIzaSyCaLNISayGYJoiPdXPajHKFjCwvolkZQno",
+    authDomain: "tay-s-game.firebaseapp.com",
+    projectId: "tay-s-game",
+    storageBucket: "tay-s-game.firebasestorage.app",
+    messagingSenderId: "562563277539",
+    appId: "1:562563277539:web:83f23217bde8543d19dbd6",
+    measurementId: "G-LHR4F18RTJ",
+    databaseURL: "https://tay-s-game-default-rtdb.firebaseio.com"
+  };
 
-    let bird, pipes, score, best, state, lastTime, gravity, flapPower, gameSpeed;
+  // Init
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const analytics = getAnalytics(app);
+  const rc = getRemoteConfig(app);
+  rc.settings.minimumFetchIntervalMillis = 60000;
+  rc.defaultConfig = { current_pipe_gap_size: 160 };
 
-    function reset() {
-      bird = { x: 80, y: H / 2, vy: 0, r: 0 };
-      pipes = [];
-      score = 0;
-      gravity = 900;
-      flapPower = -300;
-      gameSpeed = 180;
-      state = 'ready';
-      scoreHud.textContent = 0;
-    }
-
-    function startGame() {
-      if (state === 'ready') {
-        state = 'playing';
-        splash.style.display = 'none';
-        lastTime = performance.now();
-        loop(lastTime);
+  // === Adaptive difficulty (Remote Config) ===
+  async function loadAdaptiveDifficulty() {
+    try {
+      await fetchAndActivate(rc);
+      const val = Number(getValue(rc, "current_pipe_gap_size")._value);
+      if (!Number.isNaN(val) && val > 60 && val < 400) {
+        window.dynamicPipeGap = val; // game uses this via pipeGap()
+        console.log("✅ Remote pipe gap:", val);
+      } else {
+        console.warn("Remote pipe gap invalid; keeping default.");
       }
+    } catch (e) {
+      console.warn("Remote Config failed, using default.", e);
+    }
+  }
+  loadAdaptiveDifficulty();
+
+  // === Leaderboard UI helper (render under Game Over panel) ===
+  async function updateLeaderboardDisplay() {
+    const lbRef = query(ref(db, "leaderboard"), orderByChild("score"), limitToLast(10));
+    const snap = await get(lbRef);
+    if (!snap.exists()) return;
+
+    const entries = Object.values(snap.val()).sort((a,b)=>b.score - a.score);
+    const panel = document.querySelector("#gameOver .panel");
+    let list = document.getElementById("leaderboardList");
+    if (!list) {
+      list = document.createElement("div");
+      list.id = "leaderboardList";
+      list.style.marginTop = "12px";
+      list.style.fontSize = "16px";
+      list.innerHTML = "<h3 style='text-align:center;'>🏆 Leaderboard</h3>";
+      panel.appendChild(list);
+    }
+    list.innerHTML = "<h3 style='text-align:center;'>🏆 Leaderboard</h3>" +
+      entries.map((e,i)=>`<div class='row'><span>${i+1}. ${e.name||"Anonymous"}</span><strong>${e.score}</strong></div>`).join("");
+  }
+
+  // === Score submit + anti-spam (30s) ===
+  let lastSubmitTime = 0;
+  async function submitScore(name, score) {
+    const lbRef = ref(db, "leaderboard");
+    await push(lbRef, { name: name || "Anonymous", score, date: Date.now() });
+    await updateLeaderboardDisplay();
+  }
+  async function safeSubmitScore(name, score) {
+    const now = Date.now();
+    if (now - lastSubmitTime < 30000) {
+      const toast = document.getElementById("toast");
+      toast.textContent = "Please wait before submitting again";
+      toast.classList.add("show");
+      clearTimeout(window.showToast?window.showToast._t:0);
+      if (window.showToast) window.showToast._t = setTimeout(()=>toast.classList.remove("show"), 1500);
+      return;
+    }
+    lastSubmitTime = now;
+    await submitScore(name, score);
+  }
+
+  // === Hook into your existing Game Over ===
+  const originalShowGameOver = window.showGameOver; // exposed in main script
+  window.showGameOver = async function(...args) {
+    // Call your original UI
+    if (typeof originalShowGameOver === "function") originalShowGameOver(...args);
+
+    // Read current score (from window.score)
+    const scoreVal = Number(window.score || 0);
+    logEvent(analytics, "game_over", { score: scoreVal });
+
+    // Ask name (first time, or when matching local best)
+    let name = localStorage.getItem("player_name") || "";
+    const localBest = Number(localStorage.getItem("sb_best") || 0);
+    if (!name || scoreVal >= localBest) {
+      name = prompt("New high score! Enter your name for the leaderboard:") || "Anonymous";
+      localStorage.setItem("player_name", name);
     }
 
-    function gameOver() {
-      state = 'over';
-      scoreNow.textContent = score;
-      best = Math.max(best, score);
-      bestNow.textContent = best;
-      localStorage.setItem('sb_best', best);
-      overPanel.style.display = 'grid';
-      if (window.showGameOver) window.showGameOver(score); // for Firebase hook
-    }
-    window.showGameOver = gameOver; // fallback for Firebase
+    await safeSubmitScore(name, scoreVal);
+    updateLeaderboardDisplay();
+  };
+</script>
 
-    function spawnPipe() {
-      const gap = window.dynamicPipeGap || dynamicGap;
-      const center = Math.random() * (H - GROUND_H - gap - 100) + 50 + gap / 2;
-      pipes.push({ x: W, y: center });
-    }
-
-    function update(dt) {
-      if (state !== 'playing') return;
-
-      // bird physics
-      bird.vy += gravity * dt;
-      bird.y += bird.vy * dt;
-      bird.r = Math.min(Math.PI / 2, (bird.vy / 400));
-
-      // spawn pipes
-      if (!pipes.length || W - pipes[pipes.length - 1].x > 200) spawnPipe();
-
-      // move pipes
-      for (let p of pipes) p.x -= gameSpeed * dt;
-
-      // remove old pipes
-      if (pipes.length && pipes[0].x + PIPE_W < 0) pipes.shift();
-
-      // collisions + scoring
-      for (let p of pipes) {
-        const gap = window.dynamicPipeGap || dynamicGap;
-        const top = p.y - gap / 2;
-        const bottom = p.y + gap / 2;
-        if (
-          bird.x + 17 > p.x && bird.x - 17 < p.x + PIPE_W &&
-          (bird.y - 12 < top || bird.y + 12 > bottom)
-        ) {
-          gameOver();
-        }
-        if (!p.passed && p.x + PIPE_W < bird.x) {
-          p.passed = true;
-          score++;
-          scoreHud.textContent = score;
-        }
-      }
-
-      // hit ground or ceiling
-      if (bird.y > H - GROUND_H - 12 || bird.y < 0) {
-        gameOver();
-      }
-    }
-
-    function draw() {
-      ctx.fillStyle = '#87ceeb';
-      ctx.fillRect(0, 0, W, H);
-
-      // pipes
-      ctx.fillStyle = '#2fbf59';
-      for (let p of pipes) {
-        const gap = window.dynamicPipeGap || dynamicGap;
-        const topH = p.y - gap / 2;
-        const bottomY = p.y + gap / 2;
-        ctx.fillRect(p.x, 0, PIPE_W, topH);
-        ctx.fillRect(p.x, bottomY, PIPE_W, H - bottomY - GROUND_H);
-      }
-
-      // ground
-      ctx.fillStyle = '#ded895';
-      ctx.fillRect(0, H - GROUND_H, W, GROUND_H);
-
-      // bird
-      ctx.save();
-      ctx.translate(bird.x, bird.y);
-      ctx.rotate(bird.r);
-      ctx.fillStyle = '#ffcc00';
-      ctx.beginPath();
-      ctx.ellipse(0, 0, 17, 12, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    function loop(now) {
-      const dt = (now - lastTime) / 1000;
-      lastTime = now;
-      update(dt);
-      draw();
-      if (state !== 'over') requestAnimationFrame(loop);
-    }
-
-    // --- Input handling ---
-    function flap() {
-      if (state === 'over') return;
-      if (state === 'ready') startGame();
-      bird.vy = flapPower;
-    }
-
-    canvas.addEventListener('mousedown', flap);
-    canvas.addEventListener('touchstart', e => { e.preventDefault(); flap(); });
-    window.addEventListener('keydown', e => {
-      if ([' ', 'ArrowUp', 'w'].includes(e.key)) { e.preventDefault(); flap(); }
-    });
-
-    againBtn.addEventListener('click', () => {
-      overPanel.style.display = 'none';
-      splash.style.display = 'grid';
-      reset();
-    });
-
-    shareBtn.addEventListener('click', async () => {
-      const msg = `I scored ${score} in Tay’s Flapping Bird! Can you beat me?`;
-      try {
-        if (navigator.share) await navigator.share({ text: msg, title: "Tay’s Flapping Bird" });
-        else { await navigator.clipboard.writeText(msg); showToast('Copied!'); }
-      } catch { }
-    });
-
-    function showToast(msg) {
-      toast.textContent = msg;
-      toast.classList.add('show');
-      clearTimeout(showToast._t);
-      showToast._t = setTimeout(() => toast.classList.remove('show'), 1500);
-    }
-    window.showToast = showToast;
-
-    // --- Init ---
-    best = Number(localStorage.getItem('sb_best') || 0);
-    reset();
-    draw();
-  })();
-  </script>
-  <!-- === Firebase + Leaderboard + Adaptive Difficulty + Anti-Spam === -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-    import { getDatabase, ref, push, query, orderByChild, limitToLast, get } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
-    import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-analytics.js";
-    import { getRemoteConfig, fetchAndActivate, getValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-remote-config.js";
-
-    /* === Your Firebase project config === */
-    const firebaseConfig = {
-      apiKey: "HIDDEN_FOR_SECURITY",
-      authDomain: "tay-s-game.firebaseapp.com",
-      projectId: "tay-s-game",
-      storageBucket: "tay-s-game.firebasestorage.app",
-      messagingSenderId: "562563277539",
-      appId: "1:562563277539:web:83f23217bde8543d19dbd6",
-      measurementId: "G-LHR4F18RTJ",
-      databaseURL: "https://tay-s-game-default-rtdb.firebaseio.com"
-    };
-
-    /* === Initialize Firebase === */
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const analytics = getAnalytics(app);
-    const remoteConfig = getRemoteConfig(app);
-    remoteConfig.settings.minimumFetchIntervalMillis = 60000;
-    remoteConfig.defaultConfig = { current_pipe_gap_size: 160 };
-
-    /* === Adaptive difficulty === */
-    async function loadAdaptiveDifficulty() {
-      try {
-        await fetchAndActivate(remoteConfig);
-        const gap = Number(getValue(remoteConfig, "current_pipe_gap_size")._value);
-        window.dynamicPipeGap = gap;
-        console.log("✅ Pipe gap loaded from Remote Config:", gap);
-      } catch (err) {
-        console.warn("⚠️ Remote Config failed – using default 160 px", err);
-        window.dynamicPipeGap = 160;
-      }
-    }
-    loadAdaptiveDifficulty();
-
-    /* === Leaderboard display === */
-    async function updateLeaderboardDisplay() {
-      const lbRef = query(ref(db, "leaderboard"), orderByChild("score"), limitToLast(10));
-      const snap = await get(lbRef);
-      if (!snap.exists()) return;
-      const entries = Object.values(snap.val()).sort((a,b)=>b.score-a.score);
-      const panel = document.querySelector("#gameOver .panel");
-      let list = document.getElementById("leaderboardList");
-      if (!list) {
-        list = document.createElement("div");
-        list.id = "leaderboardList";
-        list.style.marginTop = "12px";
-        list.style.fontSize = "16px";
-        list.innerHTML = "<h3 style='text-align:center;'>🏆 Leaderboard</h3>";
-        panel.appendChild(list);
-      }
-      list.innerHTML = "<h3 style='text-align:center;'>🏆 Leaderboard</h3>" +
-        entries.map((e,i)=>`<div class='row'><span>${i+1}. ${e.name||"Anonymous"}</span><strong>${e.score}</strong></div>`).join("");
-    }
-
-    /* === Score submission + anti-spam === */
-    async function submitScore(name, score) {
-      const lbRef = ref(db, "leaderboard");
-      await push(lbRef, { name: name || "Anonymous", score, date: Date.now() });
-      await updateLeaderboardDisplay();
-    }
-
-    let lastSubmitTime = 0;
-    async function safeSubmitScore(name, score) {
-      const now = Date.now();
-      if (now - lastSubmitTime < 30000) {
-        const toast = document.getElementById("toast");
-        toast.textContent = "Please wait before submitting again";
-        toast.classList.add("show");
-        clearTimeout(showToast._t);
-        showToast._t = setTimeout(()=>toast.classList.remove("show"),1500);
-        return;
-      }
-      lastSubmitTime = now;
-      await submitScore(name, score);
-    }
-
-    /* === Hook into gameOver === */
-    const originalGameOver = window.showGameOver;
-    window.showGameOver = async function(scoreVal = 0) {
-      if (originalGameOver && originalGameOver !== window.showGameOver) originalGameOver();
-      logEvent(analytics, "game_over", { score: scoreVal });
-      let playerName = localStorage.getItem("player_name") || "";
-      if (!playerName || scoreVal >= (Number(localStorage.getItem("sb_best")||0))) {
-        playerName = prompt("New high score! Enter your name for the leaderboard:") || "Anonymous";
-        localStorage.setItem("player_name", playerName);
-      }
-      await safeSubmitScore(playerName, scoreVal);
-      updateLeaderboardDisplay();
-    };
-  </script>
-</body>
+</body>  
 </html>
