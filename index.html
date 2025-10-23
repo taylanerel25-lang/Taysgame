@@ -195,7 +195,7 @@
   let multiplier = 1;
   window.score = 0; // expose for Firebase block
 
-  const collectibles = [];
+  let collectibles = [];
   const particles = [];
 
   const medalFor = (s) => s>=50?['🏆 Platinum','#e5e4e2']:s>=30?['🥇 Gold','#f7c32e']:s>=20?['🥈 Silver','#c0c0c0']:s>=10?['🥉 Bronze','#cd7f32']:null;
