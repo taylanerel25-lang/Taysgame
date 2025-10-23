@@ -209,21 +209,17 @@
 
   /* ========= AUDIO ========= */
   let audioCtx = null;
-  const ensureAudio = () => { 
-    if (!audioCtx) { 
-      try { 
-        audioCtx = new (window.AudioContext||window.webkitAudioContext)(); 
-        audioCtx.resume().catch(() => {}); // Explicit resume to handle suspended state on mobile
-      } catch {} 
-    } 
-  };
   const beep = (type,freq,dur,vol=0.2)=>{
     if(!audioCtx || storage.muted) return;
-    const o=audioCtx.createOscillator(), g=audioCtx.createGain();
-    o.type=type; o.frequency.value=freq; g.gain.value=vol;
-    o.connect(g).connect(audioCtx.destination);
-    const t=audioCtx.currentTime;
-    o.start(t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur*0.9); o.stop(t+dur);
+    try {
+      const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+      o.type=type; o.frequency.value=freq; g.gain.value=vol;
+      o.connect(g).connect(audioCtx.destination);
+      const t=audioCtx.currentTime;
+      o.start(t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur*0.9); o.stop(t+dur);
+    } catch (e) {
+      console.warn('Audio playback failed:', e); // Prevent freeze from errors
+    }
   };
   const sfx = {
     flap: ()=>beep('square',600,0.08,0.15),
@@ -268,7 +264,16 @@
   /* ========= INPUT ========= */
   const flap=()=>{
     if(state==='dead') return;
-    ensureAudio();
+
+    // Initialize audio on first user gesture (tap/start)
+    if (!audioCtx) {
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        audioCtx.resume().catch((e) => console.warn('Audio resume failed:', e));
+      } catch (e) {
+        console.warn('AudioContext creation failed:', e);
+      }
+    }
 
     // Require name before first play
     if(!localStorage.getItem('player_name')){
@@ -681,11 +686,15 @@
 
   /* ========= LOOP ========= */
   function loop(now){
-    const dt=clamp((now-lastMs)/1000,0,1/30);
-    lastMs=now;
-    if(state==='ready') worldTime+=dt;
-    else if(state==='running' && !paused){ worldTime+=dt; update(dt); }
-    render();
+    try {
+      const dt=clamp((now-lastMs)/1000,0,1/30);
+      lastMs=now;
+      if(state==='ready') worldTime+=dt;
+      else if(state==='running' && !paused){ worldTime+=dt; update(dt); }
+      render();
+    } catch (e) {
+      console.error('Game loop error:', e);
+    }
     requestAnimationFrame(loop);
   }
 
@@ -708,148 +717,155 @@
   </script>
   <!-- =============== Firebase (Leaderboard + Remote Config + Analytics + Auth) =============== -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-    import { getDatabase, ref, push, get, set, onValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
-    import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-analytics.js";
-    import { getRemoteConfig, fetchAndActivate, getValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-remote-config.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+    try {
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+      import { getDatabase, ref, push, get, set, onValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
+      import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-analytics.js";
+      import { getRemoteConfig, fetchAndActivate, getValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-remote-config.js";
+      import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 
-    // Your Firebase app config
-    const firebaseConfig = {
-      apiKey: "********",
-      authDomain: "********",
-      databaseURL: "********",
-      projectId: "********",
-      storageBucket: "********",
-      messagingSenderId: "********",
-      appId: "********",
-      measurementId: "********"
-    };
+      // Your Firebase app config
+      const firebaseConfig = {
+        apiKey: "********",
+        authDomain: "********",
+        databaseURL: "********",
+        projectId: "********",
+        storageBucket: "********",
+        messagingSenderId: "********",
+        appId: "********",
+        measurementId: "********"
+      };
 
-    // Init
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const analytics = getAnalytics(app);
+      // Init
+      const app = initializeApp(firebaseConfig);
+      const db = getDatabase(app);
+      const analytics = getAnalytics(app);
 
-    // ---------- Auth: sign in anonymously (ensures write access if rules require auth) ----------
-    const auth = getAuth(app);
-    const authReady = new Promise((resolve) => {
-      onAuthStateChanged(auth, (user) => {
-        if (user) { resolve(user); }
+      // ---------- Auth: sign in anonymously (ensures write access if rules require auth) ----------
+      const auth = getAuth(app);
+      const authReady = new Promise((resolve) => {
+        onAuthStateChanged(auth, (user) => {
+          if (user) { resolve(user); }
+        });
       });
-    });
-    // Kick off anon sign-in if needed
-    signInAnonymously(auth).catch((e)=>console.warn("Anonymous auth failed:", e));
+      // Kick off anon sign-in if needed
+      signInAnonymously(auth).catch((e)=>console.warn("Anonymous auth failed:", e));
 
-    // ---------- Remote Config: dynamic pipe gap (optional) ----------
-    const rc = getRemoteConfig(app);
-    rc.settings.minimumFetchIntervalMillis = 60000;
-    rc.defaultConfig = { current_pipe_gap_size: 160 };
-    async function loadAdaptiveDifficulty(){
-      try{
-        await fetchAndActivate(rc);
-        const val = Number(getValue(rc,"current_pipe_gap_size")._value);
-        if(!Number.isNaN(val) && val>60 && val<400){
-          window.dynamicPipeGap = val;
-          console.log("Remote pipe gap:", val);
-        }
-      }catch(e){ console.warn("Remote Config failed", e); }
-    }
-    loadAdaptiveDifficulty();
-
-    // ---------- Leaderboard helpers ----------
-    const sanitize = (name)=> String(name||"Anonymous").trim().replace(/[.#$/\[\]\/]/g,"_").toLowerCase();
-
-    async function updatePlayerBest(name, score){
-      const cleanKey = sanitize(name);
-      const bestRef = ref(db, "bests/" + cleanKey);
-      try {
-        const snap = await get(bestRef);
-        const prev = snap.exists() ? Number(snap.val().bestScore||0) : 0;
-        if(score > prev){
-          await set(bestRef, { name: name || "Anonymous", bestScore: score, updatedAt: Date.now() });
-        }
-      } catch (e) {
-        console.warn("updatePlayerBest failed:", e);
-      }
-    }
-
-    function renderBoard(container, entries){
-      if(!container) return;
-      if(!entries.length){
-        container.innerHTML = "<div style='text-align:center;opacity:.9'>No scores yet</div>";
-        return;
-      }
-      container.innerHTML = entries
-        .map((e,i)=>`<div class="board-row"><span>${i+1}. ${e.name}</span><strong>${e.score}</strong></div>`).join("");
-    }
-
-    function convertBestsToList(obj){
-      if(!obj) return [];
-      return Object.values(obj)
-        .map(e=>({ name: e.name || "Anonymous", score: Number(e.bestScore||0) }))
-        .filter(e=>Number.isFinite(e.score))
-        .sort((a,b)=>b.score-a.score)
-        .slice(0,10);
-    }
-
-    // Live listeners (so all devices see updates instantly)
-    function startLiveLeaderboards(){
-      const splashBody = document.getElementById("leaderboardSplashBody");
-      const overBody = document.getElementById("leaderboardOverBody");
-      const bestsRef = ref(db, "bests");
-      onValue(bestsRef, (snap)=>{
+      // ---------- Remote Config: dynamic pipe gap (optional) ----------
+      const rc = getRemoteConfig(app);
+      rc.settings.minimumFetchIntervalMillis = 60000;
+      rc.defaultConfig = { current_pipe_gap_size: 160 };
+      async function loadAdaptiveDifficulty(){
         try{
-          const top = convertBestsToList(snap.val());
-          renderBoard(splashBody, top);
-          renderBoard(overBody, top);
-        }catch(e){
-          console.warn("Render leaderboard failed:", e);
-          if(splashBody) splashBody.innerHTML = "<div style='text-align:center;opacity:.9'>Couldn’t load leaderboard</div>";
-          if(overBody) overBody.innerHTML = "<div style='text-align:center;opacity:.9'>Couldn’t load leaderboard</div>";
+          await fetchAndActivate(rc);
+          const val = Number(getValue(rc,"current_pipe_gap_size")._value);
+          if(!Number.isNaN(val) && val>60 && val<400){
+            window.dynamicPipeGap = val;
+            console.log("Remote pipe gap:", val);
+          }
+        }catch(e){ console.warn("Remote Config failed", e); }
+      }
+      loadAdaptiveDifficulty();
+
+      // ---------- Leaderboard helpers ----------
+      const sanitize = (name)=> String(name||"Anonymous").trim().replace(/[.#$/\[\]\/]/g,"_").toLowerCase();
+
+      async function updatePlayerBest(name, score){
+        const cleanKey = sanitize(name);
+        const bestRef = ref(db, "bests/" + cleanKey);
+        try {
+          const snap = await get(bestRef);
+          const prev = snap.exists() ? Number(snap.val().bestScore||0) : 0;
+          if(score > prev){
+            await set(bestRef, { name: name || "Anonymous", bestScore: score, updatedAt: Date.now() });
+          }
+        } catch (e) {
+          console.warn("updatePlayerBest failed:", e);
         }
-      }, (err)=>{
-        console.warn("Leaderboard listener error:", err);
+      }
+
+      function renderBoard(container, entries){
+        if(!container) return;
+        if(!entries.length){
+          container.innerHTML = "<div style='text-align:center;opacity:.9'>No scores yet</div>";
+          return;
+        }
+        container.innerHTML = entries
+          .map((e,i)=>`<div class="board-row"><span>${i+1}. ${e.name}</span><strong>${e.score}</strong></div>`).join("");
+      }
+
+      function convertBestsToList(obj){
+        if(!obj) return [];
+        return Object.values(obj)
+          .map(e=>({ name: e.name || "Anonymous", score: Number(e.bestScore||0) }))
+          .filter(e=>Number.isFinite(e.score))
+          .sort((a,b)=>b.score-a.score)
+          .slice(0,10);
+      }
+
+      // Live listeners (so all devices see updates instantly)
+      function startLiveLeaderboards(){
         const splashBody = document.getElementById("leaderboardSplashBody");
         const overBody = document.getElementById("leaderboardOverBody");
-        if(splashBody) splashBody.innerHTML = "<div style='text-align:center;opacity:.9'>Couldn’t load leaderboard</div>";
-        if(overBody) overBody.innerHTML = "<div style='text-align:center;opacity:.9'>Couldn’t load leaderboard</div>";
-      });
+        const bestsRef = ref(db, "bests");
+        onValue(bestsRef, (snap)=>{
+          try{
+            const top = convertBestsToList(snap.val());
+            renderBoard(splashBody, top);
+            renderBoard(overBody, top);
+          }catch(e){
+            console.warn("Render leaderboard failed:", e);
+            if(splashBody) splashBody.innerHTML = "<div style='text-align:center;opacity:.9'>Couldn’t load leaderboard</div>";
+            if(overBody) overBody.innerHTML = "<div style='text-align:center;opacity:.9'>Couldn’t load leaderboard</div>";
+          }
+        }, (err)=>{
+          console.warn("Leaderboard listener error:", err);
+          const splashBody = document.getElementById("leaderboardSplashBody");
+          const overBody = document.getElementById("leaderboardOverBody");
+          if(splashBody) splashBody.innerHTML = "<div style='text-align:center;opacity:.9'>Couldn’t load leaderboard</div>";
+          if(overBody) overBody.innerHTML = "<div style='text-align:center;opacity:.9'>Couldn’t load leaderboard</div>";
+        });
+      }
+
+      // Start listeners right away
+      startLiveLeaderboards();
+
+      // ---------- Submit on Game Over ----------
+      const originalShowGameOver = window.showGameOver;
+      window.showGameOver = async function(...args){
+        if (typeof originalShowGameOver === "function") originalShowGameOver(...args);
+
+        const scoreVal = Number(window.score || 0);
+        try { logEvent(analytics, "game_over", { score: scoreVal }); } catch {}
+
+        let name = localStorage.getItem("player_name") || "";
+        if(!name){
+          // Fallback prompt if name modal wasn’t used for some reason
+          name = prompt("Enter your name for the leaderboard:") || "Anonymous";
+          localStorage.setItem("player_name", name.replace(/[.#$/\[\]\/]/g,"").slice(0,24));
+        }
+
+        try{
+          // Ensure auth is ready in case rules require it
+          await authReady;
+
+          // Save a raw row in /leaderboard (history) and update best
+          await push(ref(db, "leaderboard"), { name: name || "Anonymous", score: scoreVal, date: Date.now() });
+          await updatePlayerBest(name, scoreVal);
+          // live listeners will refresh the UI automatically
+        }catch(e){
+          console.warn("Score submit failed:", e);
+          const toast=document.getElementById("toast");
+          toast.textContent="Couldn’t submit score"; toast.classList.add("show");
+          setTimeout(()=>toast.classList.remove("show"),1500);
+        }
+      };
+    } catch (e) {
+      console.warn('Firebase initialization failed:', e);
+      // Fallback: Disable leaderboards if Firebase fails
+      document.getElementById("leaderboardSplashBody").innerHTML = "<div style='text-align:center;opacity:.9'>Leaderboard unavailable</div>";
+      document.getElementById("leaderboardOverBody").innerHTML = "<div style='text-align:center;opacity:.9'>Leaderboard unavailable</div>";
     }
-
-    // Start listeners right away
-    startLiveLeaderboards();
-
-    // ---------- Submit on Game Over ----------
-    const originalShowGameOver = window.showGameOver;
-    window.showGameOver = async function(...args){
-      if (typeof originalShowGameOver === "function") originalShowGameOver(...args);
-
-      const scoreVal = Number(window.score || 0);
-      try { logEvent(analytics, "game_over", { score: scoreVal }); } catch {}
-
-      let name = localStorage.getItem("player_name") || "";
-      if(!name){
-        // Fallback prompt if name modal wasn’t used for some reason
-        name = prompt("Enter your name for the leaderboard:") || "Anonymous";
-        localStorage.setItem("player_name", name.replace(/[.#$/\[\]\/]/g,"").slice(0,24));
-      }
-
-      try{
-        // Ensure auth is ready in case rules require it
-        await authReady;
-
-        // Save a raw row in /leaderboard (history) and update best
-        await push(ref(db, "leaderboard"), { name: name || "Anonymous", score: scoreVal, date: Date.now() });
-        await updatePlayerBest(name, scoreVal);
-        // live listeners will refresh the UI automatically
-      }catch(e){
-        console.warn("Score submit failed:", e);
-        const toast=document.getElementById("toast");
-        toast.textContent="Couldn’t submit score"; toast.classList.add("show");
-        setTimeout(()=>toast.classList.remove("show"),1500);
-      }
-    };
   </script>
 </body>
 </html>
