@@ -103,7 +103,7 @@
     <div class="name-card">
       <h3 id="nameTitle">Welcome! Enter your name</h3>
       <p style="margin:0 0 6px 0;text-align:center;opacity:.8;font-size:14px;">It’ll appear on the leaderboard across all devices.</p>
-      <div class="name-row">
+    <div class="name-row">
         <input id="playerNameInput" type="text" placeholder="e.g. Tay" maxlength="24" />
         <button id="saveNameBtn" class="btn">Save</button>
       </div>
@@ -524,12 +524,13 @@
   init();
 })();
   </script>
-  <!-- =============== Firebase (Leaderboard + Remote Config + Analytics) =============== -->
+  <!-- =============== Firebase (Leaderboard + Remote Config + Analytics + Auth) =============== -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-    import { getDatabase, ref, push, get, set } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
+    import { getDatabase, ref, push, get, set, onValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
     import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-analytics.js";
     import { getRemoteConfig, fetchAndActivate, getValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-remote-config.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 
     // Your Firebase app config
     const firebaseConfig = {
@@ -547,6 +548,16 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const analytics = getAnalytics(app);
+
+    // ---------- Auth: sign in anonymously (ensures write access if rules require auth) ----------
+    const auth = getAuth(app);
+    const authReady = new Promise((resolve) => {
+      onAuthStateChanged(auth, (user) => {
+        if (user) { resolve(user); }
+      });
+    });
+    // Kick off anon sign-in if needed
+    signInAnonymously(auth).catch((e)=>console.warn("Anonymous auth failed:", e));
 
     // ---------- Remote Config: dynamic pipe gap (optional) ----------
     const rc = getRemoteConfig(app);
@@ -570,10 +581,14 @@
     async function updatePlayerBest(name, score){
       const cleanKey = sanitize(name);
       const bestRef = ref(db, "bests/" + cleanKey);
-      const snap = await get(bestRef);
-      const prev = snap.exists() ? Number(snap.val().bestScore||0) : 0;
-      if(score > prev){
-        await set(bestRef, { name: name || "Anonymous", bestScore: score, updatedAt: Date.now() });
+      try {
+        const snap = await get(bestRef);
+        const prev = snap.exists() ? Number(snap.val().bestScore||0) : 0;
+        if(score > prev){
+          await set(bestRef, { name: name || "Anonymous", bestScore: score, updatedAt: Date.now() });
+        }
+      } catch (e) {
+        console.warn("updatePlayerBest failed:", e);
       }
     }
 
@@ -587,31 +602,41 @@
         .map((e,i)=>`<div class="board-row"><span>${i+1}. ${e.name}</span><strong>${e.score}</strong></div>`).join("");
     }
 
-    async function getTop10(){
-      const bestsRef = ref(db, "bests");
-      const snap = await get(bestsRef);
-      if(!snap.exists()) return [];
-      return Object.values(snap.val())
+    function convertBestsToList(obj){
+      if(!obj) return [];
+      return Object.values(obj)
         .map(e=>({ name: e.name || "Anonymous", score: Number(e.bestScore||0) }))
         .filter(e=>Number.isFinite(e.score))
         .sort((a,b)=>b.score-a.score)
         .slice(0,10);
     }
 
-    async function refreshAllLeaderboards(){
+    // Live listeners (so all devices see updates instantly)
+    function startLiveLeaderboards(){
       const splashBody = document.getElementById("leaderboardSplashBody");
       const overBody = document.getElementById("leaderboardOverBody");
-      try{
-        const top = await getTop10();
-        renderBoard(splashBody, top);
-        renderBoard(overBody, top);
-      }catch(e){
-        console.warn("Leaderboard load failed:", e);
+      const bestsRef = ref(db, "bests");
+      onValue(bestsRef, (snap)=>{
+        try{
+          const top = convertBestsToList(snap.val());
+          renderBoard(splashBody, top);
+          renderBoard(overBody, top);
+        }catch(e){
+          console.warn("Render leaderboard failed:", e);
+          if(splashBody) splashBody.innerHTML = "<div style='text-align:center;opacity:.9'>Couldn’t load leaderboard</div>";
+          if(overBody) overBody.innerHTML = "<div style='text-align:center;opacity:.9'>Couldn’t load leaderboard</div>";
+        }
+      }, (err)=>{
+        console.warn("Leaderboard listener error:", err);
+        const splashBody = document.getElementById("leaderboardSplashBody");
+        const overBody = document.getElementById("leaderboardOverBody");
         if(splashBody) splashBody.innerHTML = "<div style='text-align:center;opacity:.9'>Couldn’t load leaderboard</div>";
         if(overBody) overBody.innerHTML = "<div style='text-align:center;opacity:.9'>Couldn’t load leaderboard</div>";
-      }
+      });
     }
-    refreshAllLeaderboards();
+
+    // Start listeners right away
+    startLiveLeaderboards();
 
     // ---------- Submit on Game Over ----------
     const originalShowGameOver = window.showGameOver;
@@ -619,7 +644,7 @@
       if (typeof originalShowGameOver === "function") originalShowGameOver(...args);
 
       const scoreVal = Number(window.score || 0);
-      logEvent(analytics, "game_over", { score: scoreVal });
+      try { logEvent(analytics, "game_over", { score: scoreVal }); } catch {}
 
       let name = localStorage.getItem("player_name") || "";
       if(!name){
@@ -629,10 +654,13 @@
       }
 
       try{
+        // Ensure auth is ready in case rules require it
+        await authReady;
+
         // Save a raw row in /leaderboard (history) and update best
         await push(ref(db, "leaderboard"), { name: name || "Anonymous", score: scoreVal, date: Date.now() });
         await updatePlayerBest(name, scoreVal);
-        await refreshAllLeaderboards();
+        // live listeners will refresh the UI automatically
       }catch(e){
         console.warn("Score submit failed:", e);
         const toast=document.getElementById("toast");
