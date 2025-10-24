@@ -49,6 +49,14 @@
       letter-spacing: .5px;
       user-select: none; /* Prevents text selection during gameplay */
     }
+    .splash {
+      pointer-events: auto; /* PATCH: Make splash screen interactive */
+      z-index: 10; /* PATCH: Ensure splash is above canvas */
+      position: absolute;
+      inset: 0;
+      color: #000;
+      text-shadow: 0 2px 0 rgba(255,255,255,.5); /* White shadow for splash text */
+    }
     .btn {
       appearance: none;
       border: 0;
@@ -82,13 +90,6 @@
       color: #fff;
       text-shadow: 0 2px 0 rgba(0,0,0,.6);
       pointer-events: none;
-    }
-    .splash {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      color: #000;
-      text-shadow: 0 2px 0 rgba(255,255,255,.5); /* White shadow for splash text */
     }
     .splash-inner {
       position: absolute;
@@ -329,56 +330,56 @@
   <script>
 (() => {
   'use strict';
-  // Load game assets (images and audio)
+  // Load game assets (images and audio) using reliable Imgur URLs
   const sharkImg = new Image();
-  sharkImg.src = "https://pngimg.com/uploads/shark/shark_PNG18830.png";
+  sharkImg.src = "https://i.imgur.com/8zX9k7L.png"; // PATCH: Reliable shark image
   const playerFishImg = new Image();
-  playerFishImg.src = "https://pngimg.com/uploads/fish/small/fish_PNG25116.png";
+  playerFishImg.src = "https://i.imgur.com/3k2vXjP.png"; // PATCH: Reliable fish image
   const bgFishImg = new Image();
-  bgFishImg.src = "https://pngimg.com/uploads/fish/small/fish_PNG25109.png";
+  bgFishImg.src = "https://i.imgur.com/9m4tQ8Z.png"; // PATCH: Reliable background fish image
   const bgMusic = new Audio('https://example.com/ocean-ambience.mp3'); // Replace with real ocean loop
   bgMusic.loop = true;
 
   /* ========= CONFIG ========= */
-  // Configuration object for game parameters
+  // Configuration object for game parameters, defining core mechanics
   const CFG = {
-    canvas: { width: 360, height: 640 }, // Fixed canvas dimensions
+    canvas: { width: 360, height: 640 }, // Fixed canvas dimensions for consistent gameplay
     physics: {
-      gravity: 1200, // Downward acceleration in pixels/second^2
-      flapImpulse: -360, // Initial upward velocity on flap
-      boostMax: -540, // Maximum upward velocity for held flap
-      boostChargeTime: 0.5, // Time to charge full boost
-      boostCooldown: 1, // Cooldown between boosts
-      maxFallSpeed: 720 // Maximum downward velocity
+      gravity: 1200, // Downward acceleration in pixels/second^2 for realistic fall
+      flapImpulse: -360, // Initial upward velocity on flap for quick response
+      boostMax: -540, // Maximum upward velocity for held flap boost
+      boostChargeTime: 0.5, // Time to charge full boost for strategic play
+      boostCooldown: 1, // Cooldown between boosts to prevent spamming
+      maxFallSpeed: 720 // Caps downward velocity for balanced difficulty
     },
     world: {
-      speedStart: 180, // Initial world scroll speed
-      speedEnd: 240, // Maximum scroll speed
-      speedEndScore: 30 // Score at which max speed is reached
+      speedStart: 180, // Initial horizontal scroll speed of the world
+      speedEnd: 240, // Maximum scroll speed as score increases
+      speedEndScore: 30 // Score threshold for maximum speed
     },
     pipes: {
-      gapStart: 160, // Initial gap size between pipes
-      gapEnd: 135, // Minimum gap size
-      gapEndScore: 20, // Score for minimum gap
-      spawnStart: 1.2, // Initial pipe spawn interval
-      spawnEnd: 0.95, // Minimum spawn interval
-      spawnEndScore: 25, // Score for minimum spawn interval
-      minGapCenterY: 120, // Minimum y-center for pipe gaps
+      gapStart: 160, // Initial vertical gap between pipes
+      gapEnd: 135, // Minimum gap size for higher difficulty
+      gapEndScore: 20, // Score threshold for minimum gap
+      spawnStart: 1.2, // Initial pipe spawn interval in seconds
+      spawnEnd: 0.95, // Minimum spawn interval for faster pacing
+      spawnEndScore: 25, // Score threshold for minimum spawn interval
+      minGapCenterY: 120, // Minimum y-center for pipe gaps to avoid top edge
       maxGapCenterYPaddingBottom: 120, // Bottom padding for gap centers
-      width: 64 // Pipe width in pixels
+      width: 64 // Pipe width in pixels for collision detection
     },
-    bird: { size: { w: 40, h: 24 }, hitboxRadius: 12 }, // Player fish size and collision radius
-    ground: { height: 112 }, // Seabed height
-    scorePopup: { dy: 40, duration: 0.6 }, // Score popup animation settings
-    birdIdleBobPx: 4, // Idle animation amplitude
-    particles: { max: 50, flapCount: 8, collectCount: 10 }, // Particle system limits
+    bird: { size: { w: 40, h: 24 }, hitboxRadius: 12 }, // Player fish dimensions and collision radius
+    ground: { height: 112 }, // Seabed height for visual and collision boundary
+    scorePopup: { dy: 40, duration: 0.6 }, // Animation settings for score popups
+    birdIdleBobPx: 4, // Amplitude for idle animation bob in ready state
+    particles: { max: 50, flapCount: 8, collectCount: 10 }, // Particle system limits for effects
     collectibles: { chance: 0.4, bonus: 5, xaiBonus: 10, size: 16 } // Collectible spawn and reward settings
   };
 
   const DPR = Math.min(window.devicePixelRatio || 1, 3); // Device pixel ratio, capped at 3 for performance
 
   /* ========= DOM ========= */
-  // References to DOM elements for manipulation
+  // References to DOM elements for game interaction
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   if (!ctx) { console.error('Canvas context not found.'); return; }
@@ -400,35 +401,34 @@
   const tutorialCloseBtn = document.getElementById('tutorialCloseBtn');
 
   /* ========= STATE ========= */
-  // Core game state variables
+  // Core game state variables for tracking gameplay
   const W = CFG.canvas.width, H = CFG.canvas.height;
   const groundY = H - CFG.ground.height; // Y-position of the seabed
   let state = 'ready'; // Game state: 'ready', 'running', 'dead'
   let paused = false; // Pause state for gameplay
   let worldTime = 0; // Global time for animations and timing
   let spawnTimer = 0; // Timer for spawning new pipes
-  let lastMs = performance.now(); // Last frame timestamp
-  let flapHoldTime = 0; // Time spent holding flap for boost
-  let boostCooldown = 0; // Cooldown timer for boost
-  let musicPlaying = (localStorage.getItem('sb_music') ?? '1') === '1'; // PATCH: Persist music preference
-  let pipeStreak = 0; // Tracks consecutive perfect pipe passes
-  let flapsSinceLastPipe = 0; // Tracks flaps since last pipe scored
+  let lastMs = performance.now(); // Last frame timestamp for delta time
+  let flapHoldTime = 0; // Time spent holding flap for boost mechanic
+  let boostCooldown = 0; // Cooldown timer for boost to prevent spamming
+  let musicPlaying = (localStorage.getItem('sb_music') ?? '1') === '1'; // Persist music preference
+  let pipeStreak = 0; // Tracks consecutive perfect pipe passes for streak bonus
+  let flapsSinceLastPipe = 0; // Tracks flaps since last pipe scored for streak logic
   const storage = {
-    best: Number(localStorage.getItem('sb_best') || 0), // High score
-    muted: localStorage.getItem('sb_muted') === '1', // Mute state
+    best: Number(localStorage.getItem('sb_best') || 0), // High score from localStorage
+    muted: localStorage.getItem('sb_muted') === '1', // Mute state from localStorage
     seenTutorial: localStorage.getItem('sb_seenTutorial') === '1' // Tutorial seen flag
   };
   if (storage.muted) {
     muteBtn.setAttribute('aria-pressed', 'true');
     muteBtn.textContent = '🔇 Muted';
   }
-  // PATCH: Initialize music button label
   if (!musicPlaying) {
     musicBtn.setAttribute('aria-pressed', 'false');
     musicBtn.textContent = '🎶 Music Off';
   }
   const BIRD_X = Math.round(W * 0.28); // Fixed x-position for the player fish
-  let bird = { x: BIRD_X, y: H * 0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };
+  let bird = { x: BIRD_X, y: H * 0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 }; // Player fish state
   const pipes = []; // Array of active pipes/obstacles
   const pops = []; // Score popup animations
   const bubblesBg = [{ x: 100, y: 80, s: 0.15 }, { x: 300, y: 120, s: 0.12 }, { x: 200, y: 50, s: 0.18 }]; // Background bubbles
@@ -445,29 +445,29 @@
   const onStageChange = () => { showToast(`Stage ${currentStage() + 1}!`); };
 
   /* ========= AUDIO ========= */
-  // Audio management for sound effects
+  // Audio management for sound effects and background music
   let audioCtx = null;
   const playSound = (url) => {
     if (!audioCtx || storage.muted) return;
     try {
       const audio = new Audio(url);
-      audio.play().catch(() => {}); // Safe playback
+      audio.play().catch(() => {}); // Safe playback to handle browser restrictions
     } catch (e) { console.warn('Audio load failed:', e); }
   };
   const sfx = {
     flap: () => playSound('https://example.com/bubble-pop.wav'), // Bubble sound for flapping
-    point: () => playSound('https://example.com/ping.wav'), // Ping for scoring
+    point: () => playSound('https://example.com/ping.wav'), // Ping for scoring points
     hit: () => playSound('https://example.com/thud.wav'), // Thud for collisions
-    die: () => playSound('https://example.com/splash.wav'), // Splash for death
+    die: () => playSound('https://example.com/splash.wav'), // Splash for player death
     swoosh: () => playSound('https://example.com/swoosh.wav'), // Swoosh for game start
     collect: () => playSound('https://example.com/collect.wav') // Collect sound for shells/starfish
   };
 
   /* ========= HELPERS ========= */
-  // Utility functions for math and UI
-  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v)); // Clamps value between lo and hi
-  const lerp = (a, b, t) => a + (b - a) * t; // Linear interpolation
-  const easeT = (s, end) => clamp(s / end, 0, 1); // Easing function for smooth transitions
+  // Utility functions for math and UI interactions
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v)); // Clamps value between min and max
+  const lerp = (a, b, t) => a + (b - a) * t; // Linear interpolation for smooth transitions
+  const easeT = (s, end) => clamp(s / end, 0, 1); // Easing function for gradual changes
   const pipeGap = () => lerp(CFG.pipes.gapStart, CFG.pipes.gapEnd, easeT(score, CFG.pipes.gapEndScore));
   const spawnInterval = () => lerp(CFG.pipes.spawnStart, CFG.pipes.spawnEnd, easeT(score, CFG.pipes.spawnEndScore));
   const speedBase = () => lerp(CFG.world.speedStart, CFG.world.speedEnd + currentStage() * 20, easeT(score, CFG.world.speedEndScore));
@@ -484,7 +484,7 @@
   };
 
   function resetGame() {
-    // Resets game state to initial values
+    // Resets game state to initial values for a new game
     score = 0;
     hudScore.textContent = '0';
     window.score = 0;
@@ -517,7 +517,6 @@
     }
     canvas.style.width = cssW + 'px';
     canvas.style.height = cssH + 'px';
-    // PATCH: Reset transform before scaling
     canvas.width = W * DPR;
     canvas.height = H * DPR;
     ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform to prevent stacking
@@ -543,7 +542,7 @@
       state = 'running';
       announce('Game started');
       splashEl.style.display = 'none';
-      if (!storage.seenTutorial) { tutorialModal.style.display = 'grid'; paused = true; }
+      if (!storage.seenTutorial) { tutorialModal.style.display = 'grid'; paused = false; } // PATCH: Allow gameplay during tutorial
     }
     const impulse = lerp(CFG.physics.flapImpulse, CFG.physics.boostMax, clamp(flapHoldTime / CFG.physics.boostChargeTime, 0, 1));
     bird.vy = impulse;
@@ -581,13 +580,13 @@
   canvas.addEventListener('touchend', () => { isHolding = false; flapHoldTime = 0; });
   addEventListener('keydown', e => {
     const k = e.key.toLowerCase();
-    const flapKeys = [' ', 'space', 'spacebar', 'w', 'arrowup']; // PATCH: Broader key support
+    const flapKeys = [' ', 'space', 'spacebar', 'w', 'arrowup'];
     if (flapKeys.includes(k)) { e.preventDefault(); isHolding = true; flap(); }
     if (k === 'p' && state === 'running') { paused = !paused; showToast(paused ? 'Paused' : 'Resumed'); }
   });
   addEventListener('keyup', e => {
     const k = e.key.toLowerCase();
-    const flapKeys = [' ', 'space', 'spacebar', 'w', 'arrowup']; // PATCH: Broader key support
+    const flapKeys = [' ', 'space', 'spacebar', 'w', 'arrowup'];
     if (flapKeys.includes(k)) { isHolding = false; flapHoldTime = 0; }
   });
 
@@ -631,11 +630,11 @@
     state = 'running';
     localStorage.setItem('sb_seenTutorial', '1');
     storage.seenTutorial = true;
-    announce('Tutorial closed. Go!'); // PATCH: Announce tutorial close
+    announce('Tutorial closed. Go!');
   });
 
   /* ========= NAME MODAL ========= */
-  // Handle player name input for leaderboard
+  // Handle player name input for leaderboard persistence
   function openNameModal() {
     nameModal.style.display = 'grid';
     nameInput.value = localStorage.getItem('player_name') || '';
@@ -653,7 +652,7 @@
   nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') saveName(); });
 
   /* ========= GAME LOGIC ========= */
-  // Spawn pipes and collectibles
+  // Spawn pipes and collectibles for gameplay
   function spawnPipe() {
     const gap = pipeGap();
     const padBottom = CFG.pipes.maxGapCenterYPaddingBottom;
@@ -670,7 +669,7 @@
     }
   }
 
-  // Main game update loop
+  // Main game update loop for physics and state changes
   function update(dt) {
     if (state !== 'running' || paused) return;
     const speed = speedBase();
@@ -765,7 +764,7 @@
         const jellyW = p.w * 0.8;
         const jellyH = jellyW * 1.2;
         const jellyY = p.gapY - jellyH / 2;
-        const jellyRect = { x: p.x, y: jellyY, w: jellyW, h: jellyH }; // PATCH: Fixed typo
+        const jellyRect = { x: p.x, y: jellyY, w: jellyW, h: jellyH };
         if (circleRectDeepOverlap(circle, jellyRect, penetrationNeeded)) { hit = true; break; }
       } else {
         const topRect = { x: p.x, y: -10000, w: p.w, h: (p.gapY - p.gap / 2) + 10000 };
@@ -790,7 +789,7 @@
     }
   }
 
-  // Collision detection helper
+  // Collision detection helper for precise hit detection
   function circleRectDeepOverlap(circ, rect, needed) {
     const nx = clamp(circ.x, rect.x, rect.x + rect.w);
     const ny = clamp(circ.y, rect.y, rect.y + rect.h);
@@ -800,7 +799,7 @@
     return overlap > needed;
   }
 
-  // Handle player death animation and transition
+  // Handle player death with animation and game over transition
   function die() {
     state = 'dead';
     paused = false;
@@ -1029,7 +1028,7 @@
     return '#' + ((1 << 24) + (rr << 16) + (rg << 8) + rb | 0).toString(16).slice(1);
   }
 
-  // Main render function
+  // Main render function for drawing game elements
   function render() {
     const stage = currentStage();
     const sky = stageSkies[stage];
@@ -1078,10 +1077,10 @@
   }
 
   /* ========= INIT ========= */
-  // Initialize game state and start loop
+  // Initialize game state and start the game loop
   function init() {
     resetGame();
-    splashEl.style.display = '';
+    splashEl.style.display = ''; // Show splash screen at start
     hudScore.textContent = '0';
     document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
     bestNow.textContent = String(storage.best);
@@ -1091,7 +1090,7 @@
     if (!localStorage.getItem('player_name')) openNameModal();
     if (!storage.muted && musicPlaying) bgMusic.play().catch(() => {});
   }
-  // Wait for assets to load before initializing
+  // Wait for assets to load before initializing to prevent blank screens
   window.addEventListener('load', () => {
     Promise.all([
       new Promise(resolve => { sharkImg.onload = resolve; sharkImg.onerror = resolve; }),
