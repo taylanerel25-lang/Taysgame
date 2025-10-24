@@ -42,7 +42,7 @@
     .hud {
       position: fixed;
       inset: 0;
-      pointer-events: none; /* Allows clicks to pass through to canvas */
+      pointer-events: auto; /* PATCH: Allow clicks/taps on splash and HUD elements */
       display: grid;
       place-items: center;
       font-weight: 700;
@@ -50,12 +50,10 @@
       user-select: none; /* Prevents text selection during gameplay */
     }
     .splash {
-      pointer-events: auto; /* PATCH: Make splash screen interactive */
-      z-index: 10; /* PATCH: Ensure splash is above canvas */
       position: absolute;
       inset: 0;
       color: #000;
-      text-shadow: 0 2px 0 rgba(255,255,255,.5); /* White shadow for splash text */
+      text-shadow: 0 2px 0 rgba(255,255,255,.5); /* White shadow for splash text readability */
     }
     .btn {
       appearance: none;
@@ -332,11 +330,11 @@
   'use strict';
   // Load game assets (images and audio) using reliable Imgur URLs
   const sharkImg = new Image();
-  sharkImg.src = "https://i.imgur.com/8zX9k7L.png"; // PATCH: Reliable shark image
+  sharkImg.src = "https://i.imgur.com/8zX9k7L.png";
   const playerFishImg = new Image();
-  playerFishImg.src = "https://i.imgur.com/3k2vXjP.png"; // PATCH: Reliable fish image
+  playerFishImg.src = "https://i.imgur.com/3k2vXjP.png";
   const bgFishImg = new Image();
-  bgFishImg.src = "https://i.imgur.com/9m4tQ8Z.png"; // PATCH: Reliable background fish image
+  bgFishImg.src = "https://i.imgur.com/9m4tQ8Z.png";
   const bgMusic = new Audio('https://example.com/ocean-ambience.mp3'); // Replace with real ocean loop
   bgMusic.loop = true;
 
@@ -542,7 +540,7 @@
       state = 'running';
       announce('Game started');
       splashEl.style.display = 'none';
-      if (!storage.seenTutorial) { tutorialModal.style.display = 'grid'; paused = false; } // PATCH: Allow gameplay during tutorial
+      if (!storage.seenTutorial) { tutorialModal.style.display = 'none'; paused = false; } // PATCH: Hide tutorial, keep game running
     }
     const impulse = lerp(CFG.physics.flapImpulse, CFG.physics.boostMax, clamp(flapHoldTime / CFG.physics.boostChargeTime, 0, 1));
     bird.vy = impulse;
