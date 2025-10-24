@@ -2,27 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <!-- Ensures proper character encoding for the document, supporting special characters -->
   <title>Swimming Fish</title>
-  <!-- Sets the browser tab title to "Swimming Fish" -->
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-  <!-- Configures responsive viewport, disables user scaling for consistent game display -->
   <meta name="theme-color" content="#20b2aa" />
-  <!-- Sets browser UI theme color (e.g., mobile address bar) to ocean blue -->
   <style>
     :root {
-      --bg: #20b2aa; /* Ocean blue background for the canvas */
-      --panel: rgba(255,255,255,.9); /* Semi-transparent white for UI panels */
-      --panel-dark: rgba(0,0,0,.65); /* Darker panel for contrast in leaderboard */
-      --text: #1d1d1f; /* Dark text color for readability */
+      --bg: #20b2aa;
+      --panel: rgba(255,255,255,.9);
+      --panel-dark: rgba(0,0,0,.65);
+      --text: #1d1d1f;
     }
     html, body {
       height: 100%;
       margin: 0;
-      background: #111; /* Dark page background for contrast with canvas */
+      background: #111;
       color: var(--text);
       font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans";
-      overscroll-behavior: none; /* Prevents scroll bounce on touch devices */
+      overscroll-behavior: none;
     }
     .wrap {
       position: fixed;
@@ -30,30 +26,29 @@
       display: grid;
       place-items: center;
       padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-      /* Centers canvas and respects safe areas for notched devices */
     }
     canvas {
       background: var(--bg);
-      box-shadow: 0 10px 40px rgba(0,0,0,.35); /* Subtle shadow for depth */
+      box-shadow: 0 10px 40px rgba(0,0,0,.35);
       border-radius: 16px;
-      image-rendering: pixelated; /* Ensures crisp pixel art rendering */
-      touch-action: none; /* Disables default touch behaviors for game controls */
+      image-rendering: pixelated;
+      touch-action: none;
     }
     .hud {
       position: fixed;
       inset: 0;
-      pointer-events: auto; /* PATCH: Allow clicks/taps on splash and HUD elements */
+      pointer-events: auto; /* PATCH: allow clicks/taps */
       display: grid;
       place-items: center;
       font-weight: 700;
       letter-spacing: .5px;
-      user-select: none; /* Prevents text selection during gameplay */
+      user-select: none;
     }
     .splash {
       position: absolute;
       inset: 0;
       color: #000;
-      text-shadow: 0 2px 0 rgba(255,255,255,.5); /* White shadow for splash text readability */
+      text-shadow: 0 2px 0 rgba(255,255,255,.5);
     }
     .btn {
       appearance: none;
@@ -61,7 +56,7 @@
       background: var(--panel);
       color: #111;
       padding: 8px 12px;
-      border-radius: 999px; /* Pill-shaped buttons for modern look */
+      border-radius: 999px;
       font-weight: 700;
       box-shadow: 0 2px 8px rgba(0,0,0,.15);
       cursor: pointer;
@@ -69,7 +64,7 @@
     }
     .btn:focus {
       outline: 3px solid #000;
-      outline-offset: 2px; /* Accessibility outline for keyboard navigation */
+      outline-offset: 2px;
     }
     .score {
       position: fixed;
@@ -77,7 +72,7 @@
       right: 14px;
       font-size: 28px;
       color: #fff;
-      text-shadow: 0 2px 0 rgba(0,0,0,.6); /* Shadow for score readability */
+      text-shadow: 0 2px 0 rgba(0,0,0,.6);
       pointer-events: none;
     }
     .best {
@@ -98,14 +93,8 @@
       text-align: center;
       pointer-events: none;
     }
-    .title {
-      font-size: 36px;
-      margin: 2px 0 8px;
-    }
-    .subtitle {
-      font-size: 18px;
-      opacity: .95;
-    }
+    .title { font-size: 36px; margin: 2px 0 8px; }
+    .subtitle { font-size: 18px; opacity: .95; }
     .splash-board {
       position: absolute;
       left: 50%;
@@ -119,18 +108,10 @@
       box-shadow: 0 8px 30px rgba(0,0,0,.25);
       pointer-events: auto;
     }
-    .board-head {
-      font-size: 20px;
-      font-weight: 800;
-      text-align: center;
-      margin: 0 0 6px;
-    }
+    .board-head { font-size: 20px; font-weight: 800; text-align: center; margin: 0 0 6px; }
     .board-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 16px;
-      padding: 6px 0;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 16px; padding: 6px 0;
     }
     .panel {
       min-width: 280px;
@@ -143,143 +124,71 @@
       pointer-events: auto;
       transform: translateY(8px);
     }
-    .panel h2 {
-      margin: 0 0 8px 0;
-      font-size: 22px;
-      text-align: center;
-    }
-    .panel .row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 18px;
-      padding: 6px 0;
-    }
-    .panel .actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-top: 12px;
-    }
+    .panel h2 { margin: 0 0 8px 0; font-size: 22px; text-align: center; }
+    .panel .row { display: flex; justify-content: space-between; align-items: center; font-size: 18px; padding: 6px 0; }
+    .panel .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
     .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(0,0,0,.08);
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 14px;
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(0,0,0,.08); padding: 4px 10px; border-radius: 999px; font-size: 14px;
     }
     .sr-only {
-      position: absolute !important;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0,0,0,0);
-      white-space: nowrap;
-      border: 0;
+      position: absolute !important; width: 1px; height: 1px; padding: 0;
+      margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
     }
     .toast {
-      position: fixed;
-      bottom: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,.85);
-      color: #fff;
-      padding: 8px 12px;
-      border-radius: 10px;
-      font-size: 14px;
-      pointer-events: none;
-      opacity: 0;
+      position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,.85); color: #fff; padding: 8px 12px; border-radius: 10px;
+      font-size: 14px; pointer-events: none; opacity: 0;
       transition: opacity .25s ease, transform .25s ease;
     }
-    .toast.show {
-      opacity: 1;
-      transform: translate(-50%, -6px);
-    }
-    .soundbar {
-      position: fixed;
-      top: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      pointer-events: auto;
-      display: flex;
-      gap: 8px; /* Spaces buttons in the soundbar */
-    }
+    .toast.show { opacity: 1; transform: translate(-50%, -6px); }
+    .soundbar { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); pointer-events: auto; display: flex; gap: 8px; }
     .name-modal {
-      position: fixed;
-      inset: 0;
-      display: none;
-      place-items: center;
-      background: rgba(0,0,0,.35);
+      position: fixed; inset: 0; display: none; place-items: center; background: rgba(0,0,0,.35);
     }
     .name-card {
-      width: min(92%, 360px);
-      background: #fff;
-      color: #111;
-      border-radius: 18px;
-      padding: 16px;
-      box-shadow: 0 10px 40px rgba(0,0,0,.35);
+      width: min(92%, 360px); background: #fff; color: #111;
+      border-radius: 18px; padding: 16px; box-shadow: 0 10px 40px rgba(0,0,0,.35);
     }
-    .name-card h3 {
-      margin: 0 0 8px 0;
-      text-align: center;
-    }
-    .name-row {
-      display: flex;
-      gap: 8px;
-      margin-top: 10px;
-    }
+    .name-card h3 { margin: 0 0 8px 0; text-align: center; }
+    .name-row { display: flex; gap: 8px; margin-top: 10px; }
     .name-row input {
-      flex: 1;
-      border-radius: 12px;
-      border: 2px solid #ddd;
-      padding: 10px 12px;
-      font-size: 16px;
+      flex: 1; border-radius: 12px; border: 2px solid #ddd;
+      padding: 10px 12px; font-size: 16px;
     }
-    .name-row button {
-      white-space: nowrap;
-    }
+    .name-row button { white-space: nowrap; }
     .tutorial {
-      position: fixed;
-      inset: 0;
-      display: none;
-      place-items: center;
-      background: rgba(0,0,0,.5);
-      pointer-events: auto;
+      position: fixed; inset: 0; display: none; place-items: center;
+      background: rgba(0,0,0,.5); pointer-events: auto;
     }
     .tutorial-card {
-      width: min(92%, 360px);
-      background: #fff;
-      color: #111;
-      border-radius: 18px;
-      padding: 16px;
-      text-align: center;
+      width: min(92%, 360px); background: #fff; color: #111;
+      border-radius: 18px; padding: 16px; text-align: center;
     }
   </style>
 </head>
+
 <body>
-  <!-- Main game canvas container -->
   <div class="wrap">
     <canvas id="game" width="360" height="640" aria-label="Swimming Fish canvas"></canvas>
   </div>
-  <!-- HUD for in-game UI elements -->
+
   <div class="hud" aria-hidden="true">
     <div class="soundbar">
-      <button id="muteBtn" class="btn" aria-pressed="false" aria-label="Toggle sound">🔊 Sound</button>
+      <button id="muteBtn" class="btn" aria-pressed="false">🔊 Sound</button>
       <button id="pauseBtn" class="btn">⏸ Pause</button>
-      <button id="musicBtn" class="btn" aria-pressed="true" aria-label="Toggle music">🎵 Music</button>
+      <button id="musicBtn" class="btn" aria-pressed="true">🎵 Music</button>
     </div>
     <div id="scoreHud" class="score">0</div>
     <div id="bestHud" class="best">Highest: 0</div>
     <div id="splash" class="splash">
       <div class="splash-inner">
         <div class="title">Swimming Fish</div>
-        <div style="font-size:14px;opacity:.9">Made for xAI by Taylan&trade;</div>
+        <div style="font-size:14px;opacity:.9">Made for xAI by Taylan™</div>
         <div class="subtitle">Tap / Click / Space to start</div>
-        <div style="margin-top:6px;font-size:14px;opacity:.9">Avoid obstacles, collect shells &amp; starfish. Good luck!</div>
+        <div style="margin-top:6px;font-size:14px;opacity:.9">
+          Avoid obstacles, collect shells &amp; starfish. Good luck!
+        </div>
       </div>
       <div id="splashBoard" class="splash-board">
         <div class="board-head">🏆 Leaderboard</div>
@@ -292,7 +201,12 @@
     <div class="panel" role="dialog" aria-modal="true" aria-labelledby="overTitle">
       <h2 id="overTitle">Game Over</h2>
       <div class="row"><span>Your Score</span><strong id="scoreNow">0</strong></div>
-      <div class="row"><span>Highest Score</span><span><strong id="bestNow">0</strong> <span id="medal" class="pill" aria-label="medal" style="display:none;">🥉 Bronze</span></span></div>
+      <div class="row">
+        <span>Highest Score</span>
+        <span><strong id="bestNow">0</strong>
+          <span id="medal" class="pill" style="display:none;">🥉 Bronze</span>
+        </span>
+      </div>
       <div class="actions">
         <button id="againBtn" class="btn">Play Again</button>
         <button id="shareBtn" class="btn">Share</button>
@@ -303,18 +217,22 @@
       </div>
     </div>
   </div>
-  <!-- Name input modal for leaderboard -->
+
+  <!-- Name input modal -->
   <div id="nameModal" class="name-modal" role="dialog" aria-modal="true" aria-labelledby="nameTitle">
     <div class="name-card">
       <h3 id="nameTitle">Welcome! Enter your name</h3>
-      <p style="margin:0 0 6px 0;text-align:center;opacity:.8;font-size:14px;">It’ll appear on the leaderboard across all devices.</p>
+      <p style="margin:0 0 6px;text-align:center;opacity:.8;font-size:14px;">
+        It’ll appear on the leaderboard across all devices.
+      </p>
       <div class="name-row">
         <input id="playerNameInput" type="text" placeholder="e.g. Tay" maxlength="24" />
         <button id="saveNameBtn" class="btn">Save</button>
       </div>
     </div>
   </div>
-  <!-- Tutorial modal for first-time players -->
+
+  <!-- Tutorial modal -->
   <div id="tutorialModal" class="tutorial">
     <div class="tutorial-card">
       <h3>Welcome to Swimming Fish!</h3>
@@ -323,1099 +241,417 @@
       <button id="tutorialCloseBtn" class="btn">Got it!</button>
     </div>
   </div>
+
   <div id="aria" class="sr-only" aria-live="polite"></div>
   <div id="toast" class="toast" role="status"></div>
+
   <script>
 (() => {
-  'use strict';
-  // Load game assets (images and audio) using reliable Imgur URLs
-  const sharkImg = new Image();
-  sharkImg.src = "https://i.imgur.com/8zX9k7L.png";
-  const playerFishImg = new Image();
-  playerFishImg.src = "https://i.imgur.com/3k2vXjP.png";
-  const bgFishImg = new Image();
-  bgFishImg.src = "https://i.imgur.com/9m4tQ8Z.png";
-  const bgMusic = new Audio('https://example.com/ocean-ambience.mp3'); // Replace with real ocean loop
-  bgMusic.loop = true;
+'use strict';
 
-  /* ========= CONFIG ========= */
-  // Configuration object for game parameters, defining core mechanics
-  const CFG = {
-    canvas: { width: 360, height: 640 }, // Fixed canvas dimensions for consistent gameplay
-    physics: {
-      gravity: 1200, // Downward acceleration in pixels/second^2 for realistic fall
-      flapImpulse: -360, // Initial upward velocity on flap for quick response
-      boostMax: -540, // Maximum upward velocity for held flap boost
-      boostChargeTime: 0.5, // Time to charge full boost for strategic play
-      boostCooldown: 1, // Cooldown between boosts to prevent spamming
-      maxFallSpeed: 720 // Caps downward velocity for balanced difficulty
-    },
-    world: {
-      speedStart: 180, // Initial horizontal scroll speed of the world
-      speedEnd: 240, // Maximum scroll speed as score increases
-      speedEndScore: 30 // Score threshold for maximum speed
-    },
-    pipes: {
-      gapStart: 160, // Initial vertical gap between pipes
-      gapEnd: 135, // Minimum gap size for higher difficulty
-      gapEndScore: 20, // Score threshold for minimum gap
-      spawnStart: 1.2, // Initial pipe spawn interval in seconds
-      spawnEnd: 0.95, // Minimum spawn interval for faster pacing
-      spawnEndScore: 25, // Score threshold for minimum spawn interval
-      minGapCenterY: 120, // Minimum y-center for pipe gaps to avoid top edge
-      maxGapCenterYPaddingBottom: 120, // Bottom padding for gap centers
-      width: 64 // Pipe width in pixels for collision detection
-    },
-    bird: { size: { w: 40, h: 24 }, hitboxRadius: 12 }, // Player fish dimensions and collision radius
-    ground: { height: 112 }, // Seabed height for visual and collision boundary
-    scorePopup: { dy: 40, duration: 0.6 }, // Animation settings for score popups
-    birdIdleBobPx: 4, // Amplitude for idle animation bob in ready state
-    particles: { max: 50, flapCount: 8, collectCount: 10 }, // Particle system limits for effects
-    collectibles: { chance: 0.4, bonus: 5, xaiBonus: 10, size: 16 } // Collectible spawn and reward settings
-  };
+/* ========= ASSET LOADING ========= */
+const sharkImg = new Image();
+sharkImg.src = "https://i.imgur.com/8zX9k7L.png";
+const playerFishImg = new Image();
+playerFishImg.src = "https://i.imgur.com/3k2vXjP.png";
+const bgFishImg = new Image();
+bgFishImg.src = "https://i.imgur.com/9m4tQ8Z.png";
+const bgMusic = new Audio('https://example.com/ocean-ambience.mp3');
+bgMusic.loop = true;
 
-  const DPR = Math.min(window.devicePixelRatio || 1, 3); // Device pixel ratio, capped at 3 for performance
+/* ========= CONFIGURATION ========= */
+const CFG = {
+  canvas: { width: 360, height: 640 },
+  physics: {
+    gravity: 1200,
+    flapImpulse: -360,
+    boostMax: -540,
+    boostChargeTime: 0.5,
+    boostCooldown: 1,
+    maxFallSpeed: 720
+  },
+  world: {
+    speedStart: 180,
+    speedEnd: 240,
+    speedEndScore: 30
+  },
+  pipes: {
+    gapStart: 160,
+    gapEnd: 135,
+    gapEndScore: 20,
+    spawnStart: 1.2,
+    spawnEnd: 0.95,
+    spawnEndScore: 25,
+    minGapCenterY: 120,
+    maxGapCenterYPaddingBottom: 120,
+    width: 64
+  },
+  bird: { size: { w: 40, h: 24 }, hitboxRadius: 12 },
+  ground: { height: 112 },
+  scorePopup: { dy: 40, duration: 0.6 },
+  birdIdleBobPx: 4,
+  particles: { max: 50, flapCount: 8, collectCount: 10 },
+  collectibles: { chance: 0.4, bonus: 5, xaiBonus: 10, size: 16 }
+};
+const DPR = Math.min(window.devicePixelRatio || 1, 3);
 
-  /* ========= DOM ========= */
-  // References to DOM elements for game interaction
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
-  if (!ctx) { console.error('Canvas context not found.'); return; }
-  const splashEl = document.getElementById('splash');
-  const hudScore = document.getElementById('scoreHud');
-  const overPanel = document.getElementById('gameOver');
-  const scoreNow = document.getElementById('scoreNow');
-  const bestNow = document.getElementById('bestNow');
-  const medalEl = document.getElementById('medal');
-  const muteBtn = document.getElementById('muteBtn');
-  const pauseBtn = document.getElementById('pauseBtn');
-  const musicBtn = document.getElementById('musicBtn');
-  const ariaLive = document.getElementById('aria');
-  const toast = document.getElementById('toast');
-  const nameModal = document.getElementById('nameModal');
-  const nameInput = document.getElementById('playerNameInput');
-  const saveNameBtn = document.getElementById('saveNameBtn');
-  const tutorialModal = document.getElementById('tutorialModal');
-  const tutorialCloseBtn = document.getElementById('tutorialCloseBtn');
+/* ========= DOM REFERENCES ========= */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+if (!ctx) { console.error('Canvas context not found.'); return; }
 
-  /* ========= STATE ========= */
-  // Core game state variables for tracking gameplay
-  const W = CFG.canvas.width, H = CFG.canvas.height;
-  const groundY = H - CFG.ground.height; // Y-position of the seabed
-  let state = 'ready'; // Game state: 'ready', 'running', 'dead'
-  let paused = false; // Pause state for gameplay
-  let worldTime = 0; // Global time for animations and timing
-  let spawnTimer = 0; // Timer for spawning new pipes
-  let lastMs = performance.now(); // Last frame timestamp for delta time
-  let flapHoldTime = 0; // Time spent holding flap for boost mechanic
-  let boostCooldown = 0; // Cooldown timer for boost to prevent spamming
-  let musicPlaying = (localStorage.getItem('sb_music') ?? '1') === '1'; // Persist music preference
-  let pipeStreak = 0; // Tracks consecutive perfect pipe passes for streak bonus
-  let flapsSinceLastPipe = 0; // Tracks flaps since last pipe scored for streak logic
-  const storage = {
-    best: Number(localStorage.getItem('sb_best') || 0), // High score from localStorage
-    muted: localStorage.getItem('sb_muted') === '1', // Mute state from localStorage
-    seenTutorial: localStorage.getItem('sb_seenTutorial') === '1' // Tutorial seen flag
-  };
-  if (storage.muted) {
-    muteBtn.setAttribute('aria-pressed', 'true');
-    muteBtn.textContent = '🔇 Muted';
-  }
-  if (!musicPlaying) {
-    musicBtn.setAttribute('aria-pressed', 'false');
-    musicBtn.textContent = '🎶 Music Off';
-  }
-  const BIRD_X = Math.round(W * 0.28); // Fixed x-position for the player fish
-  let bird = { x: BIRD_X, y: H * 0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 }; // Player fish state
-  const pipes = []; // Array of active pipes/obstacles
-  const pops = []; // Score popup animations
-  const bubblesBg = [{ x: 100, y: 80, s: 0.15 }, { x: 300, y: 120, s: 0.12 }, { x: 200, y: 50, s: 0.18 }]; // Background bubbles
-  const bubblesFg = [{ x: 40, y: 100, s: 0.30 }, { x: 240, y: 60, s: 0.25 }, { x: 170, y: 140, s: 0.22 }]; // Foreground bubbles
-  let score = 0; // Current score
-  window.score = 0; // Exposed for leaderboard integration
-  let collectibles = []; // Array of collectibles (shells, xAI starfish)
-  const particles = []; // Particle effects for flaps and collisions
-  const medalFor = (s) => s >= 50 ? ['🏆 Platinum', '#e5e4e2'] : s >= 30 ? ['🥇 Gold', '#f7c32e'] : s >= 20 ? ['🥈 Silver', '#c0c0c0'] : s >= 10 ? ['🥉 Bronze', '#cd7f32'] : null;
-  const stageSkies = ['#20b2aa', '#00bfff', '#4682b4', '#191970', '#00ced1']; // Background colors per stage
-  const stagePipes = ['#ff7f50', '#ff4500', '#cd5b45', '#a52a2a', '#ff6347']; // Pipe colors per stage
-  let lastStage = -1; // Tracks last stage for change detection
-  const currentStage = () => Math.min(Math.floor(score / 10), stageSkies.length - 1);
-  const onStageChange = () => { showToast(`Stage ${currentStage() + 1}!`); };
+const splashEl = document.getElementById('splash');
+const hudScore = document.getElementById('scoreHud');
+const overPanel = document.getElementById('gameOver');
+const scoreNow = document.getElementById('scoreNow');
+const bestNow = document.getElementById('bestNow');
+const medalEl = document.getElementById('medal');
+const muteBtn = document.getElementById('muteBtn');
+const pauseBtn = document.getElementById('pauseBtn');
+const musicBtn = document.getElementById('musicBtn');
+const ariaLive = document.getElementById('aria');
+const toast = document.getElementById('toast');
+const nameModal = document.getElementById('nameModal');
+const nameInput = document.getElementById('playerNameInput');
+const saveNameBtn = document.getElementById('saveNameBtn');
+const tutorialModal = document.getElementById('tutorialModal');
+const tutorialCloseBtn = document.getElementById('tutorialCloseBtn');
 
-  /* ========= AUDIO ========= */
-  // Audio management for sound effects and background music
-  let audioCtx = null;
-  const playSound = (url) => {
-    if (!audioCtx || storage.muted) return;
-    try {
-      const audio = new Audio(url);
-      audio.play().catch(() => {}); // Safe playback to handle browser restrictions
-    } catch (e) { console.warn('Audio load failed:', e); }
-  };
-  const sfx = {
-    flap: () => playSound('https://example.com/bubble-pop.wav'), // Bubble sound for flapping
-    point: () => playSound('https://example.com/ping.wav'), // Ping for scoring points
-    hit: () => playSound('https://example.com/thud.wav'), // Thud for collisions
-    die: () => playSound('https://example.com/splash.wav'), // Splash for player death
-    swoosh: () => playSound('https://example.com/swoosh.wav'), // Swoosh for game start
-    collect: () => playSound('https://example.com/collect.wav') // Collect sound for shells/starfish
-  };
+/* ========= STATE ========= */
+const W = CFG.canvas.width, H = CFG.canvas.height;
+const groundY = H - CFG.ground.height;
+let state = 'ready';
+let paused = false;
+let worldTime = 0;
+let spawnTimer = 0;
+let lastMs = performance.now();
+let flapHoldTime = 0;
+let boostCooldown = 0;
+let musicPlaying = (localStorage.getItem('sb_music') ?? '1') === '1';
+let pipeStreak = 0;
+let flapsSinceLastPipe = 0;
 
-  /* ========= HELPERS ========= */
-  // Utility functions for math and UI interactions
-  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v)); // Clamps value between min and max
-  const lerp = (a, b, t) => a + (b - a) * t; // Linear interpolation for smooth transitions
-  const easeT = (s, end) => clamp(s / end, 0, 1); // Easing function for gradual changes
-  const pipeGap = () => lerp(CFG.pipes.gapStart, CFG.pipes.gapEnd, easeT(score, CFG.pipes.gapEndScore));
-  const spawnInterval = () => lerp(CFG.pipes.spawnStart, CFG.pipes.spawnEnd, easeT(score, CFG.pipes.spawnEndScore));
-  const speedBase = () => lerp(CFG.world.speedStart, CFG.world.speedEnd + currentStage() * 20, easeT(score, CFG.world.speedEndScore));
-  const showToast = (msg) => {
-    toast.textContent = msg;
-    toast.classList.add('show');
-    clearTimeout(showToast._t);
-    showToast._t = setTimeout(() => toast.classList.remove('show'), 1200);
-  };
-  const announce = (msg) => {
-    const a = document.getElementById('aria');
-    a.textContent = '';
-    setTimeout(() => a.textContent = msg, 30); // Delayed for screen reader reliability
-  };
+const storage = {
+  best: Number(localStorage.getItem('sb_best') || 0),
+  muted: localStorage.getItem('sb_muted') === '1',
+  seenTutorial: localStorage.getItem('sb_seenTutorial') === '1'
+};
 
-  function resetGame() {
-    // Resets game state to initial values for a new game
-    score = 0;
-    hudScore.textContent = '0';
-    window.score = 0;
-    worldTime = 0;
-    spawnTimer = -0.5;
-    pipes.length = 0;
-    pops.length = 0;
-    collectibles.length = 0;
-    particles.length = 0;
-    bird = { x: BIRD_X, y: H * 0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };
-    sfx.swoosh();
-    lastStage = -1;
-    pipeStreak = 0;
-    flapsSinceLastPipe = 0;
-    document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
-  }
+if (storage.muted) {
+  muteBtn.setAttribute('aria-pressed','true');
+  muteBtn.textContent = '🔇 Muted';
+}
+if (!musicPlaying) {
+  musicBtn.setAttribute('aria-pressed','false');
+  musicBtn.textContent = '🎶 Music Off';
+}
 
-  /* ========= DPR / RESIZE ========= */
-  function fitCanvas() {
-    // Adjusts canvas size to fit window while maintaining aspect ratio
-    const aspect = W / H;
-    const vw = innerWidth, vh = innerHeight;
-    let cssW, cssH;
-    if (vw / vh < aspect) {
-      cssW = Math.min(vw, W * 2.5);
-      cssH = Math.round(cssW / aspect);
-    } else {
-      cssH = Math.min(vh, H * 2.5);
-      cssW = Math.round(cssH * aspect);
-    }
-    canvas.style.width = cssW + 'px';
-    canvas.style.height = cssH + 'px';
-    canvas.width = W * DPR;
-    canvas.height = H * DPR;
-    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform to prevent stacking
-    ctx.scale(DPR, DPR);
-    ctx.imageSmoothingEnabled = false;
-  }
-  addEventListener('resize', fitCanvas, { passive: true });
-  fitCanvas();
+const BIRD_X = Math.round(W * 0.28);
+let bird = { x: BIRD_X, y: H * 0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };
+const pipes = [];
+const pops = [];
+const bubblesBg = [{x:100,y:80,s:0.15},{x:300,y:120,s:0.12},{x:200,y:50,s:0.18}];
+const bubblesFg = [{x:40,y:100,s:0.3},{x:240,y:60,s:0.25},{x:170,y:140,s:0.22}];
+let score = 0;
+window.score = 0;
+let collectibles = [];
+const particles = [];
+/* ========= AUDIO ========= */
+let audioCtx = null;
+const playSound = (url) => {
+  if (!audioCtx || storage.muted) return;
+  try {
+    const a = new Audio(url);
+    a.play().catch(()=>{});
+  } catch(e){ console.warn('Audio load failed:', e); }
+};
+const sfx = {
+  flap: () => playSound('https://example.com/bubble-pop.wav'),
+  point: () => playSound('https://example.com/ping.wav'),
+  hit: () => playSound('https://example.com/thud.wav'),
+  die: () => playSound('https://example.com/splash.wav'),
+  swoosh: () => playSound('https://example.com/swoosh.wav'),
+  collect: () => playSound('https://example.com/collect.wav')
+};
 
-  /* ========= INPUT ========= */
-  // Handle user input for flapping and pausing
-  let isHolding = false;
-  const flap = () => {
-    if (state === 'dead' || boostCooldown > 0) return;
-    if (!audioCtx) {
-      try {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        audioCtx.resume().catch(e => console.warn('Audio resume failed:', e));
-      } catch (e) { console.warn('AudioContext creation failed:', e); }
-    }
-    if (!localStorage.getItem('player_name')) { openNameModal(); return; }
-    if (state === 'ready') {
-      state = 'running';
-      announce('Game started');
-      splashEl.style.display = 'none';
-      if (!storage.seenTutorial) { tutorialModal.style.display = 'none'; paused = false; } // PATCH: Hide tutorial, keep game running
-    }
-    const impulse = lerp(CFG.physics.flapImpulse, CFG.physics.boostMax, clamp(flapHoldTime / CFG.physics.boostChargeTime, 0, 1));
-    bird.vy = impulse;
-    sfx.flap();
-    boostCooldown = CFG.physics.boostCooldown;
-    flapsSinceLastPipe++;
-    for (let i = 0; i < CFG.particles.flapCount; i++) {
-      particles.push({
-        x: bird.x + Math.random() * 10,
-        y: bird.y + Math.random() * CFG.bird.size.h - CFG.bird.size.h / 2,
-        vx: -speedBase() * 0.3 + Math.random() * 30 - 15,
-        vy: Math.random() * -50 - 20,
-        life: 1.0 + Math.random() * 0.8,
-        size: 2 + Math.random() * 4,
-        color: 'rgba(255,255,255,0.8)',
-        t: 0
-      });
-    }
-    for (let i = 0; i < 3; i++) {
-      particles.push({
-        x: bird.x - CFG.bird.size.w / 2,
-        y: bird.y + Math.random() * CFG.bird.size.h - CFG.bird.size.h / 2,
-        vx: -speedBase() * 0.5 - Math.random() * 20,
-        vy: Math.random() * 20 - 10,
-        life: 0.5 + Math.random() * 0.5,
-        size: 1 + Math.random() * 2,
-        color: 'rgba(255,255,255,0.6)',
-        t: 0
-      });
-    }
-  };
-  canvas.addEventListener('mousedown', e => { e.preventDefault(); isHolding = true; flap(); });
-  canvas.addEventListener('mouseup', () => { isHolding = false; flapHoldTime = 0; });
-  canvas.addEventListener('touchstart', e => { e.preventDefault(); isHolding = true; flap(); }, { passive: false });
-  canvas.addEventListener('touchend', () => { isHolding = false; flapHoldTime = 0; });
-  addEventListener('keydown', e => {
-    const k = e.key.toLowerCase();
-    const flapKeys = [' ', 'space', 'spacebar', 'w', 'arrowup'];
-    if (flapKeys.includes(k)) { e.preventDefault(); isHolding = true; flap(); }
-    if (k === 'p' && state === 'running') { paused = !paused; showToast(paused ? 'Paused' : 'Resumed'); }
-  });
-  addEventListener('keyup', e => {
-    const k = e.key.toLowerCase();
-    const flapKeys = [' ', 'space', 'spacebar', 'w', 'arrowup'];
-    if (flapKeys.includes(k)) { isHolding = false; flapHoldTime = 0; }
-  });
+/* ========= HELPERS ========= */
+const clamp = (v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+const easeT=(s,end)=>clamp(s/end,0,1);
+const pipeGap=()=>lerp(CFG.pipes.gapStart,CFG.pipes.gapEnd,easeT(score,CFG.pipes.gapEndScore));
+const spawnInterval=()=>lerp(CFG.pipes.spawnStart,CFG.pipes.spawnEnd,easeT(score,CFG.pipes.spawnEndScore));
+const speedBase=()=>lerp(CFG.world.speedStart,CFG.world.speedEnd,easeT(score,CFG.world.speedEndScore));
+const showToast=(m)=>{toast.textContent=m;toast.classList.add('show');clearTimeout(showToast._t);
+  showToast._t=setTimeout(()=>toast.classList.remove('show'),1200);};
+const announce=(m)=>{ariaLive.textContent='';setTimeout(()=>ariaLive.textContent=m,30);};
 
-  /* ========= UI ========= */
-  // UI event handlers for buttons and modals
-  muteBtn.addEventListener('click', () => {
-    storage.muted = !storage.muted;
-    localStorage.setItem('sb_muted', storage.muted ? '1' : '0');
-    muteBtn.setAttribute('aria-pressed', storage.muted ? 'true' : 'false');
-    muteBtn.textContent = storage.muted ? '🔇 Muted' : '🔊 Sound';
-    if (storage.muted) bgMusic.pause(); else if (musicPlaying) bgMusic.play().catch(() => {});
-  });
-  pauseBtn.addEventListener('click', () => {
-    if (state === 'running') { paused = !paused; showToast(paused ? 'Paused' : 'Go!'); }
-  });
-  musicBtn.addEventListener('click', () => {
-    musicPlaying = !musicPlaying;
-    localStorage.setItem('sb_music', musicPlaying ? '1' : '0');
-    musicBtn.setAttribute('aria-pressed', musicPlaying ? 'true' : 'false');
-    musicBtn.textContent = musicPlaying ? '🎵 Music' : '🎶 Music Off';
-    if (musicPlaying && !storage.muted) bgMusic.play().catch(() => {});
-    else bgMusic.pause();
-  });
-  document.getElementById('againBtn').addEventListener('click', () => {
-    overPanel.style.display = 'none';
-    splashEl.style.display = '';
-    state = 'ready';
-    resetGame();
-    announce('Back to splash');
-  });
-  document.getElementById('shareBtn').addEventListener('click', async () => {
-    const text = `I scored ${scoreNow.textContent} in Swimming Fish for xAI! Can you beat me?`;
-    try {
-      if (navigator.share) await navigator.share({ text, title: "Swimming Fish" });
-      else { await navigator.clipboard.writeText(text); showToast('Copied to clipboard!'); }
-    } catch {}
-  });
-  tutorialCloseBtn.addEventListener('click', () => {
-    tutorialModal.style.display = 'none';
-    paused = false;
-    state = 'running';
-    localStorage.setItem('sb_seenTutorial', '1');
-    storage.seenTutorial = true;
-    announce('Tutorial closed. Go!');
-  });
+function resetGame(){
+  score=0;hudScore.textContent='0';window.score=0;
+  worldTime=0;spawnTimer=-0.5;pipes.length=0;pops.length=0;collectibles.length=0;particles.length=0;
+  bird={x:BIRD_X,y:H*0.5,vy:0,rot:0,frame:0,frameTimer:0};
+  sfx.swoosh();pipeStreak=0;flapsSinceLastPipe=0;
+  document.getElementById('bestHud').textContent=`Highest: ${storage.best}`;
+}
 
-  /* ========= NAME MODAL ========= */
-  // Handle player name input for leaderboard persistence
-  function openNameModal() {
-    nameModal.style.display = 'grid';
-    nameInput.value = localStorage.getItem('player_name') || '';
-    setTimeout(() => nameInput.focus(), 10);
-  }
-  function saveName() {
-    const raw = (nameInput.value || '').trim();
-    const clean = raw.replace(/[.#$/]/g, '').slice(0, 24);
-    if (!clean) { showToast('Please enter a name'); nameInput.focus(); return; }
-    localStorage.setItem('player_name', clean);
-    nameModal.style.display = 'none';
-    showToast(`Hi, ${clean}!`);
-  }
-  saveNameBtn.addEventListener('click', saveName);
-  nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') saveName(); });
+/* ========= RESIZE ========= */
+function fitCanvas(){
+  const aspect=W/H,vw=innerWidth,vh=innerHeight;let cssW,cssH;
+  if(vw/vh<aspect){cssW=Math.min(vw,W*2.5);cssH=Math.round(cssW/aspect);}
+  else{cssH=Math.min(vh,H*2.5);cssW=Math.round(cssH*aspect);}
+  canvas.style.width=cssW+'px';canvas.style.height=cssH+'px';
+  canvas.width=W*DPR;canvas.height=H*DPR;
+  ctx.setTransform(1,0,0,1,0,0);ctx.scale(DPR,DPR);ctx.imageSmoothingEnabled=false;
+}
+addEventListener('resize',fitCanvas,{passive:true});fitCanvas();
 
-  /* ========= GAME LOGIC ========= */
-  // Spawn pipes and collectibles for gameplay
-  function spawnPipe() {
-    const gap = pipeGap();
-    const padBottom = CFG.pipes.maxGapCenterYPaddingBottom;
-    const minC = CFG.pipes.minGapCenterY;
-    const maxCenter = (groundY - padBottom) - gap / 2;
-    const minCenter = minC + gap / 2;
-    let gapY = Math.round(lerp(minCenter, maxCenter, Math.random()));
-    const type = Math.random() < 0.1 ? 'jellyfish' : Math.random() < 0.3 ? 'shark' : 'coral';
-    pipes.push({ x: W + 10, gapY, gap, w: CFG.pipes.width, scored: false, type, phase: Math.random() * Math.PI * 2 });
-    if (Math.random() < CFG.collectibles.chance) {
-      const collY = gapY + (Math.random() - 0.5) * (gap - CFG.collectibles.size * 2);
-      const isXAI = Math.random() < 0.01;
-      collectibles.push({ x: W + 10 + CFG.pipes.width / 2, y: collY, collected: false, type: isXAI ? 'xai' : 'shell' });
-    }
-  }
+/* ========= INPUT ========= */
+let isHolding=false;
+const flap=()=>{
+  if(state==='dead'||boostCooldown>0)return;
+  if(!audioCtx){try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();audioCtx.resume().catch(()=>{});}catch{}}
+  if(!localStorage.getItem('player_name')){openNameModal();return;}
+  if(state==='ready'){state='running';announce('Game started');splashEl.style.display='none';
+    if(!storage.seenTutorial){tutorialModal.style.display='none';paused=false;}}
+  const impulse=lerp(CFG.physics.flapImpulse,CFG.physics.boostMax,clamp(flapHoldTime/CFG.physics.boostChargeTime,0,1));
+  bird.vy=impulse;sfx.flap();boostCooldown=CFG.physics.boostCooldown;flapsSinceLastPipe++;
+  for(let i=0;i<CFG.particles.flapCount;i++){
+    particles.push({x:bird.x+Math.random()*10,y:bird.y+Math.random()*CFG.bird.size.h-CFG.bird.size.h/2,
+      vx:-speedBase()*0.3+Math.random()*30-15,vy:Math.random()*-50-20,life:1+Math.random()*0.8,
+      size:2+Math.random()*4,color:'rgba(255,255,255,0.8)',t:0});}
+};
 
-  // Main game update loop for physics and state changes
-  function update(dt) {
-    if (state !== 'running' || paused) return;
-    const speed = speedBase();
-    worldTime += dt;
-    spawnTimer += dt;
-    if (spawnTimer >= spawnInterval()) { spawnTimer = 0; spawnPipe(); }
-    for (const c of bubblesFg) { c.x -= speed * c.s * dt; if (c.x < -80) c.x += W + 160; }
-    for (const c of bubblesBg) { c.x -= speed * c.s * dt; if (c.x < -80) c.x += W + 160; }
-    if (state === 'running') {
-      bird.vy += CFG.physics.gravity * dt;
-      bird.vy = clamp(bird.vy, -9999, CFG.physics.maxFallSpeed);
-      bird.y += bird.vy * dt;
-      bird.y = clamp(bird.y, 2, H + 1000);
-      const targetRot = bird.vy < 0 ? -15 * Math.PI / 180 : Math.min(60 * Math.PI / 180, bird.vy / CFG.physics.maxFallSpeed * (60 * Math.PI / 180));
-      bird.rot = lerp(bird.rot, targetRot, 0.12);
-    }
-    if (isHolding) flapHoldTime += dt;
-    if (boostCooldown > 0) boostCooldown -= dt;
-    for (const p of pipes) {
-      p.x -= speed * dt;
-      if (p.type === 'jellyfish') p.gapY += Math.sin(p.phase + worldTime * 2) * 30 * dt;
-      const cx = p.x + p.w / 2;
-      if (!p.scored && cx < bird.x) {
-        p.scored = true;
-        score += 1;
-        hudScore.textContent = String(score);
-        window.score = score;
-        if (score > storage.best) {
-          storage.best = score;
-          localStorage.setItem('sb_best', String(score));
-          document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
-        }
-        pops.push({ x: cx, y: p.gapY, t: 0, duration: CFG.scorePopup.duration, text: `+1` });
-        if (navigator.vibrate) navigator.vibrate(20);
-        sfx.point();
-        announce(`Score ${score}`);
-        if (flapsSinceLastPipe <= 1) {
-          pipeStreak++;
-          if (pipeStreak >= 3) {
-            showToast('Perfect x3!');
-            pipeStreak = 0;
-          }
-        } else {
-          pipeStreak = 0;
-        }
-        flapsSinceLastPipe = 0;
-        const st = currentStage();
-        if (st !== lastStage) {
-          lastStage = st;
-          onStageChange();
-        }
-      }
-    }
-    while (pipes.length && pipes[0].x + pipes[0].w < -20) pipes.shift();
-    for (const coll of collectibles) {
-      coll.x -= speed * dt;
-      if (!coll.collected && Math.hypot(bird.x - coll.x, bird.y - coll.y) < CFG.bird.hitboxRadius + CFG.collectibles.size / 2) {
-        coll.collected = true;
-        const bonus = coll.type === 'xai' ? CFG.collectibles.xaiBonus : CFG.collectibles.bonus;
-        score += bonus;
-        hudScore.textContent = String(score);
-        sfx.collect();
-        showToast(coll.type === 'xai' ? `+${bonus} xAI Starfish! Accelerating Discovery!` : `+${bonus} Shell!`);
-        if (navigator.vibrate) navigator.vibrate([20, 10, 20]);
-        for (let i = 0; i < CFG.particles.collectCount; i++) {
-          particles.push({
-            x: coll.x,
-            y: coll.y,
-            vx: Math.random() * 100 - 50,
-            vy: Math.random() * 100 - 150,
-            life: 0.8 + Math.random() * 0.4,
-            size: 3 + Math.random() * 3,
-            color: coll.type === 'xai' ? '#00f7ff' : '#ffcc00',
-            t: 0
-          });
-        }
-      }
-    }
-    collectibles = collectibles.filter(c => c.x > -20 && !c.collected);
-    const r = CFG.bird.hitboxRadius;
-    const circle = { x: bird.x + 2, y: bird.y, r };
-    const penetrationNeeded = 0.1 * r;
-    let hit = false;
-    for (const p of pipes) {
-      if (p.type === 'shark') {
-        const sharkW = p.w * 1.2;
-        const sharkH = sharkW * 0.6;
-        const sharkY = p.gapY - sharkH / 2;
-        const sharkRect = { x: p.x, y: sharkY, w: sharkW, h: sharkH };
-        if (circleRectDeepOverlap(circle, sharkRect, penetrationNeeded)) { hit = true; break; }
-      } else if (p.type === 'jellyfish') {
-        const jellyW = p.w * 0.8;
-        const jellyH = jellyW * 1.2;
-        const jellyY = p.gapY - jellyH / 2;
-        const jellyRect = { x: p.x, y: jellyY, w: jellyW, h: jellyH };
-        if (circleRectDeepOverlap(circle, jellyRect, penetrationNeeded)) { hit = true; break; }
-      } else {
-        const topRect = { x: p.x, y: -10000, w: p.w, h: (p.gapY - p.gap / 2) + 10000 };
-        const botRect = { x: p.x, y: (p.gapY + p.gap / 2), w: p.w, h: (groundY - (p.gapY + p.gap / 2)) };
-        if (circleRectDeepOverlap(circle, topRect, penetrationNeeded) || circleRectDeepOverlap(circle, botRect, penetrationNeeded)) { hit = true; break; }
-      }
-    }
-    if (circle.y + circle.r >= groundY) { die(); return; }
-    if (hit) { sfx.hit(); die(); }
-    for (let i = pops.length - 1; i >= 0; i--) {
-      const pop = pops[i];
-      pop.t += dt;
-      if (pop.t >= pop.duration) pops.splice(i, 1);
-    }
-    for (let i = particles.length - 1; i >= 0; i--) {
-      const p = particles[i];
-      p.t += dt;
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.vy -= 100 * dt;
-      if (p.t >= p.life) particles.splice(i, 1);
-    }
-  }
+canvas.addEventListener('mousedown',e=>{e.preventDefault();isHolding=true;flap();});
+canvas.addEventListener('mouseup',()=>{isHolding=false;flapHoldTime=0;});
+canvas.addEventListener('touchstart',e=>{e.preventDefault();isHolding=true;flap();},{passive:false});
+canvas.addEventListener('touchend',()=>{isHolding=false;flapHoldTime=0;});
+addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase(),flapKeys=[' ','space','spacebar','w','arrowup'];
+  if(flapKeys.includes(k)){e.preventDefault();isHolding=true;flap();}
+  if(k==='p'&&state==='running'){paused=!paused;showToast(paused?'Paused':'Resumed');}
+});
+addEventListener('keyup',e=>{
+  const k=e.key.toLowerCase();if([' ','space','spacebar','w','arrowup'].includes(k)){isHolding=false;flapHoldTime=0;}
+});
 
-  // Collision detection helper for precise hit detection
-  function circleRectDeepOverlap(circ, rect, needed) {
-    const nx = clamp(circ.x, rect.x, rect.x + rect.w);
-    const ny = clamp(circ.y, rect.y, rect.y + rect.h);
-    const dx = circ.x - nx, dy = circ.y - ny;
-    const dist = Math.hypot(dx, dy);
-    const overlap = circ.r - dist;
-    return overlap > needed;
-  }
+/* ========= UI ========= */
+muteBtn.onclick=()=>{
+  storage.muted=!storage.muted;
+  localStorage.setItem('sb_muted',storage.muted?'1':'0');
+  muteBtn.setAttribute('aria-pressed',storage.muted?'true':'false');
+  muteBtn.textContent=storage.muted?'🔇 Muted':'🔊 Sound';
+  if(storage.muted)bgMusic.pause();else if(musicPlaying)bgMusic.play().catch(()=>{});
+};
+pauseBtn.onclick=()=>{if(state==='running'){paused=!paused;showToast(paused?'Paused':'Go!');}};
+musicBtn.onclick=()=>{
+  musicPlaying=!musicPlaying;
+  localStorage.setItem('sb_music',musicPlaying?'1':'0');
+  musicBtn.setAttribute('aria-pressed',musicPlaying?'true':'false');
+  musicBtn.textContent=musicPlaying?'🎵 Music':'🎶 Music Off';
+  if(musicPlaying&&!storage.muted)bgMusic.play().catch(()=>{});else bgMusic.pause();
+};
+document.getElementById('againBtn').onclick=()=>{
+  overPanel.style.display='none';splashEl.style.display='';state='ready';resetGame();announce('Back to splash');
+};
+document.getElementById('shareBtn').onclick=async()=>{
+  const text=`I scored ${scoreNow.textContent} in Swimming Fish! Can you beat me?`;
+  try{if(navigator.share)await navigator.share({text,title:"Swimming Fish"});
+  else{await navigator.clipboard.writeText(text);showToast('Copied to clipboard!');}}catch{}
+};
+tutorialCloseBtn.onclick=()=>{
+  tutorialModal.style.display='none';paused=false;state='running';
+  localStorage.setItem('sb_seenTutorial','1');storage.seenTutorial=true;announce('Tutorial closed');
+};
 
-  // Handle player death with animation and game over transition
-  function die() {
-    state = 'dead';
-    paused = false;
-    if (navigator.vibrate) navigator.vibrate(80);
-    sfx.die();
-    for (let i = 0; i < 15; i++) {
-      particles.push({ x: bird.x, y: bird.y, vx: Math.random() * 200 - 100, vy: Math.random() * 200 - 100, life: 0.5, size: 5, color: 'rgba(255,0,0,0.8)', t: 0 });
-    }
-    const fallUntil = () => {
-      const now = performance.now();
-      const dt = Math.min((now - lastMs) / 1000, 1 / 30);
-      lastMs = now;
-      bird.vy += CFG.physics.gravity * dt;
-      bird.vy = Math.min(bird.vy, CFG.physics.maxFallSpeed);
-      bird.y += bird.vy * dt;
-      bird.rot = lerp(bird.rot, 90 * Math.PI / 180, 0.12);
-      render();
-      if (bird.y + CFG.bird.hitboxRadius < groundY) requestAnimationFrame(fallUntil);
-      else { bird.y = groundY - CFG.bird.hitboxRadius; setTimeout(showGameOver, 800); }
-    };
-    fallUntil();
-  }
+/* ========= NAME MODAL ========= */
+function openNameModal(){
+  nameModal.style.display='grid';
+  nameInput.value=localStorage.getItem('player_name')||'';
+  setTimeout(()=>nameInput.focus(),10);
+}
+function saveName(){
+  const raw=(nameInput.value||'').trim();
+  const clean=raw.replace(/[.#$/]/g,'').slice(0,24);
+  if(!clean){showToast('Please enter a name');nameInput.focus();return;}
+  localStorage.setItem('player_name',clean);nameModal.style.display='none';showToast(`Hi, ${clean}!`);
+}
+saveNameBtn.onclick=saveName;
+nameInput.addEventListener('keydown',e=>{if(e.key==='Enter')saveName();});
 
-  // Show game over screen with score and leaderboard
-  function showGameOver() {
-    scoreNow.textContent = String(score);
-    if (score > storage.best) { storage.best = score; localStorage.setItem('sb_best', String(score)); }
-    bestNow.textContent = String(storage.best);
-    document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
-    const m = medalFor(storage.best);
-    if (m) { medalEl.style.display = ''; medalEl.textContent = m[0]; } else medalEl.style.display = 'none';
-    overPanel.style.display = '';
+/* ========= GAME LOGIC ========= */
+function spawnPipe(){
+  const gap=pipeGap();
+  const pad=CFG.pipes.maxGapCenterYPaddingBottom;
+  const minC=CFG.pipes.minGapCenterY;
+  const maxCenter=(groundY-pad)-gap/2;
+  const minCenter=minC+gap/2;
+  const gapY=Math.round(lerp(minCenter,maxCenter,Math.random()));
+  const type=Math.random()<0.1?'jellyfish':Math.random()<0.3?'shark':'coral';
+  pipes.push({x:W+10,gapY,gap,w:CFG.pipes.width,scored:false,type,phase:Math.random()*Math.PI*2});
+  if(Math.random()<CFG.collectibles.chance){
+    const collY=gapY+(Math.random()-0.5)*(gap-CFG.collectibles.size*2);
+    const isXAI=Math.random()<0.01;
+    collectibles.push({x:W+10+CFG.pipes.width/2,y:collY,collected:false,type:isXAI?'xai':'shell'});
   }
-  window.showGameOver = showGameOver;
+}
 
-  /* ========= RENDER ========= */
-  // Drawing utilities for canvas rendering
-  function roundedRect(x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
-  }
-  function drawBubbles(bubbles, opacity = 0.9) {
-    for (const c of bubbles) {
-      ctx.save();
-      ctx.translate(c.x, c.y);
-      const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, 20);
-      grad.addColorStop(0, `rgba(255,255,255,${opacity})`);
-      grad.addColorStop(1, `rgba(255,255,255,${opacity * 0.2})`);
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(0, 0, 20, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(8, -6, 12, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(-10, 4, 15, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-  }
-  function drawCoralAndSharks() {
-    const stage = currentStage();
-    const baseColor = stagePipes[stage];
-    const dark = 'rgba(0,0,0,.18)';
-    for (const p of pipes) {
-      const topH = p.gapY - p.gap / 2;
-      const botY = p.gapY + p.gap / 2;
-      const botH = groundY - botY;
-      const persp = 8;
-      if (p.type === 'shark') {
-        const sharkW = p.w * 1.2;
-        const sharkH = sharkW * 0.6;
-        const sharkY = p.gapY - sharkH / 2;
-        if (sharkImg.complete && sharkImg.naturalWidth > 0) {
-          ctx.drawImage(sharkImg, p.x, sharkY, sharkW, sharkH);
-        } else {
-          ctx.fillStyle = "#808080";
-          ctx.fillRect(p.x, sharkY, sharkW, sharkH);
-        }
-      } else if (p.type === 'jellyfish') {
-        const jellyW = p.w * 0.8;
-        const jellyH = jellyW * 1.2;
-        const jellyY = p.gapY - jellyH / 2;
-        ctx.fillStyle = 'rgba(255,105,180,0.7)';
-        ctx.beginPath();
-        ctx.arc(p.x + jellyW / 2, jellyY + jellyH / 2, jellyW / 2, Math.PI, 2 * Math.PI);
-        ctx.lineTo(p.x + jellyW, jellyY + jellyH);
-        ctx.quadraticCurveTo(p.x + jellyW / 2, jellyY + jellyH + 20, p.x, jellyY + jellyH);
-        ctx.closePath();
-        ctx.fill();
-      } else {
-        const grad = ctx.createRadialGradient(p.x + p.w / 2, 0, p.w / 2, p.x + p.w / 2, 0, 0);
-        grad.addColorStop(0, baseColor);
-        grad.addColorStop(0.7, '#ffffff40');
-        grad.addColorStop(1, dark);
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.moveTo(p.x, 0);
-        for (let i = 0; i < p.w; i += 10) {
-          ctx.quadraticCurveTo(p.x + i + 5, -10, p.x + i + 10, 0);
-        }
-        ctx.lineTo(p.x + p.w + persp, topH);
-        ctx.lineTo(p.x - persp, topH);
-        ctx.closePath();
-        ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(p.x - persp, botY);
-        ctx.lineTo(p.x + p.w + persp, botY);
-        for (let i = p.w; i > 0; i -= 10) {
-          ctx.quadraticCurveTo(p.x + i - 5, groundY + 10, p.x + i - 10, groundY);
-        }
-        ctx.closePath();
-        ctx.fill();
-      }
-    }
-  }
-  function drawFish() {
-    ctx.save();
-    const w = CFG.bird.size.w, h = CFG.bird.size.h;
-    const idleBob = (state === 'ready') ? Math.sin(worldTime * Math.PI * 4) * CFG.birdIdleBobPx : 0;
-    ctx.translate(bird.x, bird.y + idleBob);
-    ctx.rotate(bird.rot);
-    ctx.scale(-1, 1);
-    if (playerFishImg.complete && playerFishImg.naturalWidth > 0) {
-      ctx.drawImage(playerFishImg, -w / 2, -h / 2, w, h);
-    } else {
-      ctx.fillStyle = '#87cefa';
-      roundedRect(-w / 2, -h / 2, w, h, 10);
-      ctx.fill();
-    }
-    ctx.restore();
-    ctx.save();
-    const shadowScale = 1 - (bird.y / groundY) * 0.5;
-    ctx.translate(bird.x, groundY - 4);
-    ctx.fillStyle = 'rgba(0,0,0,0.15)';
-    ctx.beginPath();
-    ctx.ellipse(0, 0, (w / 2 - 2) * shadowScale, 3 * shadowScale, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-  function drawSeabed() {
-    const speed = speedBase();
-    const t = (worldTime * speed) % 48;
-    const y = groundY;
-    ctx.fillStyle = '#f4a460';
-    ctx.fillRect(0, y, W, H - y);
-    ctx.fillStyle = '#20b2aa';
-    ctx.fillRect(0, y - 8, W, 8);
-    ctx.fillStyle = 'rgba(255,255,255,.2)';
-    for (let x = -t; x < W; x += 48) {
-      ctx.beginPath();
-      ctx.arc(x + 12, y + 12, 8, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(x + 36, y + 24, 6, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.strokeStyle = '#228b22';
-    ctx.lineWidth = 3;
-    for (let x = -t; x < W; x += 80) {
-      ctx.beginPath();
-      let currentY = groundY;
-      let currentX = x;
-      ctx.moveTo(currentX, currentY);
-      for (let i = 0; i < 4; i++) {
-        currentY -= 15;
-        const sway = Math.sin(worldTime + i * 0.5) * 8;
-        ctx.quadraticCurveTo(currentX + sway, currentY + 7, currentX + sway / 2, currentY);
-        currentX += sway / 2;
-      }
-      ctx.stroke();
-    }
-  }
-  function drawCollectibles() {
-    for (const coll of collectibles) {
-      if (coll.collected) continue;
-      const grad = ctx.createRadialGradient(coll.x, coll.y, 0, coll.x, coll.y, CFG.collectibles.size / 2);
-      grad.addColorStop(0, coll.type === 'xai' ? '#00f7ff' : '#fffacd');
-      grad.addColorStop(1, coll.type === 'xai' ? '#00b7eb' : '#ffd700');
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      if (coll.type === 'xai') {
-        for (let i = 0; i < 5; i++) {
-          const angle = i * (Math.PI * 2 / 5) - Math.PI / 2;
-          ctx.lineTo(coll.x + Math.cos(angle) * CFG.collectibles.size, coll.y + Math.sin(angle) * CFG.collectibles.size);
-          ctx.lineTo(coll.x + Math.cos(angle + Math.PI / 5) * (CFG.collectibles.size / 2), coll.y + Math.sin(angle + Math.PI / 5) * (CFG.collectibles.size / 2));
-        }
-      } else {
-        ctx.moveTo(coll.x, coll.y);
-        for (let i = 0; i < Math.PI * 2; i += 0.1) {
-          const r = (CFG.collectibles.size / 2) * (1 - i / (Math.PI * 2));
-          ctx.lineTo(coll.x + Math.cos(i) * r, coll.y + Math.sin(i) * r);
-        }
-      }
-      ctx.closePath();
-      ctx.fill();
-    }
-  }
-  function drawParticles() {
-    ctx.save();
-    try {
-      for (const p of particles) {
-        const t = p.t / p.life;
-        ctx.globalAlpha = 1 - t * t;
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * (1 - t), 0, Math.PI * 2);
-        ctx.fill();
-      }
-    } finally { ctx.restore(); }
-  }
-  function lerpColor(a, b, t) {
-    const ah = parseInt(a.replace(/#/g, ''), 16),
-      ar = ah >> 16, ag = ah >> 8 & 0xff, ab = ah & 0xff,
-      bh = parseInt(b.replace(/#/g, ''), 16),
-      br = bh >> 16, bg = bh >> 8 & 0xff, bb = bh & 0xff,
-      rr = Math.round(ar + t * (br - ar)),
-      rg = Math.round(ag + t * (bg - ag)),
-      rb = Math.round(ab + t * (bb - ab));
-    return '#' + ((1 << 24) + (rr << 16) + (rg << 8) + rb | 0).toString(16).slice(1);
-  }
+function circleRectDeepOverlap(c,r,need){
+  const nx=clamp(c.x,r.x,r.x+r.w),ny=clamp(c.y,r.y,r.y+r.h);
+  const dist=Math.hypot(c.x-nx,c.y-ny);
+  return (c.r-dist)>need;
+}
 
-  // Main render function for drawing game elements
-  function render() {
-    const stage = currentStage();
-    const sky = stageSkies[stage];
-    canvas.style.background = sky;
-    ctx.save();
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, W, H);
-    drawBubbles(bubblesBg, 0.4);
-    const fishX = (worldTime * speedBase() * 0.3) % (W + 50) - 50;
-    if (bgFishImg.complete && bgFishImg.naturalWidth > 0) {
-      ctx.globalAlpha = 0.3;
-      ctx.drawImage(bgFishImg, fishX, H * 0.4, 15, 8);
-      ctx.drawImage(bgFishImg, fishX + 30, H * 0.45, 12, 6);
-      ctx.globalAlpha = 1;
-    }
-    drawBubbles(bubblesFg, 0.7);
-    drawCoralAndSharks();
-    drawCollectibles();
-    drawFish();
-    drawParticles();
-    drawSeabed();
-    for (const pop of pops) {
-      const t = clamp(pop.t / pop.duration, 0, 1);
-      const y = pop.y - t * CFG.scorePopup.dy;
-      ctx.globalAlpha = 1 - t;
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 20px ui-rounded, system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(pop.text, pop.x, y);
-      ctx.globalAlpha = 1;
-    }
-    ctx.restore();
-  }
+function die(){
+  state='dead';paused=false;if(navigator.vibrate)navigator.vibrate(80);
+  sfx.die();
+  for(let i=0;i<15;i++){particles.push({x:bird.x,y:bird.y,vx:Math.random()*200-100,vy:Math.random()*200-100,life:0.5,size:5,color:'rgba(255,0,0,0.8)',t:0});}
+  const fall=()=>{const now=performance.now();const dt=Math.min((now-lastMs)/1000,1/30);
+    lastMs=now;bird.vy+=CFG.physics.gravity*dt;bird.vy=Math.min(bird.vy,CFG.physics.maxFallSpeed);
+    bird.y+=bird.vy*dt;bird.rot=lerp(bird.rot,90*Math.PI/180,0.12);render();
+    if(bird.y+CFG.bird.hitboxRadius<groundY)requestAnimationFrame(fall);
+    else{bird.y=groundY-CFG.bird.hitboxRadius;setTimeout(showGameOver,800);}
+  };fall();
+}  
+function showGameOver(){
+  scoreNow.textContent=String(score);
+  if(score>storage.best){storage.best=score;localStorage.setItem('sb_best',String(score));}
+  bestNow.textContent=String(storage.best);
+  document.getElementById('bestHud').textContent=`Highest: ${storage.best}`;
+  const medals=s=>s>=50?['🏆 Platinum','#e5e4e2']:s>=30?['🥇 Gold','#f7c32e']:s>=20?['🥈 Silver','#c0c0c0']:s>=10?['🥉 Bronze','#cd7f32']:null;
+  const m=medals(storage.best);
+  if(m){medalEl.style.display='';medalEl.textContent=m[0];}else medalEl.style.display='none';
+  overPanel.style.display='';
+}
 
-  /* ========= LOOP ========= */
-  // Main game loop for updates and rendering
-  function loop(now) {
-    try {
-      const dt = clamp((now - lastMs) / 1000, 0, 1 / 30);
-      lastMs = now;
-      if (state === 'ready') worldTime += dt;
-      else if (state === 'running' && !paused) { worldTime += dt; update(dt); }
-      render();
-    } catch (e) { console.error('Game loop error:', e); }
-    requestAnimationFrame(loop);
-  }
+/* ========= UPDATE ========= */
+function update(dt){
+  if(state!=='running'||paused)return;
+  const speed=speedBase();worldTime+=dt;spawnTimer+=dt;
+  if(spawnTimer>=spawnInterval()){spawnTimer=0;spawnPipe();}
+  for(const b of bubblesFg){b.x-=speed*b.s*dt;if(b.x<-80)b.x+=W+160;}
+  for(const b of bubblesBg){b.x-=speed*b.s*dt;if(b.x<-80)b.x+=W+160;}
+  bird.vy+=CFG.physics.gravity*dt;bird.vy=clamp(bird.vy,-9999,CFG.physics.maxFallSpeed);
+  bird.y+=bird.vy*dt;bird.y=clamp(bird.y,2,H+1000);
+  bird.rot=lerp(bird.rot,bird.vy<0?-15*Math.PI/180:60*Math.PI/180,0.12);
+  if(isHolding)flapHoldTime+=dt;if(boostCooldown>0)boostCooldown-=dt;
 
-  /* ========= INIT ========= */
-  // Initialize game state and start the game loop
-  function init() {
-    resetGame();
-    splashEl.style.display = ''; // Show splash screen at start
-    hudScore.textContent = '0';
-    document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
-    bestNow.textContent = String(storage.best);
-    overPanel.style.display = 'none';
-    lastMs = performance.now();
-    requestAnimationFrame(loop);
-    if (!localStorage.getItem('player_name')) openNameModal();
-    if (!storage.muted && musicPlaying) bgMusic.play().catch(() => {});
+  for(const p of pipes){
+    p.x-=speed*dt;
+    if(p.type==='jellyfish')p.gapY+=Math.sin(p.phase+worldTime*2)*30*dt;
+    const cx=p.x+p.w/2;
+    if(!p.scored&&cx<bird.x){
+      p.scored=true;score++;hudScore.textContent=score;window.score=score;
+      if(score>storage.best){storage.best=score;localStorage.setItem('sb_best',String(score));document.getElementById('bestHud').textContent=`Highest: ${storage.best}`;}
+      pops.push({x:cx,y:p.gapY,t:0,duration:CFG.scorePopup.duration,text:'+1'});
+      sfx.point();announce(`Score ${score}`);
+    }
   }
-  // Wait for assets to load before initializing to prevent blank screens
-  window.addEventListener('load', () => {
-    Promise.all([
-      new Promise(resolve => { sharkImg.onload = resolve; sharkImg.onerror = resolve; }),
-      new Promise(resolve => { playerFishImg.onload = resolve; playerFishImg.onerror = resolve; }),
-      new Promise(resolve => { bgFishImg.onload = resolve; bgFishImg.onerror = resolve; })
-    ]).then(init);
-  });
+  pipes.filter(p=>p.x+p.w>-20);
+  const r=CFG.bird.hitboxRadius,circle={x:bird.x+2,y:bird.y,r};
+  for(const p of pipes){
+    if(p.type==='shark'){
+      const rect={x:p.x,y:p.gapY-32,w:p.w*1.2,h:p.w*0.6};
+      if(circleRectDeepOverlap(circle,rect,0.1*r))return die();
+    }else{
+      const top={x:p.x,y:-9999,w:p.w,h:(p.gapY-p.gap/2)+9999};
+      const bot={x:p.x,y:(p.gapY+p.gap/2),w:p.w,h:(groundY-(p.gapY+p.gap/2))};
+      if(circleRectDeepOverlap(circle,top,0.1*r)||circleRectDeepOverlap(circle,bot,0.1*r))return die();
+    }
+  }
+  if(circle.y+circle.r>=groundY)return die();
+}
+
+/* ========= RENDERING ========= */
+function drawBubbles(list,op){for(const b of list){ctx.save();ctx.translate(b.x,b.y);
+  const g=ctx.createRadialGradient(0,0,0,0,0,20);
+  g.addColorStop(0,`rgba(255,255,255,${op})`);g.addColorStop(1,`rgba(255,255,255,${op*0.2})`);
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,20,0,Math.PI*2);ctx.fill();ctx.restore();}}
+
+function drawFish(){
+  ctx.save();const w=CFG.bird.size.w,h=CFG.bird.size.h;
+  ctx.translate(bird.x,bird.y);ctx.rotate(bird.rot);ctx.scale(-1,1);
+  if(playerFishImg.complete)ctx.drawImage(playerFishImg,-w/2,-h/2,w,h);
+  else{ctx.fillStyle='#87cefa';ctx.fillRect(-w/2,-h/2,w,h);}
+  ctx.restore();
+}
+
+function drawPipes(){
+  ctx.fillStyle='#ff6347';
+  for(const p of pipes){
+    const topH=p.gapY-p.gap/2,botY=p.gapY+p.gap/2;
+    ctx.fillRect(p.x,0,p.w,topH);
+    ctx.fillRect(p.x,botY,p.w,groundY-botY);
+  }
+}
+
+function drawGround(){
+  ctx.fillStyle='#f4a460';
+  ctx.fillRect(0,groundY,W,H-groundY);
+}
+
+function drawParticles(){
+  ctx.save();
+  for(const p of particles){
+    p.t+=0.016;p.x+=p.vx*0.016;p.y+=p.vy*0.016;
+    ctx.globalAlpha=1-p.t/p.life;
+    ctx.fillStyle=p.color;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawHUD(){
+  for(const pop of pops){
+    const t=clamp(pop.t/pop.duration,0,1);
+    const y=pop.y-t*CFG.scorePopup.dy;
+    ctx.globalAlpha=1-t;ctx.fillStyle='#fff';ctx.font='bold 20px ui-rounded,system-ui,sans-serif';
+    ctx.textAlign='center';ctx.fillText(pop.text,pop.x,y);
+    ctx.globalAlpha=1;
+  }
+}
+
+function render(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#20b2aa';ctx.fillRect(0,0,W,H);
+  drawBubbles(bubblesBg,0.3);
+  drawPipes();
+  drawFish();
+  drawBubbles(bubblesFg,0.6);
+  drawParticles();
+  drawGround();
+  drawHUD();
+}
+
+/* ========= MAIN LOOP ========= */
+function loop(now){
+  const dt=clamp((now-lastMs)/1000,0,1/30);
+  lastMs=now;
+  if(state==='ready')worldTime+=dt;
+  else if(state==='running'&&!paused){worldTime+=dt;update(dt);}
+  render();
+  requestAnimationFrame(loop);
+}
+
+/* ========= INIT ========= */
+function init(){
+  resetGame();
+  splashEl.style.display='';
+  hudScore.textContent='0';
+  document.getElementById('bestHud').textContent=`Highest: ${storage.best}`;
+  bestNow.textContent=String(storage.best);
+  overPanel.style.display='none';
+  lastMs=performance.now();
+  requestAnimationFrame(loop);
+  if(!localStorage.getItem('player_name'))openNameModal();
+  if(!storage.muted&&musicPlaying)bgMusic.play().catch(()=>{});
+}
+window.addEventListener('load',()=>{
+  Promise.all([
+    new Promise(r=>{sharkImg.onload=r;sharkImg.onerror=r;}),
+    new Promise(r=>{playerFishImg.onload=r;playerFishImg.onerror=r;}),
+    new Promise(r=>{bgFishImg.onload=r;bgFishImg.onerror=r;})
+  ]).then(init);
+});
 })();
   </script>
 </body>
 </html>
-Safe-Working Baseline Version
-Below is a trimmed-down version to confirm visuals and core gameplay. I’ve removed non-essential features (e.g., leaderboard, share button, music settings) to focus on the fish moving, splash screen working, and basic mechanics. Line count is still ≥1200 with added comments.
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <!-- Core character encoding for consistent text rendering -->
-  <title>Swimming Fish</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-  <!-- Ensures responsive viewport and disables user scaling -->
-  <meta name="theme-color" content="#20b2aa" />
-  <!-- Ocean blue theme color for browser UI -->
-  <style>
-    :root {
-      --bg: #20b2aa; /* Canvas background color */
-      --panel: rgba(255,255,255,.9); /* UI panel color */
-      --text: #1d1d1f; /* Text color for readability */
-    }
-    html, body {
-      height: 100%;
-      margin: 0;
-      background: #111; /* Dark background for contrast */
-      color: var(--text);
-      font-family: ui-rounded, system-ui, sans-serif;
-      overscroll-behavior: none; /* Prevents scroll bounce */
-    }
-    .wrap {
-      position: fixed;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-      /* Centers canvas with safe area support */
-    }
-    canvas {
-      background: var(--bg);
-      box-shadow: 0 10px 40px rgba(0,0,0,.35); /* Adds depth to canvas */
-      border-radius: 16px;
-      image-rendering: pixelated; /* Crisp pixel art rendering */
-      touch-action: none; /* Disables default touch behaviors */
-    }
-    .hud {
-      position: fixed;
-      inset: 0;
-      pointer-events: auto; /* PATCH: Allows splash screen interaction */
-      display: grid;
-      place-items: center;
-      font-weight: 700;
-      letter-spacing: .5px;
-      user-select: none; /* Prevents text selection */
-    }
-    .splash {
-      position: absolute;
-      inset: 0;
-      color: #000;
-      text-shadow: 0 2px 0 rgba(255,255,255,.5); /* Enhances text readability */
-    }
-    .splash-inner {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      top: 10%;
-      width: min(92%, 360px);
-      text-align: center;
-      pointer-events: none;
-    }
-    .title {
-      font-size: 36px;
-      margin: 2px 0 8px;
-    }
-    .subtitle {
-      font-size: 18px;
-      opacity: .95;
-    }
-    .score {
-      position: fixed;
-      top: 18px;
-      right: 14px;
-      font-size: 28px;
-      color: #fff;
-      text-shadow: 0 2px 0 rgba(0,0,0,.6); /* Score readability */
-      pointer-events: none;
-    }
-    .panel {
-      min-width: 280px;
-      max-width: 90vw;
-      background: var(--panel);
-      color: #111;
-      border-radius: 18px;
-      padding: 16px;
-      box-shadow: 0 8px 30px rgba(0,0,0,.25);
-      pointer-events: auto;
-      transform: translateY(8px);
-    }
-    .panel h2 {
-      margin: 0 0 8px 0;
-      font-size: 22px;
-      text-align: center;
-    }
-    .panel .row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 18px;
-      padding: 6px 0;
-    }
-    .btn {
-      appearance: none;
-      border: 0;
-      background: var(--panel);
-      color: #111;
-      padding: 8px 12px;
-      border-radius: 999px;
-      font-weight: 700;
-      box-shadow: 0 2px 8px rgba(0,0,0,.15);
-      cursor: pointer;
-      line-height: 1;
-    }
-    .btn:focus {
-      outline: 3px solid #000;
-      outline-offset: 2px; /* Accessibility outline */
-    }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <canvas id="game" width="360" height="640" aria-label="Swimming Fish canvas"></canvas>
-  </div>
-  <div class="hud" aria-hidden="true">
-    <div id="scoreHud" class="score">0</div>
-    <div id="splash" class="splash">
-      <div class="splash-inner">
-        <div class="title">Swimming Fish</div>
-        <div class="subtitle">Tap / Click / Space to start</div>
-      </div>
-    </div>
-  </div>
-  <div id="gameOver" class="hud" style="display:none;">
-    <div class="panel" role="dialog" aria-modal="true" aria-labelledby="overTitle">
-      <h2 id="overTitle">Game Over</h2>
-      <div class="row"><span>Your Score</span><strong id="scoreNow">0</strong></div>
-      <div class="actions">
-        <button id="againBtn" class="btn">Play Again</button>
-      </div>
-    </div>
-  </div>
-  <script>
-(() => {
-  'use strict';
-  // Load core game assets (fish image only for baseline)
-  const playerFishImg = new Image();
-  playerFishImg.src = "https://i.imgur.com/3k2vXjP.png"; // Reliable fish image
-
-  /* ========= CONFIG ========= */
-  // Core game parameters for minimal gameplay
-  const CFG = {
-    canvas: { width: 360, height: 640 }, // Fixed canvas size
-    physics: {
-      gravity: 1200, // Downward acceleration
-      flapImpulse: -360, // Upward velocity on flap
-      maxFallSpeed: 720 // Caps fall speed
-    },
-    world: { speed: 180 }, // Constant scroll speed
-    pipes: {
-      gap: 160, // Fixed gap size
-      spawnInterval: 1.2, // Pipe spawn interval
-      width: 64 // Pipe width
-    },
-    bird: { size: { w: 40, h: 24 }, hitboxRadius: 12 }, // Fish size and hitbox
-    ground: { height: 112 } // Seabed height
-  };
-
-  const DPR = Math.min(window.devicePixelRatio || 1, 3); // Device pixel ratio
-
-  /* ========= DOM ========= */
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
-  if (!ctx) { console.error('Canvas context not found.'); return; }
-  const splashEl = document.getElementById('splash');
-  const hudScore = document.getElementById('scoreHud');
-  const overPanel = document.getElementById('gameOver');
-  const scoreNow = document.getElementById('scoreNow');
-  const againBtn = document.getElementById('againBtn');
-
-  /* ========= STATE ========= */
-  const W = CFG.canvas.width, H = CFG.canvas.height;
-  const groundY = H - CFG.ground.height; // Seabed position
-  let state = 'ready'; // Game state: 'ready', 'running', 'dead'
-  let paused = false; // Pause state
-  let worldTime = 0; // Animation timing
-  let spawnTimer = 0; // Pipe spawn timer
-  let lastMs = performance.now(); // Frame timing
-  const BIRD_X = Math.round(W * 0.28); // Fish x-position
-  let bird = { x: BIRD_X, y: H * 0.5, vy: 0, rot: 0 }; // Fish state
-  const pipes = []; // Active pipes
-  let score = 0; // Current score
-
-  /* ========= HELPERS ========= */
-  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v)); // Clamps value
-  const lerp = (a, b, t) => a + (b - a) * t; // Linear interpolation
-
-  function resetGame() {
-    // Resets game to initial state
-    score = 0;
-    hudScore.textContent = '0';
-    worldTime = 0;
-    spawnTimer = -0.5;
-    pipes.length = 0;
-    bird = { x: BIRD_X, y: H * 0.5, vy: 0, rot: 0 };
-  }
-
-  /* ========= DPR / RESIZE ========= */
-  function fitCanvas() {
-    // Adjusts canvas size for window
-    const aspect = W / H;
-    const vw = innerWidth, vh = innerHeight;
-    let cssW, cssH;
-    if (vw / vh < aspect) {
-      cssW = Math.min(vw, W * 2.5);
-      cssH = Math.round(cssW / aspect);
-    } else {
-      cssH = Math.min(vh, H * 2.5);
-      cssW = Math.round(cssH * aspect);
-    }
-    canvas.style.width = cssW + 'px';
-    canvas.style.height = cssH + 'px';
-    canvas.width = W * DPR;
-    canvas.height = H * DPR;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.scale(DPR, DPR);
-    ctx.imageSmoothingEnabled = false;
-  }
-  addEventListener('resize', fitCanvas, { passive: true });
-  fitCanvas();
-
-  /* ========= INPUT ========= */
-  // Handle flapping input
-  let isHolding = false;
-  const flap = () => {
-    if (state === 'dead') return;
-    if (state === 'ready') {
-      state = 'running';
-      splashEl.style.display = 'none';
-    }
-    bird.vy = CFG.physics.flapImpulse;
-  };
-  canvas.addEventListener('mousedown', e => { e.preventDefault(); isHolding = true; flap(); });
-  canvas.addEventListener('mouseup', () => { isHolding = false; });
-  canvas.addEventListener('touchstart', e => { e.preventDefault(); isHolding = true; flap(); }, { passive: false });
-  canvas.addEventListener('touchend', () => { isHolding = false; });
-  addEventListener('keydown', e => {
-    const k = e.key.toLowerCase();
-    if ([' ', 'space', 'spacebar', 'w', 'arrowup'].includes(k)) { e.preventDefault(); flap(); }
-  });
-
-  /* ========= UI ========= */
-  againBtn.addEventListener('click', () => {
-    overPanel.style.display = 'none';
-    splashEl.style.display = '';
-    state = 'ready';
-    resetGame();
-  });
-
-  /* ========= GAME LOGIC ========= */
-  function spawnPipe() {
-    // Spawns basic coral pipes
-    const gap = CFG.pipes.gap;
-    const minC = 120;
-    const maxC = groundY - 120 - gap / 2;
-    const gapY = Math.round(lerp(minC + gap / 2, maxC, Math.random()));
-    pipes.push({ x: W + 10, gapY, gap, w: CFG.pipes.width, scored: false, type: 'coral' });
-  }
-
-  function update(dt) {
-    if (state !== 'running' || paused) return;
-    const speed = CFG.world.speed;
-    worldTime += dt;
-    spawnTimer += dt;
-    if (spawnTimer >= CFG.pipes.spawnInterval) { spawnTimer = 0; spawnPipe(); }
-    bird.vy += CFG.physics.gravity * dt;
-    bird.vy = clamp(bird.vy, -9999, CFG.physics.maxFallSpeed);
-    bird.y += bird.vy * dt;
-    bird.y = clamp(bird.y, 2, H + 1000);
-    bird.rot = lerp(bird.rot, bird.vy < 0 ? -15 * Math.PI / 180 : 60 * Math.PI / 180, 0.12);
-    for (const p of pipes) {
-      p.x -= speed * dt;
-      const cx = p.x + p.w / 2;
-      if (!p.scored && cx < bird.x) {
-        p.scored = true;
-        score += 1;
-        hudScore.textContent = String(score);
-      }
-    }
-    while (pipes.length && pipes[0].x + pipes[0].w < -20) pipes.shift();
-    const r = CFG.bird.hitboxRadius;
-    const circle = { x: bird.x + 2, y: bird.y, r };
-    let hit = false;
-    for (const p of pipes) {
-      const topRect = { x: p.x, y: -10000, w: p.w, h: (p.gapY - p.gap / 2) + 10000 };
-      const botRect = { x: p.x, y: (p.gapY + p.gap / 2), w: p.w, h: (groundY - (p.gapY + p.gap / 2)) };
-      if (circleRectDeepOverlap(circle, topRect, 0.1 * r) || circleRectDeepOverlap(circle, botRect, 0.1 * r)) {
-        hit = true;
-        break;
-      }
-    }
-    if (circle.y + circle.r >= groundY || hit) { state = 'dead'; overPanel.style.display = ''; scoreNow.textContent = String(score); }
-  }
-
-  function circleRectDeepOverlap(circ, rect, needed) {
-    const nx = clamp(circ.x, rect.x, rect.x + rect.w);
-    const ny = clamp(circ.y, rect.y, rect.y + rect.h);
-    const dist = Math.hypot(circ.x - nx, circ.y - ny);
-    return (circ.r - dist) > needed;
-  }
-
-  /* ========= RENDER ========= */
-  function drawFish() {
-    ctx.save();
-    const w = CFG.bird.size.w, h = CFG.bird.size.h;
