@@ -256,8 +256,16 @@ const playerFishImg = new Image();
 playerFishImg.src = "https://i.imgur.com/3k2vXjP.png";
 const bgFishImg = new Image();
 bgFishImg.src = "https://i.imgur.com/9m4tQ8Z.png";
-const bgMusic = new Audio('https://example.com/ocean-ambience.mp3');
+const bgMusic = new Audio('/assets/ocean-ambience.mp3');
 bgMusic.loop = true;
+
+// Preload SFX (new)
+const sfx_flap   = new Audio('/assets/flap.wav');
+const sfx_point  = new Audio('/assets/point.wav');
+const sfx_hit    = new Audio('/assets/hit.wav');
+const sfx_die    = new Audio('/assets/die.wav');
+const sfx_swoosh = new Audio('/assets/swoosh.wav');
+const sfx_collect= new Audio('/assets/collect.wav');
 
 /* ========= CONFIGURATION ========= */
 const CFG = {
@@ -353,25 +361,24 @@ const pops = [];
 const bubblesBg = [{x:100,y:80,s:0.15},{x:300,y:120,s:0.12},{x:200,y:50,s:0.18}];
 const bubblesFg = [{x:40,y:100,s:0.3},{x:240,y:60,s:0.25},{x:170,y:140,s:0.22}];
 let score = 0;
-window.score = 0;
 let collectibles = [];
 const particles = [];
 /* ========= AUDIO ========= */
 let audioCtx = null;
-const playSound = (url) => {
+const playSound = (audioEl) => {
   if (!audioCtx || storage.muted) return;
   try {
-    const a = new Audio(url);
-    a.play().catch(()=>{});
-  } catch(e){ console.warn('Audio load failed:', e); }
+    audioEl.currentTime = 0;
+    audioEl.play().catch(()=>{});
+  } catch (e) { console.warn('Audio play failed:', e); }
 };
 const sfx = {
-  flap: () => playSound('https://example.com/bubble-pop.wav'),
-  point: () => playSound('https://example.com/ping.wav'),
-  hit: () => playSound('https://example.com/thud.wav'),
-  die: () => playSound('https://example.com/splash.wav'),
-  swoosh: () => playSound('https://example.com/swoosh.wav'),
-  collect: () => playSound('https://example.com/collect.wav')
+  flap:   () => playSound(sfx_flap),
+  point:  () => playSound(sfx_point),
+  hit:    () => playSound(sfx_hit),
+  die:    () => playSound(sfx_die),
+  swoosh: () => playSound(sfx_swoosh),
+  collect:() => playSound(sfx_collect)
 };
 
 /* ========= HELPERS ========= */
@@ -411,26 +418,30 @@ const flap=()=>{
   if(!audioCtx){try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();audioCtx.resume().catch(()=>{});}catch{}}
   if(!localStorage.getItem('player_name')){openNameModal();return;}
   if(state==='ready'){state='running';announce('Game started');splashEl.style.display='none';
-    if(!storage.seenTutorial){tutorialModal.style.display='none';paused=false;}}
+    if(!storage.seenTutorial){tutorialModal.style.display='grid';paused=true;}}
   const impulse=lerp(CFG.physics.flapImpulse,CFG.physics.boostMax,clamp(flapHoldTime/CFG.physics.boostChargeTime,0,1));
   bird.vy=impulse;sfx.flap();boostCooldown=CFG.physics.boostCooldown;flapsSinceLastPipe++;
+flapHoldTime = 0; // reset charge after use
   for(let i=0;i<CFG.particles.flapCount;i++){
     particles.push({x:bird.x+Math.random()*10,y:bird.y+Math.random()*CFG.bird.size.h-CFG.bird.size.h/2,
       vx:-speedBase()*0.3+Math.random()*30-15,vy:Math.random()*-50-20,life:1+Math.random()*0.8,
       size:2+Math.random()*4,color:'rgba(255,255,255,0.8)',t:0});}
 };
 
-canvas.addEventListener('mousedown',e=>{e.preventDefault();isHolding=true;flap();});
-canvas.addEventListener('mouseup',()=>{isHolding=false;flapHoldTime=0;});
-canvas.addEventListener('touchstart',e=>{e.preventDefault();isHolding=true;flap();},{passive:false});
-canvas.addEventListener('touchend',()=>{isHolding=false;flapHoldTime=0;});
-addEventListener('keydown',e=>{
-  const k=e.key.toLowerCase(),flapKeys=[' ','space','spacebar','w','arrowup'];
-  if(flapKeys.includes(k)){e.preventDefault();isHolding=true;flap();}
-  if(k==='p'&&state==='running'){paused=!paused;showToast(paused?'Paused':'Resumed');}
+canvas.addEventListener('mousedown', e => { e.preventDefault(); isHolding = true; });
+canvas.addEventListener('mouseup', () => { if (!isHolding) return; isHolding = false; flap(); });
+
+canvas.addEventListener('touchstart', e => { e.preventDefault(); isHolding = true; }, { passive: false });
+canvas.addEventListener('touchend',  () => { if (!isHolding) return; isHolding = false; flap(); });
+
+addEventListener('keydown', e => {
+  const k = e.key.toLowerCase(); const flapKeys = [' ','space','spacebar','w','arrowup'];
+  if (flapKeys.includes(k)) { e.preventDefault(); isHolding = true; } // no flap here
+  if (k === 'p' && state === 'running') { paused = !paused; showToast(paused ? 'Paused' : 'Resumed'); }
 });
-addEventListener('keyup',e=>{
-  const k=e.key.toLowerCase();if([' ','space','spacebar','w','arrowup'].includes(k)){isHolding=false;flapHoldTime=0;}
+addEventListener('keyup', e => {
+  const k = e.key.toLowerCase(); const flapKeys = [' ','space','spacebar','w','arrowup'];
+  if (flapKeys.includes(k)) { if (!isHolding) return; isHolding = false; flap(); }
 });
 
 /* ========= UI ========= */
@@ -545,7 +556,7 @@ function update(dt){
       sfx.point();announce(`Score ${score}`);
     }
   }
-  pipes.filter(p=>p.x+p.w>-20);
+  pipes = pipes.filter(p=>p.x+p.w>-20);
   const r=CFG.bird.hitboxRadius,circle={x:bird.x+2,y:bird.y,r};
   for(const p of pipes){
     if(p.type==='shark'){
@@ -575,11 +586,28 @@ function drawFish(){
 }
 
 function drawPipes(){
-  ctx.fillStyle='#ff6347';
-  for(const p of pipes){
-    const topH=p.gapY-p.gap/2,botY=p.gapY+p.gap/2;
-    ctx.fillRect(p.x,0,p.w,topH);
-    ctx.fillRect(p.x,botY,p.w,groundY-botY);
+  for (const p of pipes) {
+    const topH = p.gapY - p.gap / 2;
+    const botY = p.gapY + p.gap / 2;
+
+    if (p.type === 'shark') {
+      if (sharkImg.complete && sharkImg.naturalWidth) {
+        const sharkW = Math.max(64, sharkImg.width * 0.6);
+        const sharkH = sharkW * 0.5;
+        ctx.drawImage(sharkImg, p.x + (p.w - sharkW) / 2, p.gapY - sharkH / 2, sharkW, sharkH);
+      } else {
+        ctx.fillStyle = '#808080';
+        ctx.fillRect(p.x, p.gapY - 18, p.w, 36);
+      }
+    } else if (p.type === 'jellyfish') {
+      ctx.fillStyle = '#ff69b4';
+      ctx.fillRect(p.x, 0, p.w, topH);
+      ctx.fillRect(p.x, botY, p.w, groundY - botY);
+    } else {
+      ctx.fillStyle = '#ff6347';
+      ctx.fillRect(p.x, 0, p.w, topH);
+      ctx.fillRect(p.x, botY, p.w, groundY - botY);
+    }
   }
 }
 
@@ -619,6 +647,12 @@ function render(){
   drawParticles();
   drawGround();
   drawHUD();
+  if (bgFishImg.complete && bgFishImg.naturalWidth) {
+    ctx.globalAlpha = 0.25;
+    const swimX = (worldTime * 60) % (W + 60) - 60;
+    ctx.drawImage(bgFishImg, swimX, H * 0.4, 24, 12);
+    ctx.globalAlpha = 1;
+  }
 }
 
 /* ========= MAIN LOOP ========= */
@@ -641,7 +675,10 @@ function init(){
   overPanel.style.display='none';
   lastMs=performance.now();
   requestAnimationFrame(loop);
-  if(!localStorage.getItem('player_name'))openNameModal();
+  if(!localStorage.getItem('player_name')) {
+    openNameModal();
+    localStorage.setItem('player_name', 'Guest'); // allow play immediately
+  }
   if(!storage.muted&&musicPlaying)bgMusic.play().catch(()=>{});
 }
 window.addEventListener('load',()=>{
