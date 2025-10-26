@@ -1071,6 +1071,7 @@
                     ctx.globalAlpha = 1;
                 }
                 ctx.restore();
+                if (shieldActive) updateShieldHud();
             }
             function init() {
                 resetGame();
@@ -1109,6 +1110,7 @@
                         update(dt);
                     }
                     render();
+                    updateShieldHud();
                     if (state === 'respawn' && respawnCountdown <= 0) {
                         countdownEl.style.display = 'none';
                         state = 'running';
