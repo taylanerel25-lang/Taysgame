@@ -1,0 +1,8 @@
+{
+  "name": "Flipper Fish",
+  "short_name": "FlipperFish",
+  "start_url": "./",
+  "display": "fullscreen",
+  "background_color": "#20b2aa",
+  "theme_color": "#20b2aa"
+}
