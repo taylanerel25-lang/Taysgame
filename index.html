@@ -645,13 +645,13 @@
   }
   function showGameOver() {
     const name = localStorage.getItem('player_name') || "Anonymous";
-    if (window.dbRef && score >= storage.best) {
-      push(window.dbRef, {
-        name,
-        score,
-        at: Date.now()
-      });
-    }
+    if (window.dbRef) {
+  push(window.dbRef, {
+    name,
+    score,
+    at: Date.now()
+  });
+}
     scoreNow.textContent = String(score);
     if (score > storage.best) { storage.best = score; localStorage.setItem('sb_best', String(score)); }
     bestNow.textContent = String(storage.best);
