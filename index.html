@@ -647,7 +647,7 @@
             try {
               firebase.database().ref("leaderboard").push({
                 name,
-                score,
+                score: storage.best,
                 at: Date.now()
               }).then(() => console.log("Score saved successfully"))
                 .catch(e => console.error("Score save failed:", e));
@@ -676,7 +676,8 @@
             console.log("Snapshot:", snap.val());
             const list = [];
             snap.forEach(s => list.push(s.val()));
-            list.reverse();
+            // Reverse the list so highest score is at index 0
+            list.sort((a, b) => b.score - a.score).splice(5); // Ensure max 5 entries
             console.log("Leaderboard data:", list);
             const medal = i => i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i+1}.`;
             const html = list.map((p, i) =>
