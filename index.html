@@ -287,31 +287,24 @@
     </div>
     <div id="aria" class="sr-only" aria-live="polite"></div>
     <div id="toast" class="toast" role="status"></div>
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-      import { getDatabase, ref, push, query, orderByChild, limitToLast, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-      let app, db, dbRef;
-      try {
-        const firebaseConfig = {
-          apiKey: "AIzaSyDsfk9nWTl-FYLJlrmfiG0jYRez6461OMw",
-          authDomain: "flappy-fish-25f36.firebaseapp.com",
-          databaseURL: "https://flappy-fish-25f36-default-rtdb.firebaseio.com",
-          projectId: "flappy-fish-25f36",
-          storageBucket: "flappy-fish-25f36.appspot.com",
-          messagingSenderId: "787422563403",
-          appId: "1:787422563403:web:662ba16a0c580f10ffd1ce",
-          measurementId: "G-C0LBVK4Y8W"
-        };
-        app = initializeApp(firebaseConfig);
-        db = getDatabase(app);
-        dbRef = ref(db, "leaderboard");
-        window.db = db;
-        window.dbRef = dbRef;
-      } catch (e) {
-        console.error('Firebase initialization failed:', e);
-        document.getElementById("leaderboardSplashBody").innerHTML = "Firebase initialization failed";
-        document.getElementById("leaderboardOverBody").innerHTML = "Firebase initialization failed";
-      }
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyDsfk9nWTl-FYLJlrmfiG0jYRez6461OMw",
+        authDomain: "flappy-fish-25f36.firebaseapp.com",
+        databaseURL: "https://flappy-fish-25f36-default-rtdb.firebaseio.com",
+        projectId: "flappy-fish-25f36",
+        storageBucket: "flappy-fish-25f36.appspot.com",
+        messagingSenderId: "787422563403",
+        appId: "1:787422563403:web:662ba16a0c580f10ffd1ce",
+        measurementId: "G-C0LBVK4Y8W"
+      };
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.database();
+      const dbRef = db.ref("leaderboard");
+      window.db = db;
+      window.dbRef = dbRef;
     </script>
     <script>
       (() => {
@@ -412,7 +405,7 @@
         const sfx = {
           flap: () => beep('sine', 400, 0.12, 0.15),
           point: () => beep('triangle', 880, 0.07, 0.18),
-          hit: () => beep('sawtooth', 120, 0.15, 0.22),
+          ha: () => beep('sawtooth', 120, 0.15, 0.22),
           die: () => beep('sine', 80, 0.35, 0.25),
           swoosh: () => beep('triangle', 300, 0.1, 0.12),
           collect: () => beep('sine', 1200, 0.1, 0.2)
@@ -519,15 +512,15 @@
         }
         function saveName() {
           const raw = (nameInput.value || '').trim();
-          const clean = raw.replace(/[.#$/[]]/g, '').slice(0, 24);
+          const clean = raw.replace(/[.#$/[\]]/g, '').slice(0, 24);
           if (!clean) { showToast('Please enter a name'); nameInput.focus(); return; }
           localStorage.setItem('player_name', clean);
           nameModal.style.display = 'none';
           showToast(`Hi, ${clean}!`);
         }
+        setNameBtn.addEventListener('click', openNameModal);
         saveNameBtn.addEventListener('click', saveName);
         nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') saveName(); });
-        setNameBtn.addEventListener('click', openNameModal);
         function spawnPipe() {
           const gap = pipeGap();
           const padBottom = CFG.pipes.maxGapCenterYPaddingBottom;
@@ -599,7 +592,7 @@
             if (circleRectDeepOverlap(circle, topRect, penetrationNeeded) || circleRectDeepOverlap(circle, botRect, penetrationNeeded)) { hit = true; break; }
           }
           if (circle.y + circle.r >= groundY) { die(); return; }
-          if (hit) { sfx.hit(); die(); }
+          if (hit) { sfx.ha(); die(); }
           for (let i = pops.length-1; i >= 0; i--) { const pop = pops[i]; pop.t += dt; if (pop.t >= pop.duration) pops.splice(i, 1); }
           for (let i = particles.length-1; i >= 0; i--) {
             const p = particles[i];
@@ -650,10 +643,9 @@
           }
           bestNow.textContent = String(storage.best);
           document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
-
           if (window.dbRef) {
             try {
-              push(window.dbRef, {
+              firebase.database().ref("leaderboard").push({
                 name,
                 score,
                 at: Date.now()
@@ -663,7 +655,6 @@
               console.warn("Failed to save score:", e);
             }
           }
-
           const m = medalFor(storage.best);
           if (m) {
             medalEl.style.display = '';
@@ -671,7 +662,6 @@
           } else {
             medalEl.style.display = 'none';
           }
-
           overPanel.style.display = '';
         }
         window.showGameOver = showGameOver;
@@ -682,8 +672,7 @@
             document.getElementById("leaderboardOverBody").innerHTML = "Error: Database reference not initialized";
             return;
           }
-          const q = query(window.dbRef, orderByChild("score"), limitToLast(5));
-          onValue(q, snap => {
+          firebase.database().ref("leaderboard").orderByChild("score").limitToLast(5).on("value", snap => {
             console.log("Snapshot:", snap.val());
             const list = [];
             snap.forEach(s => list.push(s.val()));
@@ -879,6 +868,19 @@
           }
           ctx.restore();
         }
+        function init() {
+          resetGame();
+          document.getElementById("leaderboardSplashBody").innerHTML = "Loading...";
+          document.getElementById("leaderboardOverBody").innerHTML = "Loading...";
+          loadLeaderboard();
+          splashEl.style.display = '';
+          hudScore.textContent = '0';
+          document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
+          bestNow.textContent = String(storage.best);
+          overPanel.style.display = 'none';
+          lastMs = performance.now();
+          requestAnimationFrame(loop);
+        }
         function loop(now) {
           try {
             const dt = clamp((now - lastMs)/1000, 0, 1/30);
@@ -889,25 +891,6 @@
           } catch (e) {
             console.error('Game loop error:', e);
           }
-          requestAnimationFrame(loop);
-        }
-        function init() {
-          resetGame();
-          document.getElementById("leaderboardSplashBody").innerHTML = "Loading...";
-          document.getElementById("leaderboardOverBody").innerHTML = "Loading...";
-          // Wait for database to initialize before loading leaderboard
-          const waitForDb = setInterval(() => {
-            if (window.dbRef) {
-              clearInterval(waitForDb);
-              loadLeaderboard();
-            }
-          }, 300);
-          splashEl.style.display = '';
-          hudScore.textContent = '0';
-          document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
-          bestNow.textContent = String(storage.best);
-          overPanel.style.display = 'none';
-          lastMs = performance.now();
           requestAnimationFrame(loop);
         }
         init();
