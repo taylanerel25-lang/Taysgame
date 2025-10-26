@@ -297,8 +297,7 @@
             pointer-events: auto;
         }
         /* Ensure score/shield render above splash */
-       .score { z-index: 3; }
-.shield { z-index: 99999; }
+        .score, .shield { z-index: 3; }
         .splash { z-index: 2; }
         /* Centered countdown */
         .countdown {
@@ -469,7 +468,7 @@
                 showToast('Shield already equipped');
                 return;
               }
-              const COST 1;
+              const COST = 30;
               if (shellBank < COST) {
                 showToast('Not enough shells');
                 return;
