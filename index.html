@@ -69,9 +69,9 @@
             text-shadow: 0 2px 0 rgba(0,0,0,.6);
             pointer-events: none;
             z-index: 3;
-            display: flex; /* ADDED: Flexbox for shield and score alignment */
-            align-items: center; /* ADDED: Center vertically */
-            gap: 8px; /* ADDED: Space between shield and score */
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         .bank {
             position: fixed;
@@ -217,7 +217,7 @@
             color: #fff;
             text-shadow: 0 2px 0 rgba(0,0,0,.6);
             pointer-events: none;
-            display: none; /* UPDATED: Simplified, removed positioning */
+            display: none;
         }
         .soundbar {
             position: fixed;
@@ -295,10 +295,8 @@
         .splash-inner .btn {
             pointer-events: auto;
         }
-        /* Ensure score/shield render above splash */
-        .score { z-index: 3; } /* UPDATED: Only .score needs z-index now */
+        .score { z-index: 3; }
         .splash { z-index: 2; }
-        /* Centered countdown */
         .countdown {
             position: fixed;
             inset: 0;
@@ -318,7 +316,7 @@
         <canvas id="game" width="360" height="640" aria-label="Flipper Fish"></canvas>
     </div>
     <div class="hud" aria-hidden="true">
-        <div class="score"> <!-- UPDATED: New structure for score and shield -->
+        <div class="score">
             <div id="shieldHud" class="shield" aria-hidden="true" title="Shield active">🛡</div>
             <span id="scoreHud">0</span>
         </div>
@@ -408,7 +406,6 @@
         window.dbRef = dbRef;
     </script>
     <script>
-        // JavaScript remains unchanged
         (() => {
             'use strict';
             const playerFishImg = new Image();
@@ -457,28 +454,28 @@
             const closeStoreBtn = document.getElementById('closeStoreBtn');
             const buyShieldBtn = document.getElementById('buyShieldBtn');
             document.querySelector('.splash-inner .btn').addEventListener('click', () => {
-              storeModal.style.display = 'grid';
+                storeModal.style.display = 'grid';
             });
             document.getElementById('storeBtn').addEventListener('click', () => {
-              storeModal.style.display = 'grid';
+                storeModal.style.display = 'grid';
             });
             closeStoreBtn.addEventListener('click', () => {
-              storeModal.style.display = 'none';
+                storeModal.style.display = 'none';
             });
             buyShieldBtn.addEventListener('click', () => {
-              if (shieldActive) {
-                showToast('Shield already equipped');
-                return;
-              }
-              const COST = 10;
-              if (shellBank < COST) {
-                showToast('Not enough shells');
-                return;
-              }
-              updateBank(-COST);
-              shieldActive = true;
-              updateShieldHud();
-              showToast('Shield equipped!');
+                if (shieldActive) {
+                    showToast('Shield already equipped');
+                    return;
+                }
+                const COST = 10;
+                if (shellBank < COST) {
+                    showToast('Not enough shells');
+                    return;
+                }
+                updateBank(-COST);
+                shieldActive = true;
+                updateShieldHud();
+                showToast('Shield equipped!');
             });
             const W = CFG.canvas.width, H = CFG.canvas.height;
             const groundY = H - CFG.ground.height;
@@ -512,7 +509,7 @@
             let shieldActive = false;
             const shieldHud = document.getElementById('shieldHud');
             function updateShieldHud() {
-              shieldHud.style.display = shieldActive ? 'block' : 'none';
+                shieldHud.style.display = shieldActive ? 'block' : 'none';
             }
             const particles = [];
             const medalFor = (s) => s>=50 ? ['🏆 Platinum', '#e5e4e2'] : s>=30 ? ['🥇 Gold', '#f7c32e'] : s>=20 ? ['🥈 Silver', '#c0c0c0'] : s>=10 ? ['🥉 Bronze', '#cd7f32'] : null;
@@ -905,6 +902,59 @@
                 ctx.arcTo(x, y, x+w, y, r);
                 ctx.closePath();
             }
+            function shade(col, amt) {
+                const f = parseInt(col.slice(1), 16),
+                      t = amt < 0 ? 0 : 255,
+                      p = amt < 0 ? amt * -1 : amt,
+                      R = f >> 16,
+                      G = f >> 8 & 0x00FF,
+                      B = f & 0x0000FF;
+                return "#" + (0x1000000 +
+                    (Math.round((t - R) * p) + R) * 0x10000 +
+                    (Math.round((t - G) * p) + G) * 0x100 +
+                    (Math.round((t - B) * p) + B)).toString(16).slice(1);
+            }
+            function drawCoralAndSharks() {
+                const stage = currentStage();
+                const color = stagePipes[stage];
+                for (const p of pipes) {
+                    const topH = p.gapY - p.gap / 2;
+                    const botY = p.gapY + p.gap / 2;
+                    const botH = groundY - botY;
+                    const drawPipe = (x, y, w, h, isTop) => {
+                        const grad = ctx.createLinearGradient(x, y, x + w, y);
+                        grad.addColorStop(0, color);
+                        grad.addColorStop(0.4, shade(color, -30));
+                        grad.addColorStop(0.6, shade(color, -40));
+                        grad.addColorStop(1, color);
+                        ctx.fillStyle = grad;
+                        roundedRect(x, y, w, h, 16);
+                        ctx.fill();
+                        ctx.fillStyle = shade(color, -50);
+                        for (let i = 0; i < 5; i++) {
+                            const bx = x + Math.random() * w;
+                            const by = y + Math.random() * h;
+                            ctx.beginPath();
+                            ctx.arc(bx, by, 2 + Math.random() * 2, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        ctx.fillStyle = "rgba(255,255,255,.25)";
+                        ctx.fillRect(x + 4, y + 4, 6, h - 8);
+                        const shimmerT = (worldTime * 2) % 1;
+                        const shimmerY = y + shimmerT * (h - 20);
+                        ctx.fillStyle = "rgba(255,255,255,.5)";
+                        ctx.fillRect(x + 6, shimmerY, 4, 12);
+                        ctx.fillStyle = "rgba(0,0,0,.25)";
+                        ctx.fillRect(x + w - 10, y + 4, 6, h - 8);
+                        ctx.fillStyle = shade(color, -25);
+                        ctx.beginPath();
+                        ctx.ellipse(x + w / 2, isTop ? y + h : y, w * 0.9, 12, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                    };
+                    drawPipe(p.x, 0, p.w, topH, true);
+                    drawPipe(p.x, botY, p.w, botH, false);
+                }
+            }
             function drawBubbles(bubbles, opacity=0.9) {
                 for (const c of bubbles) {
                     ctx.save(); ctx.translate(c.x, c.y);
@@ -913,39 +963,6 @@
                     ctx.beginPath(); ctx.arc(8, -6, 12, 0, Math.PI*2); ctx.fill();
                     ctx.beginPath(); ctx.arc(-10, 4, 15, 0, Math.PI*2); ctx.fill();
                     ctx.restore();
-                }
-            }
-            function drawCoralAndSharks() {
-                const stage = currentStage();
-                const baseColor = stagePipes[stage];
-                const dark = 'rgba(0,0,0,.18)';
-                for (const p of pipes) {
-                    const topH = p.gapY - p.gap/2;
-                    const botY = p.gapY + p.gap/2;
-                    const botH = groundY - botY;
-                    const persp = 8;
-                    const grad = ctx.createRadialGradient(p.x + p.w/2, 0, p.w/2, p.x + p.w/2, 0, 0);
-                    grad.addColorStop(0, baseColor);
-                    grad.addColorStop(0.7, '#ffffff40');
-                    grad.addColorStop(1, dark);
-                    ctx.fillStyle = grad;
-                    ctx.beginPath();
-                    ctx.moveTo(p.x, 0);
-                    for (let i = 0; i < p.w; i += 10) {
-                        ctx.quadraticCurveTo(p.x + i + 5, -10, p.x + i + 10, 0);
-                    }
-                    ctx.lineTo(p.x + p.w + persp, topH);
-                    ctx.lineTo(p.x - persp, topH);
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.beginPath();
-                    ctx.moveTo(p.x - persp, botY);
-                    ctx.lineTo(p.x + p.w + persp, botY);
-                    for (let i = p.w; i > 0; i -= 10) {
-                        ctx.quadraticCurveTo(p.x + i - 5, groundY + 10, p.x + i - 10, groundY);
-                    }
-                    ctx.closePath();
-                    ctx.fill();
                 }
             }
             function drawFish() {
