@@ -492,12 +492,13 @@
             const multiplier = 1;
             window.score = 0;
             let collectibles = [];
-            const particles = [];
-            let shieldActive = false; // one-hit protection for the current run
+            // Shield state (one-hit protection)
+            let shieldActive = false;
             const shieldHud = document.getElementById('shieldHud');
             function updateShieldHud() {
-              if (shieldHud) shieldHud.style.display = shieldActive ? '' : 'none';
+              shieldHud.style.display = shieldActive ? '' : 'none';
             }
+            const particles = [];
             const medalFor = (s) => s>=50 ? ['🏆 Platinum', '#e5e4e2'] : s>=30 ? ['🥇 Gold', '#f7c32e'] : s>=20 ? ['🥈 Silver', '#c0c0c0'] : s>=10 ? ['🥉 Bronze', '#cd7f32'] : null;
             const stageSkies = ['#20b2aa', '#00bfff', '#4682b4', '#191970', '#00ced1'];
             const stagePipes = ['#ff7f50', '#ff4500', '#cd5b45', '#a52a2a', '#ff6347'];
