@@ -297,8 +297,8 @@
             pointer-events: auto;
         }
         /* Ensure score/shield render above splash */
-        .score { z-index: 3; }
-        .shield { z-index: 99999; }
+        .score, .shield { z-index: 3; }
+        .splash { z-index: 2; }
         /* Centered countdown */
         .countdown {
             position: fixed;
@@ -339,6 +339,7 @@
                 <div id="leaderboardSplashBody" style="font-size:16px;text-align:center;">Loading...</div>
             </div>
         </div>
+        <div id="shieldHud" class="shield" aria-hidden="true" title="Shield active">🛡</div>
     </div>
     <div id="gameOver" class="hud" style="display:none;">
         <div class="panel" role="dialog" aria-modal="true" aria-labelledby="overTitle">
@@ -467,7 +468,7 @@
                 showToast('Shield already equipped');
                 return;
               }
-              const COST = 1;
+              const COST = 30;
               if (shellBank < COST) {
                 showToast('Not enough shells');
                 return;
