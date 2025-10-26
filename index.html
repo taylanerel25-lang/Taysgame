@@ -64,7 +64,7 @@
       position: fixed;
       top: 18px;
       right: 14px;
-      font-size: 28px;
+      font-size: 56px; /* double size */
       color: #fff;
       text-shadow: 0 2px 0 rgba(0,0,0,.6);
       pointer-events: none;
@@ -73,7 +73,7 @@
       position: fixed;
       top: 18px;
       left: 14px;
-      font-size: 16px;
+      font-size: 28px;
       color: #fff;
       text-shadow: 0 2px 0 rgba(0,0,0,.6);
       pointer-events: none;
@@ -286,6 +286,9 @@
   </div>
   <div id="aria" class="sr-only" aria-live="polite"></div>
   <div id="toast" class="toast" role="status"></div>
+  <audio id="bgMusic" loop preload="auto">
+    <source src="Flappy Bird Theme Song.mp3" type="audio/mpeg">
+  </audio>
   <script>
 (() => {
   'use strict';
@@ -433,6 +436,18 @@
       state = 'running';
       announce('Game started');
       splashEl.style.display = 'none';
+      const music = document.getElementById('bgMusic');
+      music.volume = 0.5;
+      // tiny fade-in
+      music.currentTime = 0;
+      let fade = setInterval(() => {
+        if (music.volume < 1 && !storage.muted) {
+          music.volume += 0.02;
+        } else {
+          clearInterval(fade);
+        }
+      }, 120);
+      music.play().catch(() => {});
     }
     bird.vy = CFG.physics.flapImpulse; sfx.flap();
     for (let i = 0; i < CFG.particles.flapCount; i++) {
@@ -456,13 +471,21 @@
     if (k === 'p' && state === 'running') { paused = !paused; showToast(paused ? 'Paused' : 'Resumed'); }
   }, { passive: false });
   muteBtn.addEventListener('click', () => {
-    storage.muted = !storage.muted; localStorage.setItem('sb_muted', storage.muted ? '1' : '0');
+    storage.muted = !storage.muted;
+    if (storage.muted) {
+      music.pause();
+    } else {
+      music.play().catch(() => {});
+    }
+    localStorage.setItem('sb_muted', storage.muted ? '1' : '0');
     muteBtn.setAttribute('aria-pressed', storage.muted ? 'true' : 'false');
     muteBtn.textContent = storage.muted ? '🔇 Muted' : '🔊 Sound';
   });
   document.getElementById('againBtn').addEventListener('click', () => {
     overPanel.style.display = 'none'; splashEl.style.display = '';
-    state = 'ready'; resetGame(); announce('Back to splash');
+    state = 'ready'; resetGame();
+    if (!storage.muted) music.play().catch(() => {});
+    announce('Back to splash');
   });
   document.getElementById('shareBtn').addEventListener('click', async () => {
     const text = `I scored ${scoreNow.textContent} in Swimming Fish! Can you beat me?`;
@@ -577,6 +600,8 @@
     return overlap > needed;
   }
   function die() {
+    music.pause();
+    music.currentTime = 0;
     state = 'dead'; paused = false;
     if (navigator.vibrate) navigator.vibrate(80);
     sfx.die();
@@ -781,6 +806,21 @@
     }
     ctx.restore();
   }
+  function init() {
+    resetGame();
+    splashEl.style.display = '';
+    hudScore.textContent = '0';
+    document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
+    bestNow.textContent = String(storage.best);
+    overPanel.style.display = 'none';
+    lastMs = performance.now();
+    requestAnimationFrame(loop);
+    if (!localStorage.getItem('player_name')) openNameModal();
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) music.pause();
+    else if (!storage.muted && state === 'running') music.play().catch(() => {});
+  });
   function loop(now) {
     try {
       const dt = clamp((now - lastMs)/1000, 0, 1/30);
@@ -792,17 +832,6 @@
       console.error('Game loop error:', e);
     }
     requestAnimationFrame(loop);
-  }
-  function init() {
-    resetGame();
-    splashEl.style.display = '';
-    hudScore.textContent = '0';
-    document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
-    bestNow.textContent = String(storage.best);
-    overPanel.style.display = 'none';
-    lastMs = performance.now();
-    requestAnimationFrame(loop);
-    if (!localStorage.getItem('player_name')) openNameModal();
   }
   init();
 })();
