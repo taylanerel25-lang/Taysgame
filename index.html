@@ -212,7 +212,7 @@
         .shield {
             position: fixed;
             top: 28px;
-            right: 86px;
+            right: 40px;
             font-size: 28px;
             color: #fff;
             text-shadow: 0 2px 0 rgba(0,0,0,.6);
@@ -468,7 +468,7 @@
                 showToast('Shield already equipped');
                 return;
               }
-              const COST = 30;
+              const COST = 1;
               if (shellBank < COST) {
                 showToast('Not enough shells');
                 return;
