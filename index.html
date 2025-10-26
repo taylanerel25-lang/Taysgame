@@ -297,7 +297,8 @@
             pointer-events: auto;
         }
         /* Ensure score/shield render above splash */
-        .score, .shield { z-index: 3; }
+       .score { z-index: 3; }
+.shield { z-index: 99999; }
         .splash { z-index: 2; }
         /* Centered countdown */
         .countdown {
