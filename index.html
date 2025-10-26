@@ -895,13 +895,13 @@
           resetGame();
           document.getElementById("leaderboardSplashBody").innerHTML = "Loading...";
           document.getElementById("leaderboardOverBody").innerHTML = "Loading...";
-          if (window.dbRef) {
-            loadLeaderboard();
-          } else {
-            console.error("Database not initialized yet");
-            document.getElementById("leaderboardSplashBody").innerHTML = "Error: Database not initialized";
-            document.getElementById("leaderboardOverBody").innerHTML = "Error: Database not initialized";
-          }
+          // Wait for database to initialize before loading leaderboard
+          const waitForDb = setInterval(() => {
+            if (window.dbRef) {
+              clearInterval(waitForDb);
+              loadLeaderboard();
+            }
+          }, 300);
           splashEl.style.display = '';
           hudScore.textContent = '0';
           document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
