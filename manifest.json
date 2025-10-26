@@ -1,8 +1,21 @@
 {
-  "name": "Flipper Fish",
+  "name": "FlipperFish",
   "short_name": "FlipperFish",
-  "start_url": "./",
+  "description": "A fun tap-to-swim fish game!",
+  "start_url": "./index.html",
   "display": "fullscreen",
   "background_color": "#20b2aa",
-  "theme_color": "#20b2aa"
+  "theme_color": "#20b2aa",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
