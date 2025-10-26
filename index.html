@@ -211,8 +211,8 @@
         }
         .shield {
             position: fixed;
-            top: 28px;
-            right: 20px;
+            top: 60px;
+            right: 40px;
             font-size: 28px;
             color: #fff;
             text-shadow: 0 2px 0 rgba(0,0,0,.6);
@@ -296,17 +296,26 @@
         .splash-inner .btn {
             pointer-events: auto;
         }
-        /* Ensure score/shield render above splash */
-        .score, .shield { z-index: 3; }
-        .splash { z-index: 2; }
-        /* Centered countdown */
-        .countdown {
-            position: fixed;
-            inset: 0;
-            display: grid;
-            place-items: center;
-            font-size: 64px;
-            font-weight: 900;
+       /* Ensure correct ordering: score above splash, shield above score */
+.score {
+    z-index: 3;
+}
+
+.shield {
+    position: fixed;
+    top: 60px;     /* drops it below the score a little */
+    right: 40px;   /* scoots it closer to the score */
+    font-size: 28px;
+    color: #fff;
+    text-shadow: 0 2px 0 rgba(0,0,0,.6);
+    pointer-events: none;
+    display: none;
+    z-index: 10;   /* ensures shield always visible above score/splash */
+}
+
+.splash {
+    z-index: 2;
+}
             color: #fff;
             text-shadow: 0 2px 0 rgba(0,0,0,.6);
             pointer-events: none;
