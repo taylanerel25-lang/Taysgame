@@ -1,1129 +1,1138 @@
-<!DOCTYPE html>  <html lang="en">  
-<head>  
-    <meta charset="utf-8" />  
-    <title>Flipper Fish</title>  
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />  
-    <meta name="theme-color" content="#20b2aa" />  
-    <style>  
-        :root {  
-            --bg: #20b2aa;  
-            --panel: rgba(255,255,255,.9);  
-            --panel-dark: rgba(0,0,0,.65);  
-            --text: #1d1d1f;  
-        }  
-        html, body {  
-            height: 100%;  
-            margin: 0;  
-            background: #111;  
-            color: var(--text);  
-            font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans";  
-            overscroll-behavior: none;  
-        }  
-        .wrap {  
-            position: fixed;  
-            inset: 0;  
-            display: grid;  
-            place-items: center;  
-            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);  
-        }  
-        canvas {  
-            background: var(--bg);  
-            box-shadow: 0 10px 40px rgba(0,0,0,.35);  
-            border-radius: 16px;  
-            image-rendering: pixelated;  
-            touch-action: none;  
-        }  
-        .hud {  
-            position: fixed;  
-            inset: 0;  
-            pointer-events: none;  
-            display: grid;  
-            place-items: center;  
-            font-weight: 700;  
-            letter-spacing: .5px;  
-            user-select: none;  
-        }  
-        .btn {  
-            appearance: none;  
-            border: 0;  
-            background: var(--panel);  
-            color: #111;  
-            padding: 8px 12px;  
-            border-radius: 999px;  
-            font-weight: 700;  
-            box-shadow: 0 2px 8px rgba(0,0,0,.15);  
-            cursor: pointer;  
-            line-height: 1;  
-        }  
-        .btn:focus {  
-            outline: 3px solid #000;  
-            outline-offset: 2px;  
-        }  
-        .score {  
-            position: fixed;  
-            top: 18px;  
-            right: 14px;  
-            font-size: 56px;  
-            color: #fff;  
-            text-shadow: 0 2px 0 rgba(0,0,0,.6);  
-            pointer-events: none;  
-            z-index: 3;  
-            display: flex; /* ADDED: Flexbox for shield and score alignment */  
-            align-items: center; /* ADDED: Center vertically */  
-            gap: 8px; /* ADDED: Space between shield and score */  
-        }  
-        .bank {  
-            position: fixed;  
-            top: 14px;  
-            left: 50%;  
-            transform: translateX(-50%);  
-            font-size: 20px;  
-            color: #e69500;  
-            text-shadow: 0 2px 0 rgba(0,0,0,.6);  
-            pointer-events: none;  
-            text-align: center;  
-            line-height: 1;  
-        }  
-        .best {  
-            position: fixed;  
-            top: 18px;  
-            left: 14px;  
-            font-size: 16px;  
-            color: #fff;  
-            text-shadow: 0 2px 0 rgba(0,0,0,.6);  
-            pointer-events: none;  
-        }  
-        .splash {  
-            position: absolute;  
-            inset: 0;  
-            pointer-events: none;  
-            color: #000;  
-            text-shadow: 0 2px 0 rgba(255,255,255,.5);  
-            z-index: 2;  
-        }  
-        .splash-inner {  
-            position: absolute;  
-            left: 50%;  
-            transform: translateX(-50%);  
-            top: 10%;  
-            width: min(92%, 360px);  
-            text-align: center;  
-            pointer-events: none;  
-        }  
-        .title {  
-            font-size: 36px;  
-            margin: 2px 0 8px;  
-        }  
-        .subtitle {  
-            font-size: 18px;  
-            opacity: .95;  
-        }  
-        .splash-board {  
-            position: absolute;  
-            left: 50%;  
-            transform: translateX(-50%);  
-            bottom: 18px;  
-            width: min(92%, 360px);  
-            background: rgba(0,0,0,.65);  
-            color: #f0f0f0;  
-            border-radius: 18px;  
-            padding: 14px;  
-            box-shadow: 0 8px 30px rgba(0,0,0,.25);  
-            pointer-events: auto;  
-        }  
-        .board-head {  
-            font-size: 20px;  
-            font-weight: 800;  
-            text-align: center;  
-            margin: 0 0 6px;  
-        }  
-        .board-row {  
-            display: flex;  
-            justify-content: space-between;  
-            align-items: center;  
-            font-size: 16px;  
-            padding: 6px 0;  
-        }  
-        .panel {  
-            min-width: 280px;  
-            max-width: 90vw;  
-            background: var(--panel);  
-            color: #111;  
-            border-radius: 18px;  
-            padding: 16px;  
-            box-shadow: 0 8px 30px rgba(0,0,0,.25);  
-            pointer-events: auto;  
-            transform: translateY(8px);  
-        }  
-        .panel h2 {  
-            margin: 0 0 8px 0;  
-            font-size: 22px;  
-            text-align: center;  
-        }  
-        .panel .row {  
-            display: flex;  
-            justify-content: space-between;  
-            align-items: center;  
-            font-size: 18px;  
-            padding: 6px 0;  
-        }  
-        .panel .actions {  
-            display: grid;  
-            grid-template-columns: 1fr 1fr;  
-            gap: 8px;  
-            margin-top: 12px;  
-        }  
-        .pill {  
-            display: inline-flex;  
-            align-items: center;  
-            gap: 6px;  
-            background: rgba(0,0,0,.08);  
-            padding: 4px 10px;  
-            border-radius: 999px;  
-            font-size: 14px;  
-        }  
-        .sr-only {  
-            position: absolute !important;  
-            width: 1px;  
-            height: 1px;  
-            padding: 0;  
-            margin: -1px;  
-            overflow: hidden;  
-            clip: rect(0,0,0,0);  
-            white-space: nowrap;  
-            border: 0;  
-        }  
-        .toast {  
-            position: fixed;  
-            bottom: 16px;  
-            left: 50%;  
-            transform: translateX(-50%);  
-            background: rgba(0,0,0,.85);  
-            color: #fff;  
-            padding: 8px 12px;  
-            border-radius: 10px;  
-            font-size: 14px;  
-            pointer-events: none;  
-            opacity: 0;  
-            transition: opacity .25s ease, transform .25s ease;  
-        }  
-        .toast.show {  
-            opacity: 1;  
-            transform: translate(-50%, -6px);  
-        }  
-        .shield {  
-            font-size: 24px;  
-            color: #fff;  
-            text-shadow: 0 2px 0 rgba(0,0,0,.6);  
-            pointer-events: none;  
-            display: none; /* UPDATED: Simplified, removed positioning */  
-        }  
-        .soundbar {  
-            position: fixed;  
-            top: 12px;  
-            left: 50%;  
-            transform: translateX(-50%);  
-            pointer-events: auto;  
-        }  
-        .name-modal {  
-            position: fixed;  
-            inset: 0;  
-            display: none;  
-            place-items: center;  
-            background: rgba(0,0,0,.35);  
-        }  
-        .name-card {  
-            width: min(92%, 360px);  
-            background: #fff;  
-            color: #111;  
-            border-radius: 18px;  
-            padding: 16px;  
-            box-shadow: 0 10px 40px rgba(0,0,0,.35);  
-        }  
-        .name-card h3 {  
-            margin: 0 0 8px 0;  
-            text-align: center;  
-        }  
-        .name-row {  
-            display: flex;  
-            gap: 8px;  
-            margin-top: 10px;  
-        }  
-        .name-row input {  
-            flex: 1;  
-            border-radius: 12px;  
-            border: 2px solid #ddd;  
-            padding: 10px 12px;  
-            font-size: 16px;  
-        }  
-        .name-row button {  
-            white-space: nowrap;  
-        }  
-        .store-modal {  
-            position: fixed;  
-            inset: 0;  
-            display: none;  
-            place-items: center;  
-            background: rgba(0,0,0,.35);  
-            z-index: 9999;  
-        }  
-        .store-card {  
-            width: min(92%, 400px);  
-            background: #fff;  
-            color: #111;  
-            border-radius: 18px;  
-            padding: 16px;  
-            box-shadow: 0 10px 40px rgba(0,0,0,.35);  
-            position: relative;  
-            text-align: center;  
-        }  
-        #closeStoreBtn {  
-            position: absolute;  
-            top: 8px;  
-            right: 8px;  
-            background: var(--panel-dark);  
-            color: #fff;  
-            border: none;  
-            width: 30px;  
-            height: 30px;  
-            border-radius: 50%;  
-            font-size: 18px;  
-            line-height: 30px;  
-            cursor: pointer;  
-        }  
-        .splash-inner .btn {  
-            pointer-events: auto;  
-        }  
-        /* Ensure score/shield render above splash */  
-        .score { z-index: 3; } /* UPDATED: Only .score needs z-index now */  
-        .splash { z-index: 2; }  
-        /* Centered countdown */  
-        .countdown {  
-            position: fixed;  
-            inset: 0;  
-            display: grid;  
-            place-items: center;  
-            font-size: 64px;  
-            font-weight: 900;  
-            color: #fff;  
-            text-shadow: 0 2px 0 rgba(0,0,0,.6);  
-            pointer-events: none;  
-            z-index: 4;  
-        }  
-    </style>  
-</head>  
-<body>  
-    <div class="wrap">  
-        <canvas id="game" width="360" height="640" aria-label="Flipper Fish"></canvas>  
-    </div>  
-    <div class="hud" aria-hidden="true">  
-        <div class="score"> <!-- UPDATED: New structure for score and shield -->  
-            <div id="shieldHud" class="shield" aria-hidden="true" title="Shield active">🛡</div>  
-            <span id="scoreHud">0</span>  
-        </div>  
-        <div id="countdownHud" class="countdown" aria-hidden="true" style="display:none;"></div>  
-        <div class="bank">  
-            <div style="font-size:12px;color:#ffa500;text-shadow:0 2px 0 rgba(0,0,0,.6);margin-bottom:2px;">Shell Bank</div>  
-            <div id="bankHud">0</div>  
-        </div>  
-        <div id="bestHud" class="best">Highest: 0</div>  
-        <div id="splash" class="splash">  
-            <div class="splash-inner">  
-                <div class="title" style="color:#000;text-shadow:none;">Flipper Fish</div>  
-                <div style="font-size:14px;opacity:.9;color:#000;text-shadow:none;">Made by Taylan&trade;</div>  
-                <div class="subtitle">Tap the screen to start!</div>  
-                <button class="btn" style="margin-top:10px;">Shell Store</button>  
-                <div style="margin-top:6px;font-size:14px;opacity:.9">Avoid the coral, collect shells. Good luck!</div>  
-            </div>  
-            <div id="splashBoard" class="splash-board">  
-                <div class="board-head">🏆 Leaderboard</div>  
-                <div id="leaderboardSplashBody" style="font-size:16px;text-align:center;">Loading...</div>  
-            </div>  
-        </div>  
-    </div>  
-    <div id="gameOver" class="hud" style="display:none;">  
-        <div class="panel" role="dialog" aria-modal="true" aria-labelledby="overTitle">  
-            <h2 id="overTitle">Game Over</h2>  
-            <div class="row"><span>Your Score</span><strong id="scoreNow">0</strong></div>  
-            <div class="row"><span>Highest Score</span><span><strong id="bestNow">0</strong> <span id="medal" class="pill" aria-label="medal" style="display:none;">🥉 Bronze</span></span></div>  
-            <div class="actions">  
-                <button id="againBtn" class="btn">Play Again</button>  
-                <button id="shareBtn" class="btn">Share</button>  
-                <button id="setNameBtn" class="btn">Change Name</button>  
-                <button id="storeBtn" class="btn">Shell Store</button>  
-            </div>  
-            <div id="leaderboardOver" class="panel dark" style="margin-top:12px;padding:12px;">  
-                <div style="text-align:center;font-weight:800;">🏆 Leaderboard</div>  
-                <div id="leaderboardOverBody" style="margin-top:6px;font-size:16px;">Loading...</div>  
-            </div>  
-        </div>  
-    </div>  
-    <div id="nameModal" class="name-modal" role="dialog" aria-modal="true" aria-labelledby="nameTitle">  
-        <div class="name-card">  
-            <h3 id="nameTitle">Welcome! Enter your name</h3>  
-            <p style="margin:0 0 6px 0;text-align:center;opacity:.8;font-size:14px;">It’ll appear on the leaderboard across all devices.</p>  
-            <div class="name-row">  
-                <input id="playerNameInput" type="text" placeholder="e.g. Tay" maxlength="24" />  
-                <button id="saveNameBtn" class="btn">Save</button>  
-            </div>  
-        </div>  
-    </div>  
-    <div id="storeModal" class="store-modal" role="dialog" aria-modal="true">  
-        <div class="store-card">  
-            <button id="closeStoreBtn">✕</button>  
-            <h3>Shell Store</h3>  
-            <p style="opacity:.8;font-size:14px;margin-top:4px;">  
-                Spend shells you collect in-game!  
-            </p>  
-            <div id="shieldItem" style="margin-top:12px;padding:12px;border:2px solid #eee;border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;">  
-              <div style="text-align:left;">  
-                <div style="font-weight:800;">🛡 Shield (one-hit)</div>  
-                <div style="font-size:14px;opacity:.8;">Protects you from one crash this run.</div>  
-                <div style="font-size:14px;margin-top:4px;">Cost: <strong>10</strong> 🐚</div>  
-              </div>  
-              <button id="buyShieldBtn" class="btn">Buy</button>  
-            </div>  
-        </div>  
-    </div>  
-    <div id="aria" class="sr-only" aria-live="polite"></div>  
-    <div id="toast" class="toast" role="status"></div>  
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>  
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>  
-    <script>  
-        const firebaseConfig = {  
-            apiKey: "AIzaSyDsfk9nWTl-FYLJlrmfiG0jYRez6461OMw",  
-            authDomain: "flappy-fish-25f36.firebaseapp.com",  
-            databaseURL: "https://flappy-fish-25f36-default-rtdb.firebaseio.com",  
-            projectId: "flappy-fish-25f36",  
-            storageBucket: "flappy-fish-25f36.appspot.com",  
-            messagingSenderId: "787422563403",  
-            appId: "1:787422563403:web:662ba16a0c580f10ffd1ce",  
-            measurementId: "G-C0LBVK4Y8W"  
-        };  
-        firebase.initializeApp(firebaseConfig);  
-        const db = firebase.database();  
-        const dbRef = db.ref("leaderboard");  
-        window.db = db;  
-        window.dbRef = dbRef;  
-    </script>  
-    <script>  
-        // JavaScript remains unchanged  
-        (() => {  
-            'use strict';  
-            const playerFishImg = new Image();  
-            playerFishImg.src = "https://pngimg.com/uploads/fish/small/fish_PNG25116.png";  
-            const bgFishImg = new Image();  
-            bgFishImg.src = "https://pngimg.com/uploads/fish/small/fish_PNG25109.png";  
-            const CFG = {  
-                canvas: { width: 360, height: 640 },  
-                physics: { gravity: 1200, flapImpulse: -360, maxFallSpeed: 720 },  
-                world: { speedStart: 184, speedEnd: 240, speedEndScore: 30 },  
-                pipes: {  
-                    gapStart: 160, gapEnd: 135, gapEndScore: 20,  
-                    spawnStart: 1.2, spawnEnd: 0.95, spawnEndScore: 25,  
-                    minGapCenterY: 120, maxGapCenterYPaddingBottom: 120, width: 64  
-                },  
-                bird: { size: { w: 40, h: 24 }, hitboxRadius: 12 },  
-                ground: { height: 112 },  
-                scorePopup: { dy: 40, duration: 0.6 },  
-                birdIdleBobPx: 4,  
-                particles: { max: 50, flapCount: 8, collectCount: 10 },  
-                collectibles: { chance: 0.4, bonus: 2, size: 16 }  
-            };  
-            const DPR = Math.min(window.devicePixelRatio || 1, 3);  
-            const canvas = document.getElementById('game');  
-            const ctx = canvas.getContext('2d');  
-            if (!ctx) {  
-                console.error('Canvas context not found.');  
-                return;  
-            }  
-            const splashEl = document.getElementById('splash');  
-            const hudScore = document.getElementById('scoreHud');  
-            const bankHud = document.getElementById('bankHud');  
-            const overPanel = document.getElementById('gameOver');  
-            const scoreNow = document.getElementById('scoreNow');  
-            const bestNow = document.getElementById('bestNow');  
-            const medalEl = document.getElementById('medal');  
-            const ariaLive = document.getElementById('aria');  
-            const toast = document.getElementById('toast');  
-            const nameModal = document.getElementById('nameModal');  
-            const nameInput = document.getElementById('playerNameInput');  
-            const saveNameBtn = document.getElementById('saveNameBtn');  
-            const setNameBtn = document.getElementById('setNameBtn');  
-            const countdownEl = document.getElementById('countdownHud');  
-            let respawnCountdown = 0;  
-            const storeModal = document.getElementById('storeModal');  
-            const closeStoreBtn = document.getElementById('closeStoreBtn');  
-            const buyShieldBtn = document.getElementById('buyShieldBtn');  
-            document.querySelector('.splash-inner .btn').addEventListener('click', () => {  
-              storeModal.style.display = 'grid';  
-            });  
-            document.getElementById('storeBtn').addEventListener('click', () => {  
-              storeModal.style.display = 'grid';  
-            });  
-            closeStoreBtn.addEventListener('click', () => {  
-              storeModal.style.display = 'none';  
-            });  
-            buyShieldBtn.addEventListener('click', () => {  
-              if (shieldActive) {  
-                showToast('Shield already equipped');  
-                return;  
-              }  
-              const COST = 10;  
-              if (shellBank < COST) {  
-                showToast('Not enough shells');  
-                return;  
-              }  
-              updateBank(-COST);  
-              shieldActive = true;  
-              updateShieldHud();  
-              showToast('Shield equipped!');  
-            });  
-            const W = CFG.canvas.width, H = CFG.canvas.height;  
-            const groundY = H - CFG.ground.height;  
-            let state = 'ready';  
-            let paused = false;  
-            let worldTime = 0;  
-            let spawnTimer = 0;  
-            let lastMs = performance.now();  
-            const storage = {  
-                best: Number(localStorage.getItem('sb_best') || 0)  
-            };  
-            let shellBank = Number(localStorage.getItem('sb_bank') || 0);  
-            const BIRD_X = Math.round(W * 0.28);  
-            let bird = { x: BIRD_X, y: H*0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };  
-            const pipes = [];  
-            const pops = [];  
-            const bubblesBg = [  
-                { x: 100, y: 80, s: 0.15 },  
-                { x: 300, y: 120, s: 0.12 },  
-                { x: 200, y: 50, s: 0.18 }  
-            ];  
-            const bubblesFg = [  
-                { x: 40, y: 100, s: 0.30 },  
-                { x: 240, y: 60, s: 0.25 },  
-                { x: 170, y: 140, s: 0.22 }  
-            ];  
-            let score = 0;  
-            const multiplier = 1;  
-            window.score = 0;  
-            let collectibles = [];  
-            let shieldActive = false;  
-            const shieldHud = document.getElementById('shieldHud');  
-            function updateShieldHud() {  
-              shieldHud.style.display = shieldActive ? 'block' : 'none';  
-            }  
-            const particles = [];  
-            const medalFor = (s) => s>=50 ? ['🏆 Platinum', '#e5e4e2'] : s>=30 ? ['🥇 Gold', '#f7c32e'] : s>=20 ? ['🥈 Silver', '#c0c0c0'] : s>=10 ? ['🥉 Bronze', '#cd7f32'] : null;  
-            const stageSkies = ['#20b2aa', '#00bfff', '#4682b4', '#191970', '#00ced1'];  
-            const stagePipes = ['#ff7f50', '#ff4500', '#cd5b45', '#a52a2a', '#ff6347'];  
-            let lastStage = -1;  
-            const currentStage = () => Math.min(Math.floor(score/10), stageSkies.length-1);  
-            const onStageChange = () => { showToast(`Stage ${currentStage()+1}!`); };  
-            let audioCtx = null;  
-            const beep = (type, freq, dur, vol=0.2) => {  
-                if (!audioCtx) return;  
-                try {  
-                    const o = audioCtx.createOscillator(), g = audioCtx.createGain();  
-                    o.type = type; o.frequency.value = freq; g.gain.value = vol;  
-                    o.connect(g).connect(audioCtx.destination);  
-                    const t = audioCtx.currentTime;  
-                    o.start(t); g.gain.exponentialRampToValueAtTime(0.0001, t+dur*0.9); o.stop(t+dur);  
-                } catch (e) {  
-                    console.warn('Audio playback failed:', e);  
-                }  
-            };  
-            const sfx = {  
-                flap: () => beep('sine', 400, 0.12, 0.15),  
-                point: () => beep('triangle', 880, 0.07, 0.18),  
-                ha: () => beep('sawtooth', 120, 0.15, 0.22),  
-                die: () => beep('sine', 80, 0.35, 0.25),  
-                swoosh: () => beep('triangle', 300, 0.1, 0.12),  
-                collect: () => beep('sine', 1200, 0.1, 0.2)  
-            };  
-            const bgMusic = new Audio("Flappy%20Bird%20Theme%20Song.mp3");  
-            bgMusic.loop = true;  
-            bgMusic.volume = 0.35;  
-            const deathMusic = new Audio("Super%20Mario%20Bros%20-%20game%20over%20song.mp3");  
-            deathMusic.volume = 0.45;  
-            function playMusic() {  
-                bgMusic.play().catch(() => {});  
-            }  
-            function stopMusic() {  
-                bgMusic.pause();  
-                bgMusic.currentTime = 0;  
-            }  
-            const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));  
-            const lerp = (a, b, t) => a + (b-a)*t;  
-            const easeT = (s, end) => clamp(s/end, 0, 1);  
-            const pipeGap = () => (window.dynamicPipeGap ?? lerp(CFG.pipes.gapStart, CFG.pipes.gapEnd, easeT(score, CFG.pipes.gapEndScore)));  
-            const spawnInterval = () => lerp(CFG.pipes.spawnStart, CFG.pipes.spawnEnd, easeT(score, CFG.pipes.spawnEndScore));  
-            const speedBase = () => lerp(CFG.world.speedStart, CFG.world.speedEnd, easeT(score, CFG.world.speedEndScore));  
-            const showToast = (msg) => { toast.textContent = msg; toast.classList.add('show'); clearTimeout(showToast._t); showToast._t = setTimeout(() => toast.classList.remove('show'), 1200); };  
-            const announce = (msg) => { const a = document.getElementById('aria'); a.textContent = ''; setTimeout(() => a.textContent = msg, 30); };  
-            function updateBank(delta = 0) {  
-                shellBank = Math.max(0, shellBank + delta);  
-                localStorage.setItem('sb_bank', String(shellBank));  
-                if (bankHud) bankHud.textContent = String(shellBank);  
-            }  
-            function resetGame() {  
-                score = 0; hudScore.textContent = '0'; worldTime = 0; spawnTimer = -0.5;  
-                pipes.length = 0; pops.length = 0; collectibles.length = 0; particles.length = 0;  
-                bird = { x: BIRD_X, y: H*0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };  
-                sfx.swoosh(); lastStage = -1;  
-                stopMusic();  
-                document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;  
-            }  
-            function fitCanvas() {  
-                const aspect = W/H;  
-                const vw = innerWidth, vh = innerHeight;  
-                let cssW, cssH;  
-                if (vw/vh < aspect) { cssW = Math.min(vw, W*2.5); cssH = Math.round(cssW/aspect); }  
-                else { cssH = Math.min(vh, H*2.5); cssW = Math.round(cssH*aspect); }  
-                canvas.style.width = cssW + 'px'; canvas.style.height = cssH + 'px';  
-                canvas.width = Math.round(W*DPR); canvas.height = Math.round(H*DPR);  
-                ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.scale(DPR, DPR); ctx.imageSmoothingEnabled = false;  
-            }  
-            addEventListener('resize', fitCanvas, { passive: true }); fitCanvas();  
-            const flap = () => {  
-                if (state === 'dead') return;  
-                if (!audioCtx) {  
-                    try {  
-                        audioCtx = new (window.AudioContext || window.webkitAudioContext)();  
-                        audioCtx.resume().catch((e) => console.warn('Audio resume failed:', e));  
-                    } catch (e) {  
-                        console.warn('AudioContext creation failed:', e);  
-                    }  
-                }  
-                if (state === 'ready') {  
-                    updateShieldHud();  
-                    state = 'running';  
-                    playMusic();  
-                    announce('Game started');  
-                    splashEl.style.display = 'none';  
-                }  
-                bird.vy = CFG.physics.flapImpulse; sfx.flap();  
-                for (let i = 0; i < CFG.particles.flapCount; i++) {  
-                    particles.push({  
-                        x: bird.x + Math.random()*10,  
-                        y: bird.y + Math.random()*CFG.bird.size.h - CFG.bird.size.h/2,  
-                        vx: -speedBase()*0.3 + Math.random()*30 - 15,  
-                        vy: Math.random()*-50 - 20,  
-                        life: 1.0 + Math.random()*0.8,  
-                        size: 2 + Math.random()*4,  
-                        color: 'rgba(255,255,255,0.6)',  
-                        t: 0  
-                    });  
-                }  
-            };  
-            canvas.addEventListener('mousedown', e => { e.preventDefault(); flap(); });  
-            canvas.addEventListener('touchstart', e => { e.preventDefault(); flap(); }, { passive: false });  
-            addEventListener('keydown', e => {  
-                const k = e.key.toLowerCase();  
-                if ([' ', 'w', 'arrowup'].includes(k)) { e.preventDefault(); flap(); }  
-                if (k === 'p' && state === 'running') { paused = !paused; showToast(paused ? 'Paused' : 'Resumed'); }  
-            }, { passive: false });  
-            document.getElementById('againBtn').addEventListener('click', () => {  
-                overPanel.style.display = 'none'; splashEl.style.display = '';  
-                state = 'ready'; resetGame(); announce('Back to splash');  
-            });  
-            document.getElementById('shareBtn').addEventListener('click', async () => {  
-                const text = `I scored ${scoreNow.textContent} in Swimming Fish! Can you beat me?`;  
-                try {  
-                    if (navigator.share) await navigator.share({ text, title: "Swimming Fish" });  
-                    else { await navigator.clipboard.writeText(text); showToast('Copied to clipboard!'); }  
-                } catch {}  
-            });  
-            document.getElementById('setNameBtn').addEventListener('click', () => {  
-                nameModal.style.display = 'grid';  
-                nameInput.value = localStorage.getItem('player_name') || '';  
-                setTimeout(() => nameInput.focus(), 10);  
-            });  
-            function saveName() {  
-                const raw = (nameInput.value || '').trim();  
-                const clean = raw  
-                    .replace(/[.#$/[\]]/g, '')  
-                    .slice(0, 24);  
-                if (!clean) { showToast('Please enter a name'); nameInput.focus(); return; }  
-                localStorage.setItem('player_name', clean);  
-                nameModal.style.display = 'none';  
-                showToast(`Hi, ${clean}!`);  
-            }  
-            saveNameBtn.addEventListener('click', saveName);  
-            nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') saveName(); });  
-            function spawnPipe() {  
-                const gap = pipeGap();  
-                const padBottom = CFG.pipes.maxGapCenterYPaddingBottom;  
-                const minC = CFG.pipes.minGapCenterY;  
-                const maxCenter = (groundY - padBottom) - gap/2;  
-                const minCenter = minC + gap/2;  
-                let gapY = Math.round(lerp(minCenter, maxCenter, Math.random()));  
-                pipes.push({ x: W + 10, gapY, gap, w: CFG.pipes.width, scored: false, type: 'coral' });  
-                if (Math.random() < CFG.collectibles.chance) {  
-                    const collY = gapY + (Math.random() - 0.5) * (gap - CFG.collectibles.size * 2);  
-                    collectibles.push({ x: W + 10 + CFG.pipes.width / 2, y: collY, collected: false });  
-                }  
-            }  
-            function startRespawn() {  
-                shieldActive = false;  
-                updateShieldHud();  
-                state = 'respawn';  
-                respawnCountdown = 3.0;  
-                pipes.length = 0;  
-                collectibles.length = 0;  
-                pops.length = 0;  
-                spawnTimer = -0.5;  
-                bird.vy = 0;  
-                bird.rot = 0;  
-                bird.x = BIRD_X;  
-                bird.y = H * 0.5;  
-                countdownEl.style.display = '';  
-                countdownEl.textContent = Math.ceil(respawnCountdown).toString();  
-                stopMusic();  
-            }  
-            function update(dt) {  
-                if (state !== 'running' || paused) return;  
-                const speed = speedBase();  
-                worldTime += dt; spawnTimer += dt;  
-                if (spawnTimer >= spawnInterval()) { spawnTimer = 0; spawnPipe(); }  
-                for (const c of bubblesFg) { c.x -= speed*c.s*dt; if (c.x < -80) c.x += W+160; }  
-                for (const c of bubblesBg) { c.x -= speed*c.s*dt; if (c.x < -80) c.x += W+160; }  
-                bird.vy += CFG.physics.gravity*dt;  
-                bird.vy = clamp(bird.vy, -9999, CFG.physics.maxFallSpeed);  
-                bird.y += bird.vy*dt; bird.y = clamp(bird.y, 2, H+1000);  
-                const targetRot = bird.vy < 0 ? -15*Math.PI/180 : Math.min(60*Math.PI/180, bird.vy/CFG.physics.maxFallSpeed*(60*Math.PI/180));  
-                bird.rot = lerp(bird.rot, targetRot, 0.12);  
-                for (const p of pipes) {  
-                    p.x -= speed*dt;  
-                    const cx = p.x + p.w/2;  
-                    if (!p.scored && cx < bird.x) {  
-                        p.scored = true;  
-                        const addScore = 1;  
-                        score += addScore; hudScore.textContent = String(score);  
-                        window.score = score;  
-                        pops.push({ x: cx, y: p.gapY, t: 0, duration: CFG.scorePopup.duration, text: `+${addScore}` });  
-                        if (navigator.vibrate) navigator.vibrate(20);  
-                        sfx.point(); announce(`Score ${score}`);  
-                        const st = currentStage(); if (st !== lastStage) { lastStage = st; onStageChange(); }  
-                    }  
-                }  
-                while (pipes.length && pipes[0].x + pipes[0].w < -20) pipes.shift();  
-                for (const coll of collectibles) {  
-                    coll.x -= speed * dt;  
-                    if (!coll.collected && Math.hypot(bird.x - coll.x, bird.y - coll.y) < CFG.bird.hitboxRadius + CFG.collectibles.size / 2) {  
-                        coll.collected = true;  
-                        score += CFG.collectibles.bonus; hudScore.textContent = String(score);  
-                        updateBank(1);  
-                        sfx.collect(); showToast(`+${CFG.collectibles.bonus} Bonus!`);  
-                        for (let i = 0; i < CFG.particles.collectCount; i++) {  
-                            particles.push({  
-                                x: coll.x,  
-                                y: coll.y,  
-                                vx: Math.random()*100 - 50,  
-                                vy: Math.random()*100 - 150,  
-                                life: 0.8 + Math.random()*0.4,  
-                                size: 3 + Math.random()*3,  
-                                color: '#ffcc00',  
-                                t: 0  
-                            });  
-                        }  
-                    }  
-                }  
-                collectibles = collectibles.filter(c => c.x > -20 && !c.collected);  
-                const r = CFG.bird.hitboxRadius;  
-                const circle = { x: bird.x+2, y: bird.y, r };  
-                const penetrationNeeded = 0.1*r;  
-                let hit = false;  
-                for (const p of pipes) {  
-                    const topRect = { x: p.x, y: -10000, w: p.w, h: (p.gapY - p.gap/2) + 10000 };  
-                    const botRect = { x: p.x, y: (p.gapY + p.gap/2), w: p.w, h: (groundY - (p.gapY + p.gap/2)) };  
-                    if (circleRectDeepOverlap(circle, topRect, penetrationNeeded) || circleRectDeepOverlap(circle, botRect, penetrationNeeded)) { hit = true; break; }  
-                }  
-                if (circle.y + circle.r >= groundY) {  
-                    if (shieldActive) {  
-                        startRespawn();  
-                        return;  
-                    } else {  
-                        die();  
-                        return;  
-                    }  
-                }  
-                if (hit) {  
-                    if (shieldActive) {  
-                        startRespawn();  
-                        return;  
-                    }  
-                    sfx.ha();  
-                    die();  
-                    return;  
-                }  
-                for (let i = pops.length-1; i >= 0; i--) { const pop = pops[i]; pop.t += dt; if (pop.t >= pop.duration) pops.splice(i, 1); }  
-                for (let i = particles.length-1; i >= 0; i--) {  
-                    const p = particles[i];  
-                    p.t += dt;  
-                    p.x += p.vx * dt;  
-                    p.y += p.vy * dt;  
-                    p.vy -= 100 * dt;  
-                    if (p.t >= p.life) particles.splice(i, 1);  
-                }  
-            }  
-            function circleRectDeepOverlap(circ, rect, needed) {  
-                const nx = clamp(circ.x, rect.x, rect.x + rect.w);  
-                const ny = clamp(circ.y, rect.y, rect.y + rect.h);  
-                const dx = circ.x - nx, dy = circ.y - ny;  
-                const dist = Math.hypot(dx, dy);  
-                const overlap = circ.r - dist;  
-                return overlap > needed;  
-            }  
-            function die() {  
-                state = 'dead'; paused = false;  
-                if (navigator.vibrate) navigator.vibrate(80);  
-                sfx.die();  
-                stopMusic();  
-                deathMusic.currentTime = 0;  
-                deathMusic.play().catch(() => {});  
-                const fallUntil = () => {  
-                    const now = performance.now();  
-                    const dt = Math.min((now - lastMs)/1000, 1/30);  
-                    lastMs = now;  
-                    bird.vy += CFG.physics.gravity*dt;  
-                    bird.vy = Math.min(bird.vy, CFG.physics.maxFallSpeed);  
-                    bird.y += bird.vy*dt;  
-                    bird.rot = lerp(bird.rot, 90*Math.PI/180, 0.12);  
-                    render();  
-                    if (bird.y + CFG.bird.hitboxRadius < groundY) requestAnimationFrame(fallUntil);  
-                    else { bird.y = groundY - CFG.bird.hitboxRadius; setTimeout(showGameOver, 800); }  
-                };  
-                fallUntil();  
-            }  
-            function collapseLegacyFor(name, key) {  
-                const ref = firebase.database().ref("leaderboard");  
-                ref.once("value").then(snap => {  
-                    const toRemove = [];  
-                    let best = null;  snap.forEach(child => {  
-                        const v = child.val();  
-                        if (!v || v.name !== name) return;  
-                        if (!best || v.score > best.score || (v.score === best.score && v.at > best.at)) {  
-                            if (best && child.key !== key) toRemove.push(best._refKey);  
-                            best = { ...v, _refKey: child.key };  
-                        } else {  
-                            toRemove.push(child.key);  
-                        }  
-                    });  
-                    toRemove.forEach(k => ref.child(k).remove().catch(() => {}));  
-                }).catch(() => {});  
-            }  
-            function showGameOver() {  
-                const name = localStorage.getItem('player_name') || "Anonymous";  
-                scoreNow.textContent = String(score);  
-                if (score > storage.best) {  
-                    storage.best = score;  
-                    localStorage.setItem('sb_best', String(score));  
-                }  
-                bestNow.textContent = String(storage.best);  
-                document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;  
-                if (window.dbRef) {  
-                    try {  
-                        const key = (name || "Anonymous")  
-                            .trim()  
-                            .toLowerCase()  
-                            .replace(/\s+/g, ' ')  
-                            .replace(/[.#$/[\]]/g, '');  
-                        const playerRef = firebase.database().ref("leaderboard").child(key);  
-                        playerRef.once("value").then(snap => {  
-                            const current = snap.val();  
-                            if (!current || (typeof current.score !== 'number') || score > current.score) {  
-                                playerRef.set({  
-                                    name,  
-                                    score,  
-                                    at: Date.now()  
-                                }).then(() => {  
-                                    collapseLegacyFor(name, key);  
-                                }).catch(e => console.error("Score set failed:", e));  
-                            }  
-                        }).catch(e => console.error("Score read failed:", e))  
-                            .finally(() => loadLeaderboard());  
-                    } catch (e) {  
-                        console.warn("Failed to save score:", e);  
-                    }  
-                }  
-                const m = medalFor(storage.best);  
-                if (m) {  
-                    medalEl.style.display = '';  
-                    medalEl.textContent = m[0];  
-                } else {  
-                    medalEl.style.display = 'none';  
-                }  
-                overPanel.style.display = '';  
-            }  
-            window.showGameOver = showGameOver;  
-            function loadLeaderboard() {  
-                if (!window.dbRef) {  
-                    console.error("dbRef is undefined");  
-                    document.getElementById("leaderboardSplashBody").innerHTML = "Error: Database reference not initialized";  
-                    document.getElementById("leaderboardOverBody").innerHTML = "Error: Database reference not initialized";  
-                    return;  
-                }  
-                firebase.database().ref("leaderboard").on("value", snap => {  
-                    const bestByName = Object.create(null);  
-                    snap.forEach(child => {  
-                        const v = child.val();  
-                        if (!v) return;  
-                        const nm = (v.name || "Anonymous").toString();  
-                        const sc = Number(v.score || 0);  
-                        const at = Number(v.at || 0);  
-                        if (!bestByName[nm] || sc > bestByName[nm].score || (sc === bestByName[nm].score && at > bestByName[nm].at)) {  
-                            bestByName[nm] = { name: nm, score: sc, at };  
-                        }  
-                    });  
-                    const list = Object.values(bestByName)  
-                        .sort((a, b) => b.score - a.score || b.at - a.at)  
-                        .slice(0, 5);  
-                    const medal = i => i === 0 ? "🥇" :  
-                        i === 1 ? "🥈" :  
-                            i === 2 ? "🥉" : `${i+1}.`;  
-                    const html = list.length  
-                        ? list.map((p, i) =>  
-                            `<div class="board-row"><span>${medal(i)} ${p.name || "Anonymous"}</span><strong>${p.score}</strong></div>`  
-                        ).join("")  
-                        : "No scores yet";  
-                    document.getElementById("leaderboardSplashBody").innerHTML = html;  
-                    document.getElementById("leaderboardOverBody").innerHTML = html;  
-                }, error => {  
-                    console.error('Leaderboard fetch error:', error.code, error.message);  
-                    document.getElementById("leaderboardSplashBody").innerHTML = `Error: ${error.message}`;  
-                    document.getElementById("leaderboardOverBody").innerHTML = `Error: ${error.message}`;  
-                });  
-            }  
-            function roundedRect(x, y, w, h, r) {  
-                ctx.beginPath();  
-                ctx.moveTo(x+r, y);  
-                ctx.arcTo(x+w, y, x+w, y+h, r);  
-                ctx.arcTo(x+w, y+h, x, y+h, r);  
-                ctx.arcTo(x, y+h, x, y, r);  
-                ctx.arcTo(x, y, x+w, y, r);  
-                ctx.closePath();  
-            }  
-            function drawBubbles(bubbles, opacity=0.9) {  
-                for (const c of bubbles) {  
-                    ctx.save(); ctx.translate(c.x, c.y);  
-                    ctx.fillStyle = `rgba(255,255,255,${opacity})`;  
-                    ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI*2); ctx.fill();  
-                    ctx.beginPath(); ctx.arc(8, -6, 12, 0, Math.PI*2); ctx.fill();  
-                    ctx.beginPath(); ctx.arc(-10, 4, 15, 0, Math.PI*2); ctx.fill();  
-                    ctx.restore();  
-                }  
-            }  
-            function drawCoralAndSharks() {  
-                const stage = currentStage();  
-                const baseColor = stagePipes[stage];  
-                const dark = 'rgba(0,0,0,.18)';  
-                for (const p of pipes) {  
-                    const topH = p.gapY - p.gap/2;  
-                    const botY = p.gapY + p.gap/2;  
-                    const botH = groundY - botY;  
-                    const persp = 8;  
-                    const grad = ctx.createRadialGradient(p.x + p.w/2, 0, p.w/2, p.x + p.w/2, 0, 0);  
-                    grad.addColorStop(0, baseColor);  
-                    grad.addColorStop(0.7, '#ffffff40');  
-                    grad.addColorStop(1, dark);  
-                    ctx.fillStyle = grad;  
-                    ctx.beginPath();  
-                    ctx.moveTo(p.x, 0);  
-                    for (let i = 0; i < p.w; i += 10) {  
-                        ctx.quadraticCurveTo(p.x + i + 5, -10, p.x + i + 10, 0);  
-                    }  
-                    ctx.lineTo(p.x + p.w + persp, topH);  
-                    ctx.lineTo(p.x - persp, topH);  
-                    ctx.closePath();  
-                    ctx.fill();  
-                    ctx.beginPath();  
-                    ctx.moveTo(p.x - persp, botY);  
-                    ctx.lineTo(p.x + p.w + persp, botY);  
-                    for (let i = p.w; i > 0; i -= 10) {  
-                        ctx.quadraticCurveTo(p.x + i - 5, groundY + 10, p.x + i - 10, groundY);  
-                    }  
-                    ctx.closePath();  
-                    ctx.fill();  
-                }  
-            }  
-            function drawFish() {  
-                ctx.save();  
-                const w = CFG.bird.size.w, h = CFG.bird.size.h;  
-                const idleBob = (state === 'ready') ? Math.sin(worldTime*Math.PI*4)*CFG.birdIdleBobPx : 0;  
-                ctx.translate(bird.x, bird.y + idleBob);  
-                ctx.rotate(bird.rot);  
-                if (playerFishImg.complete && playerFishImg.naturalWidth > 0) {  
-                    ctx.scale(-1, 1);  
-                    ctx.drawImage(playerFishImg, -w/2, -h/2, w, h);  
-                } else {  
-                    ctx.fillStyle = '#87cefa';  
-                    roundedRect(-w/2, -h/2, w, h, 10);  
-                    ctx.fill();  
-                }  
-                ctx.restore();  
-                ctx.save();  
-                const shadowScale = 1 - (bird.y / groundY) * 0.5;  
-                ctx.translate(bird.x, groundY - 4);  
-                ctx.fillStyle = 'rgba(0,0,0,0.15)';  
-                ctx.beginPath(); ctx.ellipse(0, 0, (w/2 - 2) * shadowScale, 3 * shadowScale, 0, 0, Math.PI * 2); ctx.fill();  
-                ctx.restore();  
-            }  
-            function drawSeabed() {  
-                const speed = speedBase();  
-                const t = (worldTime*speed)%48;  
-                const y = groundY;  
-                ctx.fillStyle = '#f4a460';  
-                ctx.fillRect(0, y, W, H-y);  
-                ctx.fillStyle = '#20b2aa'; ctx.fillRect(0, y-8, W, 8);  
-                ctx.fillStyle = 'rgba(255,255,255,.2)';  
-                for (let x = -t; x < W; x += 48) {  
-                    ctx.beginPath(); ctx.arc(x+12, y+12, 8, 0, Math.PI*2); ctx.fill();  
-                    ctx.beginPath(); ctx.arc(x+36, y+24, 6, 0, Math.PI*2); ctx.fill();  
-                }  
-            }  
-            function drawCollectibles() {  
-                for (const coll of collectibles) {  
-                    if (coll.collected) continue;  
-                    const grad = ctx.createRadialGradient(coll.x, coll.y, 0, coll.x, coll.y, CFG.collectibles.size / 2);  
-                    grad.addColorStop(0, '#fffacd');  
-                    grad.addColorStop(1, '#ffd700');  
-                    ctx.fillStyle = grad;  
-                    ctx.beginPath();  
-                    ctx.moveTo(coll.x, coll.y);  
-                    for (let i = 0; i < Math.PI*2; i += 0.1) {  
-                        const r = (CFG.collectibles.size / 2) * (1 - i/(Math.PI*2));  
-                        ctx.lineTo(coll.x + Math.cos(i)*r, coll.y + Math.sin(i)*r);  
-                    }  
-                    ctx.closePath();  
-                    ctx.fill();  
-                }  
-            }  
-            function drawParticles() {  
-                ctx.save();  
-                try {  
-                    for (const p of particles) {  
-                        const t = p.t / p.life;  
-                        ctx.globalAlpha = 1 - t * t;  
-                        ctx.fillStyle = p.color;  
-                        ctx.beginPath();  
-                        ctx.arc(p.x, p.y, p.size * (1 - t), 0, Math.PI * 2);  
-                        ctx.fill();  
-                    }  
-                } finally {  
-                    ctx.restore();  
-                }  
-            }  
-            function lerpColor(a, b, t) {  
-                const ah = parseInt(a.replace(/#/g, ''), 16),  
-                    ar = ah >> 16, ag = ah >> 8 & 0xff, ab = ah & 0xff,  
-                    bh = parseInt(b.replace(/#/g, ''), 16),  
-                    br = bh >> 16, bg = bh >> 8 & 0xff, bb = bh & 0xff,  
-                    rr = Math.round(ar + t * (br - ar)),  
-                    rg = Math.round(ag + t * (bg - ag)),  
-                    rb = Math.round(ab + t * (bb - ab));  
-                return '#' + ((1 << 24) + (rr << 16) + (rg << 8) + rb | 0).toString(16).slice(1);  
-            }  
-            function render() {  
-                const stage = currentStage();  
-                const sky = stageSkies[stage];  
-                canvas.style.background = sky;  
-                ctx.save();  
-                ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);  
-                drawBubbles(bubblesBg, 0.4);  
-                drawBubbles(bubblesFg, 0.7);  
-                drawCoralAndSharks();  
-                drawCollectibles();  
-                drawFish();  
-                drawParticles();  
-                drawSeabed();  
-                ctx.strokeStyle = '#228b22';  
-                ctx.lineWidth = 4;  
-                const swayAmount = 10;  
-                for (let x = 0; x < W; x += 60) {  
-                    ctx.beginPath();  
-                    let currentY = groundY;  
-                    let currentX = x;  
-                    ctx.moveTo(currentX, currentY);  
-                    for (let i = 0; i < 5; i++) {  
-                        currentY -= 20;  
-                        const sway = Math.sin(worldTime + i) * swayAmount;  
-                        ctx.quadraticCurveTo(currentX + sway, currentY + 10, currentX + sway/2, currentY);  
-                        currentX += sway / 2;  
-                    }  
-                    ctx.stroke();  
-                }  
-                const fishX = (worldTime * 50) % (W + 100) - 100;  
-                const bgYOffset = Math.sin(worldTime * 2) * 4;  
-                if (bgFishImg.complete && bgFishImg.naturalWidth > 0) {  
-                    ctx.drawImage(bgFishImg, W - fishX, H*0.3 + bgYOffset, 20, 10);  
-                    ctx.drawImage(bgFishImg, W - fishX - 20, H*0.7 + bgYOffset, 15, 8);  
-                } else {  
-                    ctx.fillStyle = '#ff4500';  
-                    roundedRect(W - fishX, H*0.3 + bgYOffset, 20, 10, 4); ctx.fill();  
-                    roundedRect(W - fishX - 20, H*0.7 + bgYOffset, 15, 8, 3); ctx.fill();  
-                }  
-                for (const pop of pops) {  
-                    const t = clamp(pop.t/pop.duration, 0, 1);  
-                    const y = pop.y - t*CFG.scorePopup.dy;  
-                    ctx.globalAlpha = 1-t;  
-                    ctx.fillStyle = '#fff'; ctx.font = 'bold 20px ui-rounded, system-ui, sans-serif'; ctx.textAlign = 'center';  
-                    ctx.fillText(pop.text, pop.x, y);  
-                    ctx.globalAlpha = 1;  
-                }  
-                ctx.restore();  
-                if (shieldActive) updateShieldHud();  
-            }  
-            function init() {  
-                resetGame();  
-                document.getElementById("leaderboardSplashBody").innerHTML = "Loading...";  
-                document.getElementById("leaderboardOverBody").innerHTML = "Loading...";  
-                loadLeaderboard();  
-                splashEl.style.display = '';  
-                hudScore.textContent = '0';  
-                document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;  
-                bestNow.textContent = String(storage.best);  
-                updateBank(0);  
-                updateShieldHud();  
-                overPanel.style.display = 'none';  
-                lastMs = performance.now();  
-                if (!localStorage.getItem('player_name')) {  
-                    setTimeout(() => {  
-                        document.getElementById('nameModal').style.display = 'grid';  
-                        document.getElementById('playerNameInput').focus();  
-                    }, 400);  
-                }  
-                requestAnimationFrame(loop);  
-            }  
-            function loop(now) {  
-                try {  
-                    const dt = clamp((now - lastMs)/1000, 0, 1/30);  
-                    lastMs = now;  
-                    if (state === 'ready') {  
-                        worldTime += dt;  
-                    } else if (state === 'respawn') {  
-                        respawnCountdown = Math.max(0, respawnCountdown - dt);  
-                        const n = Math.ceil(respawnCountdown);  
-                        countdownEl.textContent = n > 0 ? String(n) : '';  
-                        worldTime += dt;  
-                    } else if (state === 'running' && !paused) {  
-                        worldTime += dt;  
-                        update(dt);  
-                    }  
-                    render();  
-                    updateShieldHud();  
-                    if (state === 'respawn' && respawnCountdown <= 0) {  
-                        countdownEl.style.display = 'none';  
-                        state = 'running';  
-                        playMusic();  
-                    }  
-                } catch (e) {  
-                    console.error('Game loop error:', e);  
-                }  
-                requestAnimationFrame(loop);  
-            }  
-            init();  
-        })();  
-    </script>  
-</body>  
-</html>  
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Flipper Fish</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <meta name="theme-color" content="#20b2aa" />
+    <!-- Added as requested -->
+    <link rel="manifest" href="manifest.json">
+    <style>
+        :root {
+            --bg: #20b2aa;
+            --panel: rgba(255,255,255,.9);
+            --panel-dark: rgba(0,0,0,.65);
+            --text: #1d1d1f;
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            background: #111;
+            color: var(--text);
+            font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans";
+            overscroll-behavior: none;
+        }
+        .wrap {
+            position: fixed;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+        canvas {
+            background: var(--bg);
+            box-shadow: 0 10px 40px rgba(0,0,0,.35);
+            border-radius: 16px;
+            image-rendering: pixelated;
+            touch-action: none;
+        }
+        .hud {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            display: grid;
+            place-items: center;
+            font-weight: 700;
+            letter-spacing: .5px;
+            user-select: none;
+        }
+        .btn {
+            appearance: none;
+            border: 0;
+            background: var(--panel);
+            color: #111;
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(0,0,0,.15);
+            cursor: pointer;
+            line-height: 1;
+        }
+        .btn:focus {
+            outline: 3px solid #000;
+            outline-offset: 2px;
+        }
+        .score {
+            position: fixed;
+            top: 18px;
+            right: 14px;
+            font-size: 56px;
+            color: #fff;
+            text-shadow: 0 2px 0 rgba(0,0,0,.6);
+            pointer-events: none;
+            z-index: 3;
+            display: flex; /* ADDED: Flexbox for shield and score alignment */
+            align-items: center; /* ADDED: Center vertically */
+            gap: 8px; /* ADDED: Space between shield and score */
+        }
+        .bank {
+            position: fixed;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            color: #e69500;
+            text-shadow: 0 2px 0 rgba(0,0,0,.6);
+            pointer-events: none;
+            text-align: center;
+            line-height: 1;
+        }
+        .best {
+            position: fixed;
+            top: 18px;
+            left: 14px;
+            font-size: 16px;
+            color: #fff;
+            text-shadow: 0 2px 0 rgba(0,0,0,.6);
+            pointer-events: none;
+        }
+        .splash {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            color: #000;
+            text-shadow: 0 2px 0 rgba(255,255,255,.5);
+            z-index: 2;
+        }
+        .splash-inner {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 10%;
+            width: min(92%, 360px);
+            text-align: center;
+            pointer-events: none;
+        }
+        .title {
+            font-size: 36px;
+            margin: 2px 0 8px;
+        }
+        .subtitle {
+            font-size: 18px;
+            opacity: .95;
+        }
+        .splash-board {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 18px;
+            width: min(92%, 360px);
+            background: rgba(0,0,0,.65);
+            color: #f0f0f0;
+            border-radius: 18px;
+            padding: 14px;
+            box-shadow: 0 8px 30px rgba(0,0,0,.25);
+            pointer-events: auto;
+        }
+        .board-head {
+            font-size: 20px;
+            font-weight: 800;
+            text-align: center;
+            margin: 0 0 6px;
+        }
+        .board-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+            padding: 6px 0;
+        }
+        .panel {
+            min-width: 280px;
+            max-width: 90vw;
+            background: var(--panel);
+            color: #111;
+            border-radius: 18px;
+            padding: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,.25);
+            pointer-events: auto;
+            transform: translateY(8px);
+        }
+        .panel h2 {
+            margin: 0 0 8px 0;
+            font-size: 22px;
+            text-align: center;
+        }
+        .panel .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 18px;
+            padding: 6px 0;
+        }
+        .panel .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0,0,0,.08);
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 14px;
+        }
+        .sr-only {
+            position: absolute !important;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border: 0;
+        }
+        .toast {
+            position: fixed;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,.85);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity .25s ease, transform .25s ease;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translate(-50%, -6px);
+        }
+        .shield {
+            font-size: 24px;
+            color: #fff;
+            text-shadow: 0 2px 0 rgba(0,0,0,.6);
+            pointer-events: none;
+            display: none; /* UPDATED: Simplified, removed positioning */
+        }
+        .soundbar {
+            position: fixed;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            pointer-events: auto;
+        }
+        .name-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            place-items: center;
+            background: rgba(0,0,0,.35);
+        }
+        .name-card {
+            width: min(92%, 360px);
+            background: #fff;
+            color: #111;
+            border-radius: 18px;
+            padding: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,.35);
+        }
+        .name-card h3 {
+            margin: 0 0 8px 0;
+            text-align: center;
+        }
+        .name-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .name-row input {
+            flex: 1;
+            border-radius: 12px;
+            border: 2px solid #ddd;
+            padding: 10px 12px;
+            font-size: 16px;
+        }
+        .name-row button {
+            white-space: nowrap;
+        }
+        .store-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            place-items: center;
+            background: rgba(0,0,0,.35);
+            z-index: 9999;
+        }
+        .store-card {
+            width: min(92%, 400px);
+            background: #fff;
+            color: #111;
+            border-radius: 18px;
+            padding: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,.35);
+            position: relative;
+            text-align: center;
+        }
+        #closeStoreBtn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--panel-dark);
+            color: #fff;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            font-size: 18px;
+            line-height: 30px;
+            cursor: pointer;
+        }
+        .splash-inner .btn {
+            pointer-events: auto;
+        }
+        /* Ensure score/shield render above splash */
+        .score { z-index: 3; } /* UPDATED: Only .score needs z-index now */
+        .splash { z-index: 2; }
+        /* Centered countdown */
+        .countdown {
+            position: fixed;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            font-size: 64px;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 2px 0 rgba(0,0,0,.6);
+            pointer-events: none;
+            z-index: 4;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <canvas id="game" width="360" height="640" aria-label="Flipper Fish"></canvas>
+    </div>
+    <div class="hud" aria-hidden="true">
+        <div class="score"> <!-- UPDATED: New structure for score and shield -->
+            <div id="shieldHud" class="shield" aria-hidden="true" title="Shield active">🛡</div>
+            <span id="scoreHud">0</span>
+        </div>
+        <div id="countdownHud" class="countdown" aria-hidden="true" style="display:none;"></div>
+        <div class="bank">
+            <div style="font-size:12px;color:#ffa500;text-shadow:0 2px 0 rgba(0,0,0,.6);margin-bottom:2px;">Shell Bank</div>
+            <div id="bankHud">0</div>
+        </div>
+        <div id="bestHud" class="best">Highest: 0</div>
+        <div id="splash" class="splash">
+            <div class="splash-inner">
+                <div class="title" style="color:#000;text-shadow:none;">Flipper Fish</div>
+                <div style="font-size:14px;opacity:.9;color:#000;text-shadow:none;">Made by Taylan&trade;</div>
+                <div class="subtitle">Tap the screen to start!</div>
+                <button class="btn" style="margin-top:10px;">Shell Store</button>
+                <div style="margin-top:6px;font-size:14px;opacity:.9">Avoid the coral, collect shells. Good luck!</div>
+            </div>
+            <div id="splashBoard" class="splash-board">
+                <div class="board-head">🏆 Leaderboard</div>
+                <div id="leaderboardSplashBody" style="font-size:16px;text-align:center;">Loading...</div>
+            </div>
+        </div>
+    </div>
+    <div id="gameOver" class="hud" style="display:none;">
+        <div class="panel" role="dialog" aria-modal="true" aria-labelledby="overTitle">
+            <h2 id="overTitle">Game Over</h2>
+            <div class="row"><span>Your Score</span><strong id="scoreNow">0</strong></div>
+            <div class="row"><span>Highest Score</span><span><strong id="bestNow">0</strong> <span id="medal" class="pill" aria-label="medal" style="display:none;">🥉 Bronze</span></span></div>
+            <div class="actions">
+                <button id="againBtn" class="btn">Play Again</button>
+                <button id="shareBtn" class="btn">Share</button>
+                <button id="setNameBtn" class="btn">Change Name</button>
+                <button id="storeBtn" class="btn">Shell Store</button>
+            </div>
+            <div id="leaderboardOver" class="panel dark" style="margin-top:12px;padding:12px;">
+                <div style="text-align:center;font-weight:800;">🏆 Leaderboard</div>
+                <div id="leaderboardOverBody" style="margin-top:6px;font-size:16px;">Loading...</div>
+            </div>
+        </div>
+    </div>
+    <div id="nameModal" class="name-modal" role="dialog" aria-modal="true" aria-labelledby="nameTitle">
+        <div class="name-card">
+            <h3 id="nameTitle">Welcome! Enter your name</h3>
+            <p style="margin:0 0 6px 0;text-align:center;opacity:.8;font-size:14px;">It’ll appear on the leaderboard across all devices.</p>
+            <div class="name-row">
+                <input id="playerNameInput" type="text" placeholder="e.g. Tay" maxlength="24" />
+                <button id="saveNameBtn" class="btn">Save</button>
+            </div>
+        </div>
+    </div>
+    <div id="storeModal" class="store-modal" role="dialog" aria-modal="true">
+        <div class="store-card">
+            <button id="closeStoreBtn">✕</button>
+            <h3>Shell Store</h3>
+            <p style="opacity:.8;font-size:14px;margin-top:4px;">
+                Spend shells you collect in-game!
+            </p>
+            <div id="shieldItem" style="margin-top:12px;padding:12px;border:2px solid #eee;border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+              <div style="text-align:left;">
+                <div style="font-weight:800;">🛡 Shield (one-hit)</div>
+                <div style="font-size:14px;opacity:.8;">Protects you from one crash this run.</div>
+                <div style="font-size:14px;margin-top:4px;">Cost: <strong>10</strong> 🐚</div>
+              </div>
+              <button id="buyShieldBtn" class="btn">Buy</button>
+            </div>
+        </div>
+    </div>
+    <div id="aria" class="sr-only" aria-live="polite"></div>
+    <div id="toast" class="toast" role="status"></div>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDsfk9nWTl-FYLJlrmfiG0jYRez6461OMw",
+            authDomain: "flappy-fish-25f36.firebaseapp.com",
+            databaseURL: "https://flappy-fish-25f36-default-rtdb.firebaseio.com",
+            projectId: "flappy-fish-25f36",
+            storageBucket: "flappy-fish-25f36.appspot.com",
+            messagingSenderId: "787422563403",
+            appId: "1:787422563403:web:662ba16a0c580f10ffd1ce",
+            measurementId: "G-C0LBVK4Y8W"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const dbRef = db.ref("leaderboard");
+        window.db = db;
+        window.dbRef = dbRef;
+    </script>
+    <script>
+        // JavaScript remains unchanged
+        (() => {
+            'use strict';
+            const playerFishImg = new Image();
+            playerFishImg.src = "https://pngimg.com/uploads/fish/small/fish_PNG25116.png";
+            const bgFishImg = new Image();
+            bgFishImg.src = "https://pngimg.com/uploads/fish/small/fish_PNG25109.png";
+            const CFG = {
+                canvas: { width: 360, height: 640 },
+                physics: { gravity: 1200, flapImpulse: -360, maxFallSpeed: 720 },
+                world: { speedStart: 184, speedEnd: 240, speedEndScore: 30 },
+                pipes: {
+                    gapStart: 160, gapEnd: 135, gapEndScore: 20,
+                    spawnStart: 1.2, spawnEnd: 0.95, spawnEndScore: 25,
+                    minGapCenterY: 120, maxGapCenterYPaddingBottom: 120, width: 64
+                },
+                bird: { size: { w: 40, h: 24 }, hitboxRadius: 12 },
+                ground: { height: 112 },
+                scorePopup: { dy: 40, duration: 0.6 },
+                birdIdleBobPx: 4,
+                particles: { max: 50, flapCount: 8, collectCount: 10 },
+                collectibles: { chance: 0.4, bonus: 2, size: 16 }
+            };
+            const DPR = Math.min(window.devicePixelRatio || 1, 3);
+            const canvas = document.getElementById('game');
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                console.error('Canvas context not found.');
+                return;
+            }
+            const splashEl = document.getElementById('splash');
+            const hudScore = document.getElementById('scoreHud');
+            const bankHud = document.getElementById('bankHud');
+            const overPanel = document.getElementById('gameOver');
+            const scoreNow = document.getElementById('scoreNow');
+            const bestNow = document.getElementById('bestNow');
+            const medalEl = document.getElementById('medal');
+            const ariaLive = document.getElementById('aria');
+            const toast = document.getElementById('toast');
+            const nameModal = document.getElementById('nameModal');
+            const nameInput = document.getElementById('playerNameInput');
+            const saveNameBtn = document.getElementById('saveNameBtn');
+            const setNameBtn = document.getElementById('setNameBtn');
+            const countdownEl = document.getElementById('countdownHud');
+            let respawnCountdown = 0;
+            const storeModal = document.getElementById('storeModal');
+            const closeStoreBtn = document.getElementById('closeStoreBtn');
+            const buyShieldBtn = document.getElementById('buyShieldBtn');
+            document.querySelector('.splash-inner .btn').addEventListener('click', () => {
+              storeModal.style.display = 'grid';
+            });
+            document.getElementById('storeBtn').addEventListener('click', () => {
+              storeModal.style.display = 'grid';
+            });
+            closeStoreBtn.addEventListener('click', () => {
+              storeModal.style.display = 'none';
+            });
+            buyShieldBtn.addEventListener('click', () => {
+              if (shieldActive) {
+                showToast('Shield already equipped');
+                return;
+              }
+              const COST = 10;
+              if (shellBank < COST) {
+                showToast('Not enough shells');
+                return;
+              }
+              updateBank(-COST);
+              shieldActive = true;
+              updateShieldHud();
+              showToast('Shield equipped!');
+            });
+            const W = CFG.canvas.width, H = CFG.canvas.height;
+            const groundY = H - CFG.ground.height;
+            let state = 'ready';
+            let paused = false;
+            let worldTime = 0;
+            let spawnTimer = 0;
+            let lastMs = performance.now();
+            const storage = {
+                best: Number(localStorage.getItem('sb_best') || 0)
+            };
+            let shellBank = Number(localStorage.getItem('sb_bank') || 0);
+            const BIRD_X = Math.round(W * 0.28);
+            let bird = { x: BIRD_X, y: H*0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };
+            const pipes = [];
+            const pops = [];
+            const bubblesBg = [
+                { x: 100, y: 80, s: 0.15 },
+                { x: 300, y: 120, s: 0.12 },
+                { x: 200, y: 50, s: 0.18 }
+            ];
+            const bubblesFg = [
+                { x: 40, y: 100, s: 0.30 },
+                { x: 240, y: 60, s: 0.25 },
+                { x: 170, y: 140, s: 0.22 }
+            ];
+            let score = 0;
+            const multiplier = 1;
+            window.score = 0;
+            let collectibles = [];
+            let shieldActive = false;
+            const shieldHud = document.getElementById('shieldHud');
+            function updateShieldHud() {
+              shieldHud.style.display = shieldActive ? 'block' : 'none';
+            }
+            const particles = [];
+            const medalFor = (s) => s>=50 ? ['🏆 Platinum', '#e5e4e2'] : s>=30 ? ['🥇 Gold', '#f7c32e'] : s>=20 ? ['🥈 Silver', '#c0c0c0'] : s>=10 ? ['🥉 Bronze', '#cd7f32'] : null;
+            const stageSkies = ['#20b2aa', '#00bfff', '#4682b4', '#191970', '#00ced1'];
+            const stagePipes = ['#ff7f50', '#ff4500', '#cd5b45', '#a52a2a', '#ff6347'];
+            let lastStage = -1;
+            const currentStage = () => Math.min(Math.floor(score/10), stageSkies.length-1);
+            const onStageChange = () => { showToast(`Stage ${currentStage()+1}!`); };
+            let audioCtx = null;
+            const beep = (type, freq, dur, vol=0.2) => {
+                if (!audioCtx) return;
+                try {
+                    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+                    o.type = type; o.frequency.value = freq; g.gain.value = vol;
+                    o.connect(g).connect(audioCtx.destination);
+                    const t = audioCtx.currentTime;
+                    o.start(t); g.gain.exponentialRampToValueAtTime(0.0001, t+dur*0.9); o.stop(t+dur);
+                } catch (e) {
+                    console.warn('Audio playback failed:', e);
+                }
+            };
+            const sfx = {
+                flap: () => beep('sine', 400, 0.12, 0.15),
+                point: () => beep('triangle', 880, 0.07, 0.18),
+                ha: () => beep('sawtooth', 120, 0.15, 0.22),
+                die: () => beep('sine', 80, 0.35, 0.25),
+                swoosh: () => beep('triangle', 300, 0.1, 0.12),
+                collect: () => beep('sine', 1200, 0.1, 0.2)
+            };
+            const bgMusic = new Audio("Flappy%20Bird%20Theme%20Song.mp3");
+            bgMusic.loop = true;
+            bgMusic.volume = 0.35;
+            const deathMusic = new Audio("Super%20Mario%20Bros%20-%20game%20over%20song.mp3");
+            deathMusic.volume = 0.45;
+            function playMusic() {
+                bgMusic.play().catch(() => {});
+            }
+            function stopMusic() {
+                bgMusic.pause();
+                bgMusic.currentTime = 0;
+            }
+            const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+            const lerp = (a, b, t) => a + (b-a)*t;
+            const easeT = (s, end) => clamp(s/end, 0, 1);
+            const pipeGap = () => (window.dynamicPipeGap ?? lerp(CFG.pipes.gapStart, CFG.pipes.gapEnd, easeT(score, CFG.pipes.gapEndScore)));
+            const spawnInterval = () => lerp(CFG.pipes.spawnStart, CFG.pipes.spawnEnd, easeT(score, CFG.pipes.spawnEndScore));
+            const speedBase = () => lerp(CFG.world.speedStart, CFG.world.speedEnd, easeT(score, CFG.world.speedEndScore));
+            const showToast = (msg) => { toast.textContent = msg; toast.classList.add('show'); clearTimeout(showToast._t); showToast._t = setTimeout(() => toast.classList.remove('show'), 1200); };
+            const announce = (msg) => { const a = document.getElementById('aria'); a.textContent = ''; setTimeout(() => a.textContent = msg, 30); };
+            function updateBank(delta = 0) {
+                shellBank = Math.max(0, shellBank + delta);
+                localStorage.setItem('sb_bank', String(shellBank));
+                if (bankHud) bankHud.textContent = String(shellBank);
+            }
+            function resetGame() {
+                score = 0; hudScore.textContent = '0'; worldTime = 0; spawnTimer = -0.5;
+                pipes.length = 0; pops.length = 0; collectibles.length = 0; particles.length = 0;
+                bird = { x: BIRD_X, y: H*0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };
+                sfx.swoosh(); lastStage = -1;
+                stopMusic();
+                document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
+            }
+            function fitCanvas() {
+                const aspect = W/H;
+                const vw = innerWidth, vh = innerHeight;
+                let cssW, cssH;
+                if (vw/vh < aspect) { cssW = Math.min(vw, W*2.5); cssH = Math.round(cssW/aspect); }
+                else { cssH = Math.min(vh, H*2.5); cssW = Math.round(cssH*aspect); }
+                canvas.style.width = cssW + 'px'; canvas.style.height = cssH + 'px';
+                canvas.width = Math.round(W*DPR); canvas.height = Math.round(H*DPR);
+                ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.scale(DPR, DPR); ctx.imageSmoothingEnabled = false;
+            }
+            addEventListener('resize', fitCanvas, { passive: true }); fitCanvas();
+            const flap = () => {
+                if (state === 'dead') return;
+                if (!audioCtx) {
+                    try {
+                        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        audioCtx.resume().catch((e) => console.warn('Audio resume failed:', e));
+                    } catch (e) {
+                        console.warn('AudioContext creation failed:', e);
+                    }
+                }
+                if (state === 'ready') {
+                    updateShieldHud();
+                    state = 'running';
+                    playMusic();
+                    announce('Game started');
+                    splashEl.style.display = 'none';
+                }
+                bird.vy = CFG.physics.flapImpulse; sfx.flap();
+                for (let i = 0; i < CFG.pipes.flapCount; i++) {
+                    particles.push({
+                        x: bird.x + Math.random()*10,
+                        y: bird.y + Math.random()*CFG.bird.size.h - CFG.bird.size.h/2,
+                        vx: -speedBase()*0.3 + Math.random()*30 - 15,
+                        vy: Math.random()*-50 - 20,
+                        life: 1.0 + Math.random()*0.8,
+                        size: 2 + Math.random()*4,
+                        color: 'rgba(255,255,255,0.6)',
+                        t: 0
+                    });
+                }
+            };
+            canvas.addEventListener('mousedown', e => { e.preventDefault(); flap(); });
+            canvas.addEventListener('touchstart', e => { e.preventDefault(); flap(); }, { passive: false });
+            addEventListener('keydown', e => {
+                const k = e.key.toLowerCase();
+                if ([' ', 'w', 'arrowup'].includes(k)) { e.preventDefault(); flap(); }
+                if (k === 'p' && state === 'running') { paused = !paused; showToast(paused ? 'Paused' : 'Resumed'); }
+            }, { passive: false });
+            document.getElementById('againBtn').addEventListener('click', () => {
+                overPanel.style.display = 'none'; splashEl.style.display = '';
+                state = 'ready'; resetGame(); announce('Back to splash');
+            });
+            document.getElementById('shareBtn').addEventListener('click', async () => {
+                const text = `I scored ${scoreNow.textContent} in Swimming Fish! Can you beat me?`;
+                try {
+                    if (navigator.share) await navigator.share({ text, title: "Swimming Fish" });
+                    else { await navigator.clipboard.writeText(text); showToast('Copied to clipboard!'); }
+                } catch {}
+            });
+            document.getElementById('setNameBtn').addEventListener('click', () => {
+                nameModal.style.display = 'grid';
+                nameInput.value = localStorage.getItem('player_name') || '';
+                setTimeout(() => nameInput.focus(), 10);
+            });
+            function saveName() {
+                const raw = (nameInput.value || '').trim();
+                const clean = raw
+                    .replace(/[.#$/[\]]/g, '')
+                    .slice(0, 24);
+                if (!clean) { showToast('Please enter a name'); nameInput.focus(); return; }
+                localStorage.setItem('player_name', clean);
+                nameModal.style.display = 'none';
+                showToast(`Hi, ${clean}!`);
+            }
+            saveNameBtn.addEventListener('click', saveName);
+            nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') saveName(); });
+            function spawnPipe() {
+                const gap = pipeGap();
+                const padBottom = CFG.pipes.maxGapCenterYPaddingBottom;
+                const minC = CFG.pipes.minGapCenterY;
+                const maxCenter = (groundY - padBottom) - gap/2;
+                const minCenter = minC + gap/2;
+                let gapY = Math.round(lerp(minCenter, maxCenter, Math.random()));
+                pipes.push({ x: W + 10, gapY, gap, w: CFG.pipes.width, scored: false, type: 'coral' });
+                if (Math.random() < CFG.collectibles.chance) {
+                    const collY = gapY + (Math.random() - 0.5) * (gap - CFG.collectibles.size * 2);
+                    collectibles.push({ x: W + 10 + CFG.pipes.width / 2, y: collY, collected: false });
+                }
+            }
+            function startRespawn() {
+                shieldActive = false;
+                updateShieldHud();
+                state = 'respawn';
+                respawnCountdown = 3.0;
+                pipes.length = 0;
+                collectibles.length = 0;
+                pops.length = 0;
+                spawnTimer = -0.5;
+                bird.vy = 0;
+                bird.rot = 0;
+                bird.x = BIRD_X;
+                bird.y = H * 0.5;
+                countdownEl.style.display = '';
+                countdownEl.textContent = Math.ceil(respawnCountdown).toString();
+                stopMusic();
+            }
+            function update(dt) {
+                if (state !== 'running' || paused) return;
+                const speed = speedBase();
+                worldTime += dt; spawnTimer += dt;
+                if (spawnTimer >= spawnInterval()) { spawnTimer = 0; spawnPipe(); }
+                for (const c of bubblesFg) { c.x -= speed*c.s*dt; if (c.x < -80) c.x += W+160; }
+                for (const c of bubblesBg) { c.x -= speed*c.s*dt; if (c.x < -80) c.x += W+160; }
+                bird.vy += CFG.physics.gravity*dt;
+                bird.vy = clamp(bird.vy, -9999, CFG.physics.maxFallSpeed);
+                bird.y += bird.vy*dt; bird.y = clamp(bird.y, 2, H+1000);
+                const targetRot = bird.vy < 0 ? -15*Math.PI/180 : Math.min(60*Math.PI/180, bird.vy/CFG.physics.maxFallSpeed*(60*Math.PI/180));
+                bird.rot = lerp(bird.rot, targetRot, 0.12);
+                for (const p of pipes) {
+                    p.x -= speed*dt;
+                    const cx = p.x + p.w/2;
+                    if (!p.scored && cx < bird.x) {
+                        p.scored = true;
+                        const addScore = 1;
+                        score += addScore; hudScore.textContent = String(score);
+                        window.score = score;
+                        pops.push({ x: cx, y: p.gapY, t: 0, duration: CFG.scorePopup.duration, text: `+${addScore}` });
+                        if (navigator.vibrate) navigator.vibrate(20);
+                        sfx.point(); announce(`Score ${score}`);
+                        const st = currentStage(); if (st !== lastStage) { lastStage = st; onStageChange(); }
+                    }
+                }
+                while (pipes.length && pipes[0].x + pipes[0].w < -20) pipes.shift();
+                for (const coll of collectibles) {
+                    coll.x -= speed * dt;
+                    if (!coll.collected && Math.hypot(bird.x - coll.x, bird.y - coll.y) < CFG.bird.hitboxRadius + CFG.collectibles.size / 2) {
+                        coll.collected = true;
+                        score += CFG.collectibles.bonus; hudScore.textContent = String(score);
+                        updateBank(1);
+                        sfx.collect(); showToast(`+${CFG.collectibles.bonus} Bonus!`);
+                        for (let i = 0; i < CFG.particles.collectCount; i++) {
+                            particles.push({
+                                x: coll.x,
+                                y: coll.y,
+                                vx: Math.random()*100 - 50,
+                                vy: Math.random()*100 - 150,
+                                life: 0.8 + Math.random()*0.4,
+                                size: 3 + Math.random()*3,
+                                color: '#ffcc00',
+                                t: 0
+                            });
+                        }
+                    }
+                }
+                collectibles = collectibles.filter(c => c.x > -20 && !c.collected);
+                const r = CFG.bird.hitboxRadius;
+                const circle = { x: bird.x+2, y: bird.y, r };
+                const penetrationNeeded = 0.1*r;
+                let hit = false;
+                for (const p of pipes) {
+                    const topRect = { x: p.x, y: -10000, w: p.w, h: (p.gapY - p.gap/2) + 10000 };
+                    const botRect = { x: p.x, y: (p.gapY + p.gap/2), w: p.w, h: (groundY - (p.gapY + p.gap/2)) };
+                    if (circleRectDeepOverlap(circle, topRect, penetrationNeeded) || circleRectDeepOverlap(circle, botRect, penetrationNeeded)) { hit = true; break; }
+                }
+                if (circle.y + circle.r >= groundY) {
+                    if (shieldActive) {
+                        startRespawn();
+                        return;
+                    } else {
+                        die();
+                        return;
+                    }
+                }
+                if (hit) {
+                    if (shieldActive) {
+                        startRespawn();
+                        return;
+                    }
+                    sfx.ha();
+                    die();
+                    return;
+                }
+                for (let i = pops.length-1; i >= 0; i--) { const pop = pops[i]; pop.t += dt; if (pop.t >= pop.duration) pops.splice(i, 1); }
+                for (let i = particles.length-1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.t += dt;
+                    p.x += p.vx * dt;
+                    p.y += p.vy * dt;
+                    p.vy -= 100 * dt;
+                    if (p.t >= p.life) particles.splice(i, 1);
+                }
+            }
+            function circleRectDeepOverlap(circ, rect, needed) {
+                const nx = clamp(circ.x, rect.x, rect.x + rect.w);
+                const ny = clamp(circ.y, rect.y, rect.y + rect.h);
+                const dx = circ.x - nx, dy = circ.y - ny;
+                const dist = Math.hypot(dx, dy);
+                const overlap = circ.r - dist;
+                return overlap > needed;
+            }
+            function die() {
+                state = 'dead'; paused = false;
+                if (navigator.vibrate) navigator.vibrate(80);
+                sfx.die();
+                stopMusic();
+                deathMusic.currentTime = 0;
+                deathMusic.play().catch(() => {});
+                const fallUntil = () => {
+                    const now = performance.now();
+                    const dt = Math.min((now - lastMs)/1000, 1/30);
+                    lastMs = now;
+                    bird.vy += CFG.physics.gravity*dt;
+                    bird.vy = Math.min(bird.vy, CFG.physics.maxFallSpeed);
+                    bird.y += bird.vy*dt;
+                    bird.rot = lerp(bird.rot, 90*Math.PI/180, 0.12);
+                    render();
+                    if (bird.y + CFG.bird.hitboxRadius < groundY) requestAnimationFrame(fallUntil);
+                    else { bird.y = groundY - CFG.bird.hitboxRadius; setTimeout(showGameOver, 800); }
+                };
+                fallUntil();
+            }
+            function collapseLegacyFor(name, key) {
+                const ref = firebase.database().ref("leaderboard");
+                ref.once("value").then(snap => {
+                    const toRemove = [];
+                    let best = null;  snap.forEach(child => {
+                        const v = child.val();
+                        if (!v || v.name !== name) return;
+                        if (!best || v.score > best.score || (v.score === best.score && v.at > best.at)) {
+                            if (best && child.key !== key) toRemove.push(best._refKey);
+                            best = { ...v, _refKey: child.key };
+                        } else {
+                            toRemove.push(child.key);
+                        }
+                    });
+                    toRemove.forEach(k => ref.child(k).remove().catch(() => {}));
+                }).catch(() => {});
+            }
+            function showGameOver() {
+                const name = localStorage.getItem('player_name') || "Anonymous";
+                scoreNow.textContent = String(score);
+                if (score > storage.best) {
+                    storage.best = score;
+                    localStorage.setItem('sb_best', String(score));
+                }
+                bestNow.textContent = String(storage.best);
+                document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
+                if (window.dbRef) {
+                    try {
+                        const key = (name || "Anonymous")
+                            .trim()
+                            .toLowerCase()
+                            .replace(/\s+/g, ' ')
+                            .replace(/[.#$/[\]]/g, '');
+                        const playerRef = firebase.database().ref("leaderboard").child(key);
+                        playerRef.once("value").then(snap => {
+                            const current = snap.val();
+                            if (!current || (typeof current.score !== 'number') || score > current.score) {
+                                playerRef.set({
+                                    name,
+                                    score,
+                                    at: Date.now()
+                                }).then(() => {
+                                    collapseLegacyFor(name, key);
+                                }).catch(e => console.error("Score set failed:", e));
+                            }
+                        }).catch(e => console.error("Score read failed:", e))
+                            .finally(() => loadLeaderboard());
+                    } catch (e) {
+                        console.warn("Failed to save score:", e);
+                    }
+                }
+                const m = medalFor(storage.best);
+                if (m) {
+                    medalEl.style.display = '';
+                    medalEl.textContent = m[0];
+                } else {
+                    medalEl.style.display = 'none';
+                }
+                overPanel.style.display = '';
+            }
+            window.showGameOver = showGameOver;
+            function loadLeaderboard() {
+                if (!window.dbRef) {
+                    console.error("dbRef is undefined");
+                    document.getElementById("leaderboardSplashBody").innerHTML = "Error: Database reference not initialized";
+                    document.getElementById("leaderboardOverBody").innerHTML = "Error: Database reference not initialized";
+                    return;
+                }
+                firebase.database().ref("leaderboard").on("value", snap => {
+                    const bestByName = Object.create(null);
+                    snap.forEach(child => {
+                        const v = child.val();
+                        if (!v) return;
+                        const nm = (v.name || "Anonymous").toString();
+                        const sc = Number(v.score || 0);
+                        const at = Number(v.at || 0);
+                        if (!bestByName[nm] || sc > bestByName[nm].score || (sc === bestByName[nm].score && at > bestByName[nm].at)) {
+                            bestByName[nm] = { name: nm, score: sc, at };
+                        }
+                    });
+                    const list = Object.values(bestByName)
+                        .sort((a, b) => b.score - a.score || b.at - a.at)
+                        .slice(0, 5);
+                    const medal = i => i === 0 ? "🥇" :
+                        i === 1 ? "🥈" :
+                            i === 2 ? "🥉" : `${i+1}.`;
+                    const html = list.length
+                        ? list.map((p, i) =>
+                            `<div class="board-row"><span>${medal(i)} ${p.name || "Anonymous"}</span><strong>${p.score}</strong></div>`
+                        ).join("")
+                        : "No scores yet";
+                    document.getElementById("leaderboardSplashBody").innerHTML = html;
+                    document.getElementById("leaderboardOverBody").innerHTML = html;
+                }, error => {
+                    console.error('Leaderboard fetch error:', error.code, error.message);
+                    document.getElementById("leaderboardSplashBody").innerHTML = `Error: ${error.message}`;
+                    document.getElementById("leaderboardOverBody").innerHTML = `Error: ${error.message}`;
+                });
+            }
+            function roundedRect(x, y, w, h, r) {
+                ctx.beginPath();
+                ctx.moveTo(x+r, y);
+                ctx.arcTo(x+w, y, x+w, y+h, r);
+                ctx.arcTo(x+w, y+h, x, y+h, r);
+                ctx.arcTo(x, y+h, x, y, r);
+                ctx.arcTo(x, y, x+w, y, r);
+                ctx.closePath();
+            }
+            function drawBubbles(bubbles, opacity=0.9) {
+                for (const c of bubbles) {
+                    ctx.save(); ctx.translate(c.x, c.y);
+                    ctx.fillStyle = `rgba(255,255,255,${opacity})`;
+                    ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(8, -6, 12, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(-10, 4, 15, 0, Math.PI*2); ctx.fill();
+                    ctx.restore();
+                }
+            }
+            function drawCoralAndSharks() {
+                const stage = currentStage();
+                const baseColor = stagePipes[stage];
+                const dark = 'rgba(0,0,0,.18)';
+                for (const p of pipes) {
+                    const topH = p.gapY - p.gap/2;
+                    const botY = p.gapY + p.gap/2;
+                    const botH = groundY - botY;
+                    const persp = 8;
+                    const grad = ctx.createRadialGradient(p.x + p.w/2, 0, p.w/2, p.x + p.w/2, 0, 0);
+                    grad.addColorStop(0, baseColor);
+                    grad.addColorStop(0.7, '#ffffff40');
+                    grad.addColorStop(1, dark);
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, 0);
+                    for (let i = 0; i < p.w; i += 10) {
+                        ctx.quadraticCurveTo(p.x + i + 5, -10, p.x + i + 10, 0);
+                    }
+                    ctx.lineTo(p.x + p.w + persp, topH);
+                    ctx.lineTo(p.x - persp, topH);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(p.x - persp, botY);
+                    ctx.lineTo(p.x + p.w + persp, botY);
+                    for (let i = p.w; i > 0; i -= 10) {
+                        ctx.quadraticCurveTo(p.x + i - 5, groundY + 10, p.x + i - 10, groundY);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+            function drawFish() {
+                ctx.save();
+                const w = CFG.bird.size.w, h = CFG.bird.size.h;
+                const idleBob = (state === 'ready') ? Math.sin(worldTime*Math.PI*4)*CFG.birdIdleBobPx : 0;
+                ctx.translate(bird.x, bird.y + idleBob);
+                ctx.rotate(bird.rot);
+                if (playerFishImg.complete && playerFishImg.naturalWidth > 0) {
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(playerFishImg, -w/2, -h/2, w, h);
+                } else {
+                    ctx.fillStyle = '#87cefa';
+                    roundedRect(-w/2, -h/2, w, h, 10);
+                    ctx.fill();
+                }
+                ctx.restore();
+                ctx.save();
+                const shadowScale = 1 - (bird.y / groundY) * 0.5;
+                ctx.translate(bird.x, groundY - 4);
+                ctx.fillStyle = 'rgba(0,0,0,0.15)';
+                ctx.beginPath(); ctx.ellipse(0, 0, (w/2 - 2) * shadowScale, 3 * shadowScale, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
+            }
+            function drawSeabed() {
+                const speed = speedBase();
+                const t = (worldTime*speed)%48;
+                const y = groundY;
+                ctx.fillStyle = '#f4a460';
+                ctx.fillRect(0, y, W, H-y);
+                ctx.fillStyle = '#20b2aa'; ctx.fillRect(0, y-8, W, 8);
+                ctx.fillStyle = 'rgba(255,255,255,.2)';
+                for (let x = -t; x < W; x += 48) {
+                    ctx.beginPath(); ctx.arc(x+12, y+12, 8, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(x+36, y+24, 6, 0, Math.PI*2); ctx.fill();
+                }
+            }
+            function drawCollectibles() {
+                for (const coll of collectibles) {
+                    if (coll.collected) continue;
+                    const grad = ctx.createRadialGradient(coll.x, coll.y, 0, coll.x, coll.y, CFG.collectibles.size / 2);
+                    grad.addColorStop(0, '#fffacd');
+                    grad.addColorStop(1, '#ffd700');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.moveTo(coll.x, coll.y);
+                    for (let i = 0; i < Math.PI*2; i += 0.1) {
+                        const r = (CFG.collectibles.size / 2) * (1 - i/(Math.PI*2));
+                        ctx.lineTo(coll.x + Math.cos(i)*r, coll.y + Math.sin(i)*r);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+            function drawParticles() {
+                ctx.save();
+                try {
+                    for (const p of particles) {
+                        const t = p.t / p.life;
+                        ctx.globalAlpha = 1 - t * t;
+                        ctx.fillStyle = p.color;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size * (1 - t), 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                } finally {
+                    ctx.restore();
+                }
+            }
+            function lerpColor(a, b, t) {
+                const ah = parseInt(a.replace(/#/g, ''), 16),
+                    ar = ah >> 16, ag = ah >> 8 & 0xff, ab = ah & 0xff,
+                    bh = parseInt(b.replace(/#/g, ''), 16),
+                    br = bh >> 16, bg = bh >> 8 & 0xff, bb = bh & 0xff,
+                    rr = Math.round(ar + t * (br - ar)),
+                    rg = Math.round(ag + t * (bg - ag)),
+                    rb = Math.round(ab + t * (bb - ab));
+                return '#' + ((1 << 24) + (rr << 16) + (rg << 8) + rb | 0).toString(16).slice(1);
+            }
+            function render() {
+                const stage = currentStage();
+                const sky = stageSkies[stage];
+                canvas.style.background = sky;
+                ctx.save();
+                ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+                drawBubbles(bubblesBg, 0.4);
+                drawBubbles(bubblesFg, 0.7);
+                drawCoralAndSharks();
+                drawCollectibles();
+                drawFish();
+                drawParticles();
+                drawSeabed();
+                ctx.strokeStyle = '#228b22';
+                ctx.lineWidth = 4;
+                const swayAmount = 10;
+                for (let x = 0; x < W; x += 60) {
+                    ctx.beginPath();
+                    let currentY = groundY;
+                    let currentX = x;
+                    ctx.moveTo(currentX, currentY);
+                    for (let i = 0; i < 5; i++) {
+                        currentY -= 20;
+                        const sway = Math.sin(worldTime + i) * swayAmount;
+                        ctx.quadraticCurveTo(currentX + sway, currentY + 10, currentX + sway/2, currentY);
+                        currentX += sway / 2;
+                    }
+                    ctx.stroke();
+                }
+                const fishX = (worldTime * 50) % (W + 100) - 100;
+                const bgYOffset = Math.sin(worldTime * 2) * 4;
+                if (bgFishImg.complete && bgFishImg.naturalWidth > 0) {
+                    ctx.drawImage(bgFishImg, W - fishX, H*0.3 + bgYOffset, 20, 10);
+                    ctx.drawImage(bgFishImg, W - fishX - 20, H*0.7 + bgYOffset, 15, 8);
+                } else {
+                    ctx.fillStyle = '#ff4500';
+                    roundedRect(W - fishX, H*0.3 + bgYOffset, 20, 10, 4); ctx.fill();
+                    roundedRect(W - fishX - 20, H*0.7 + bgYOffset, 15, 8, 3); ctx.fill();
+                }
+                for (const pop of pops) {
+                    const t = clamp(pop.t/pop.duration, 0, 1);
+                    const y = pop.y - t*CFG.scorePopup.dy;
+                    ctx.globalAlpha = 1-t;
+                    ctx.fillStyle = '#fff'; ctx.font = 'bold 20px ui-rounded, system-ui, sans-serif'; ctx.textAlign = 'center';
+                    ctx.fillText(pop.text, pop.x, y);
+                    ctx.globalAlpha = 1;
+                }
+                ctx.restore();
+                if (shieldActive) updateShieldHud();
+            }
+            function init() {
+                resetGame();
+                document.getElementById("leaderboardSplashBody").innerHTML = "Loading...";
+                document.getElementById("leaderboardOverBody").innerHTML = "Loading...";
+                loadLeaderboard();
+                splashEl.style.display = '';
+                hudScore.textContent = '0';
+                document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
+                bestNow.textContent = String(storage.best);
+                updateBank(0);
+                updateShieldHud();
+                overPanel.style.display = 'none';
+                lastMs = performance.now();
+                if (!localStorage.getItem('player_name')) {
+                    setTimeout(() => {
+                        document.getElementById('nameModal').style.display = 'grid';
+                        document.getElementById('playerNameInput').focus();
+                    }, 400);
+                }
+                requestAnimationFrame(loop);
+            }
+            function loop(now) {
+                try {
+                    const dt = clamp((now - lastMs)/1000, 0, 1/30);
+                    lastMs = now;
+                    if (state === 'ready') {
+                        worldTime += dt;
+                    } else if (state === 'respawn') {
+                        respawnCountdown = Math.max(0, respawnCountdown - dt);
+                        const n = Math.ceil(respawnCountdown);
+                        countdownEl.textContent = n > 0 ? String(n) : '';
+                        worldTime += dt;
+                    } else if (state === 'running' && !paused) {
+                        worldTime += dt;
+                        update(dt);
+                    }
+                    render();
+                    updateShieldHud();
+                    if (state === 'respawn' && respawnCountdown <= 0) {
+                        countdownEl.style.display = 'none';
+                        state = 'running';
+                        playMusic();
+                    }
+                } catch (e) {
+                    console.error('Game loop error:', e);
+                }
+                requestAnimationFrame(loop);
+            }
+            init();
+        })();
+    </script>
+    <!-- Added as requested -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js');
+      }
+    </script>
+</body>
+</html>
