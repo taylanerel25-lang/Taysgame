@@ -252,7 +252,6 @@
           <div style="font-size:14px;opacity:.9;color:#000;text-shadow:none;">Made by Taylan&trade;</div>
           <div class="subtitle">Tap the screen to start!</div>
           <div style="margin-top:6px;font-size:14px;opacity:.9">Avoid the coral, collect shells. Good luck!</div>
-          <button id="setNameBtn" class="btn" style="margin-top:12px;">Set Name</button>
         </div>
         <div id="splashBoard" class="splash-board">
           <div class="board-head">🏆 Leaderboard</div>
@@ -268,6 +267,7 @@
         <div class="actions">
           <button id="againBtn" class="btn">Play Again</button>
           <button id="shareBtn" class="btn">Share</button>
+          <button id="setNameBtn" class="btn">Change Name</button>
         </div>
         <div id="leaderboardOver" class="panel dark" style="margin-top:12px;padding:12px;">
           <div style="text-align:center;font-weight:800;">🏆 Leaderboard</div>
@@ -505,11 +505,11 @@
             else { await navigator.clipboard.writeText(text); showToast('Copied to clipboard!'); }
           } catch {}
         });
-        function openNameModal() {
+        document.getElementById('setNameBtn').addEventListener('click', () => {
           nameModal.style.display = 'grid';
           nameInput.value = localStorage.getItem('player_name') || '';
           setTimeout(() => nameInput.focus(), 10);
-        }
+        });
         function saveName() {
           const raw = (nameInput.value || '').trim();
           const clean = raw.replace(/[.#$/[\]]/g, '').slice(0, 24);
@@ -518,7 +518,6 @@
           nameModal.style.display = 'none';
           showToast(`Hi, ${clean}!`);
         }
-        setNameBtn.addEventListener('click', openNameModal);
         saveNameBtn.addEventListener('click', saveName);
         nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') saveName(); });
         function spawnPipe() {
@@ -880,6 +879,12 @@
           bestNow.textContent = String(storage.best);
           overPanel.style.display = 'none';
           lastMs = performance.now();
+          if (!localStorage.getItem('player_name')) {
+            setTimeout(() => {
+              document.getElementById('nameModal').style.display = 'grid';
+              document.getElementById('playerNameInput').focus();
+            }, 400);
+          }
           requestAnimationFrame(loop);
         }
         function loop(now) {
