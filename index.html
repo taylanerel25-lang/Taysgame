@@ -512,7 +512,9 @@
         });
         function saveName() {
           const raw = (nameInput.value || '').trim();
-          const clean = raw.replace(/[.#$/[\]]/g, '').slice(0, 24);
+          const clean = raw
+            .replace(/[.#$/[\]]/g, '')  // Firebase key safety
+            .slice(0, 24);
           if (!clean) { showToast('Please enter a name'); nameInput.focus(); return; }
           localStorage.setItem('player_name', clean);
           nameModal.style.display = 'none';
@@ -633,6 +635,28 @@
           };
           fallUntil();
         }
+        function collapseLegacyFor(name, key) {
+          // If there are legacy pushes with the same display name, remove the lower ones.
+          const ref = firebase.database().ref("leaderboard");
+          ref.once("value").then(snap => {
+            const toRemove = [];
+            let best = null;
+
+            snap.forEach(child => {
+              const v = child.val();
+              if (!v || v.name !== name) return;
+              if (!best || v.score > best.score || (v.score === best.score && v.at > best.at)) {
+                if (best && child.key !== key) toRemove.push(best._refKey);
+                best = { ...v, _refKey: child.key };
+              } else {
+                toRemove.push(child.key);
+              }
+            });
+
+            // Remove the losers
+            toRemove.forEach(k => ref.child(k).remove().catch(() => {}));
+          }).catch(() => {});
+        }
         function showGameOver() {
           const name = localStorage.getItem('player_name') || "Anonymous";
           scoreNow.textContent = String(score);
@@ -644,14 +668,29 @@
           document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
           if (window.dbRef) {
             try {
-              firebase.database().ref("leaderboard").push({
-                name,
-                score,
-                at: Date.now()
-              }).then(() => {
-                console.log("Score saved successfully");
-                loadLeaderboard(); // Immediately update leaderboard after save
-              }).catch(e => console.error("Score save failed:", e));
+              // Normalize player key so "Tay" and "tay" map to the same record
+              const key = (name || "Anonymous")
+                .trim()
+                .toLowerCase()
+                .replace(/\s+/g, ' ')        // collapse spaces
+                .replace(/[.#$/[\]]/g, '');  // Firebase key-safe
+
+              const playerRef = firebase.database().ref("leaderboard").child(key);
+
+              playerRef.once("value").then(snap => {
+                const current = snap.val();
+                // Only write if new or higher
+                if (!current || (typeof current.score !== 'number') || score > current.score) {
+                  playerRef.set({
+                    name,        // keep original casing for display
+                    score,
+                    at: Date.now()
+                  }).then(() => {
+                    collapseLegacyFor(name, key);
+                  }).catch(e => console.error("Score set failed:", e));
+                }
+              }).catch(e => console.error("Score read failed:", e))
+                .finally(() => loadLeaderboard());
             } catch (e) {
               console.warn("Failed to save score:", e);
             }
@@ -673,23 +712,47 @@
             document.getElementById("leaderboardOverBody").innerHTML = "Error: Database reference not initialized";
             return;
           }
+
+          // Use .on("value") as before (live updates)
           firebase.database().ref("leaderboard").on("value", snap => {
-            const list = [];
-            snap.forEach(s => list.push(s.val()));
-            // Sort by highest score first, then by timestamp (newest first) for equal scores
-            list.sort((a, b) => b.score - a.score || b.at - a.at);
-            // Keep only top 5
-            list.splice(5);
-            // Generate HTML with medals
-            const medal = i => i === 0 ? "🥇" : 
-                              i === 1 ? "🥈" : 
+            // Build a map of best score per name to handle any legacy duplicates
+            const bestByName = Object.create(null);
+
+            // Snapshot may contain either:
+            // - keyed entries (after PATCH 1): {name, score, at}
+            // - legacy pushed entries:       {name, score, at}
+            snap.forEach(child => {
+              const v = child.val();
+              if (!v) return;
+              const nm = (v.name || "Anonymous").toString();
+              const sc = Number(v.score || 0);
+              const at = Number(v.at || 0);
+
+              if (!bestByName[nm] || sc > bestByName[nm].score || (sc === bestByName[nm].score && at > bestByName[nm].at)) {
+                bestByName[nm] = { name: nm, score: sc, at };
+              }
+            });
+
+            // Convert to array, sort by score desc then by newest time
+            const list = Object.values(bestByName)
+              .sort((a, b) => b.score - a.score || b.at - a.at)
+              .slice(0, 5);
+
+            // Medal display
+            const medal = i => i === 0 ? "🥇" :
+                              i === 1 ? "🥈" :
                               i === 2 ? "🥉" : `${i+1}.`;
-            const html = list.map((p, i) => 
-              `<div class="board-row"><span>${medal(i)} ${p.name || "Anonymous"}</span><strong>${p.score}</strong></div>`
-            ).join("") || "No scores yet";
+
+            const html = list.length
+              ? list.map((p, i) =>
+                  `<div class="board-row"><span>${medal(i)} ${p.name || "Anonymous"}</span><strong>${p.score}</strong></div>`
+                ).join("")
+              : "No scores yet";
+
             // Update both leaderboard displays
             document.getElementById("leaderboardSplashBody").innerHTML = html;
             document.getElementById("leaderboardOverBody").innerHTML = html;
+
           }, error => {
             console.error('Leaderboard fetch error:', error.code, error.message);
             document.getElementById("leaderboardSplashBody").innerHTML = `Error: ${error.message}`;
