@@ -413,7 +413,7 @@
             const bgFishImg = new Image();
             bgFishImg.src = "https://pngimg.com/uploads/fish/small/fish_PNG25109.png";
             const seaweedImg = new Image();
-            seaweedImg.src = "https://i.imgur.com/MScx2Uo.jpeg"; // Replace with your transparent PNG URL or local path
+            seaweedImg.src = "https://i.imgur.com/MScx2Uo.jpeg";
             const CFG = {
                 canvas: { width: 360, height: 640 },
                 physics: { gravity: 1200, flapImpulse: -360, maxFallSpeed: 720 },
@@ -516,7 +516,7 @@
             const particles = [];
             const medalFor = (s) => s>=50 ? ['🏆 Platinum', '#e5e4e2'] : s>=30 ? ['🥇 Gold', '#f7c32e'] : s>=20 ? ['🥈 Silver', '#c0c0c0'] : s>=10 ? ['🥉 Bronze', '#cd7f32'] : null;
             const stageSkies = ['#20b2aa', '#00bfff', '#4682b4', '#191970', '#00ced1'];
-            const stagePipes = ['#ff7f50', '#ff4500', '#cd5b45', '#a52a2a', '#ff6347'];
+            const stagePipes = ['#1faa00', '#1c8d00', '#167300', '#115900', '#0d4700'];
             let lastStage = -1;
             const currentStage = () => Math.min(Math.floor(score/10), stageSkies.length-1);
             const onStageChange = () => { showToast(`Stage ${currentStage()+1}!`); };
@@ -940,14 +940,6 @@
                             ctx.arc(bx, by, 2 + Math.random() * 2, 0, Math.PI * 2);
                             ctx.fill();
                         }
-                        ctx.fillStyle = "rgba(255,255,255,.25)";
-                        ctx.fillRect(x + 4, y + 4, 6, h - 8);
-                        const shimmerT = (worldTime * 2) % 1;
-                        const shimmerY = y + shimmerT * (h - 20);
-                        ctx.fillStyle = "rgba(255,255,255,.5)";
-                        ctx.fillRect(x + 6, shimmerY, 4, 12);
-                        ctx.fillStyle = "rgba(0,0,0,.25)";
-                        ctx.fillRect(x + w - 10, y + 4, 6, h - 8);
                         ctx.fillStyle = shade(color, -25);
                         ctx.beginPath();
                         ctx.ellipse(x + w / 2, isTop ? y + h : y, w * 0.9, 12, 0, 0, Math.PI * 2);
