@@ -1,295 +1,292 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Swimmy Fish</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-  <meta name="theme-color" content="#20b2aa" />
-  <style>
-    :root {
-      --bg: #20b2aa;
-      --panel: rgba(255,255,255,.9);
-      --panel-dark: rgba(0,0,0,.65);
-      --text: #1d1d1f;
-    }
-    html, body {
-      height: 100%;
-      margin: 0;
-      background: #111;
-      color: var(--text);
-      font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans";
-      overscroll-behavior: none;
-    }
-    .wrap {
-      position: fixed;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    }
-    canvas {
-      background: var(--bg);
-      box-shadow: 0 10px 40px rgba(0,0,0,.35);
-      border-radius: 16px;
-      image-rendering: pixelated;
-      touch-action: none;
-    }
-    .hud {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      display: grid;
-      place-items: center;
-      font-weight: 700;
-      letter-spacing: .5px;
-      user-select: none;
-    }
-    .btn {
-      appearance: none;
-      border: 0;
-      background: var(--panel);
-      color: #111;
-      padding: 8px 12px;
-      border-radius: 999px;
-      font-weight: 700;
-      box-shadow: 0 2px 8px rgba(0,0,0,.15);
-      cursor: pointer;
-      line-height: 1;
-    }
-    .btn:focus {
-      outline: 3px solid #000;
-      outline-offset: 2px;
-    }
-    .score {
-      position: fixed;
-      top: 18px;
-      right: 14px;
-      font-size: 56px; /* double size */
-      color: #fff;
-      text-shadow: 0 2px 0 rgba(0,0,0,.6);
-      pointer-events: none;
-    }
-    .best {
-      position: fixed;
-      top: 18px;
-      left: 14px;
-      font-size: 28px;
-      color: #fff;
-      text-shadow: 0 2px 0 rgba(0,0,0,.6);
-      pointer-events: none;
-    }
-    .splash {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      color: #000;
-      text-shadow: 0 2px 0 rgba(255,255,255,.5);
-    }
-    .splash-inner {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      top: 10%;
-      width: min(92%, 360px);
-      text-align: center;
-      pointer-events: none;
-    }
-    .title {
-      font-size: 36px;
-      margin: 2px 0 8px;
-    }
-    .subtitle {
-      font-size: 18px;
-      opacity: .95;
-    }
-    .splash-board {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: 18px;
-      width: min(92%, 360px);
-      background: rgba(0,0,0,.65);
-      color: #f0f0f0;
-      border-radius: 18px;
-      padding: 14px;
-      box-shadow: 0 8px 30px rgba(0,0,0,.25);
-      pointer-events: auto;
-    }
-    .board-head {
-      font-size: 20px;
-      font-weight: 800;
-      text-align: center;
-      margin: 0 0 6px;
-    }
-    .board-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 16px;
-      padding: 6px 0;
-    }
-    .panel {
-      min-width: 280px;
-      max-width: 90vw;
-      background: var(--panel);
-      color: #111;
-      border-radius: 18px;
-      padding: 16px;
-      box-shadow: 0 8px 30px rgba(0,0,0,.25);
-      pointer-events: auto;
-      transform: translateY(8px);
-    }
-    .panel h2 {
-      margin: 0 0 8px 0;
-      font-size: 22px;
-      text-align: center;
-    }
-    .panel .row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 18px;
-      padding: 6px 0;
-    }
-    .panel .actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-top: 12px;
-    }
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(0,0,0,.08);
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 14px;
-    }
-    .sr-only {
-      position: absolute !important;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0,0,0,0);
-      white-space: nowrap;
-      border: 0;
-    }
-    .toast {
-      position: fixed;
-      bottom: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,.85);
-      color: #fff;
-      padding: 8px 12px;
-      border-radius: 10px;
-      font-size: 14px;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity .25s ease, transform .25s ease;
-    }
-    .toast.show {
-      opacity: 1;
-      transform: translate(-50%, -6px);
-    }
-    .soundbar {
-      position: fixed;
-      top: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      pointer-events: auto;
-    }
-    .name-modal {
-      position: fixed;
-      inset: 0;
-      display: none;
-      place-items: center;
-      background: rgba(0,0,0,.35);
-    }
-    .name-card {
-      width: min(92%, 360px);
-      background: #fff;
-      color: #111;
-      border-radius: 18px;
-      padding: 16px;
-      box-shadow: 0 10px 40px rgba(0,0,0,.35);
-    }
-    .name-card h3 {
-      margin: 0 0 8px 0;
-      text-align: center;
-    }
-    .name-row {
-      display: flex;
-      gap: 8px;
-      margin-top: 10px;
-    }
-    .name-row input {
-      flex: 1;
-      border-radius: 12px;
-      border: 2px solid #ddd;
-      padding: 10px 12px;
-      font-size: 16px;
-    }
-    .name-row button {
-      white-space: nowrap;
-    }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <canvas id="game" width="360" height="640" aria-label="Swimming Fish canvas"></canvas>
-  </div>
-  <div class="hud" aria-hidden="true">
-    <div class="soundbar"><button id="muteBtn" class="btn" aria-pressed="false" aria-label="Toggle sound">🔊 Sound</button></div>
-    <div id="scoreHud" class="score">0</div>
-    <div id="bestHud" class="best">Highest: 0</div>
-    <div id="splash" class="splash">
-      <div class="splash-inner">
-        <div class="title" style="color:#000;text-shadow:none;">Swimmy Fish</div>
-        <div style="font-size:14px;opacity:.9;color:#000;text-shadow:none;">Made by Taylan&trade;</div>
-        <div class="subtitle">Tap the screen to start!</div>
-        <div style="margin-top:6px;font-size:14px;opacity:.9">Avoid the coral, collect shells. Good luck!</div>
-      </div>
-      <div id="splashBoard" class="splash-board">
-        <div class="board-head">🏆 Leaderboard</div>
-        <div id="leaderboardSplashBody" style="font-size:16px;text-align:center;">Coming Soon...</div>
+  <head>
+    <meta charset="utf-8" />
+    <title>Swimming Fish</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <meta name="theme-color" content="#20b2aa" />
+    <style>
+      :root {
+        --bg: #20b2aa;
+        --panel: rgba(255,255,255,.9);
+        --panel-dark: rgba(0,0,0,.65);
+        --text: #1d1d1f;
+      }
+      html, body {
+        height: 100%;
+        margin: 0;
+        background: #111;
+        color: var(--text);
+        font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans";
+        overscroll-behavior: none;
+      }
+      .wrap {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      }
+      canvas {
+        background: var(--bg);
+        box-shadow: 0 10px 40px rgba(0,0,0,.35);
+        border-radius: 16px;
+        image-rendering: pixelated;
+        touch-action: none;
+      }
+      .hud {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+        letter-spacing: .5px;
+        user-select: none;
+      }
+      .btn {
+        appearance: none;
+        border: 0;
+        background: var(--panel);
+        color: #111;
+        padding: 8px 12px;
+        border-radius: 999px;
+        font-weight: 700;
+        box-shadow: 0 2px 8px rgba(0,0,0,.15);
+        cursor: pointer;
+        line-height: 1;
+      }
+      .btn:focus {
+        outline: 3px solid #000;
+        outline-offset: 2px;
+      }
+      .score {
+        position: fixed;
+        top: 18px;
+        right: 14px;
+        font-size: 56px; /* Doubled from 28px */
+        color: #fff;
+        text-shadow: 0 2px 0 rgba(0,0,0,.6);
+        pointer-events: none;
+      }
+      .best {
+        position: fixed;
+        top: 18px;
+        left: 14px;
+        font-size: 16px;
+        color: #fff;
+        text-shadow: 0 2px 0 rgba(0,0,0,.6);
+        pointer-events: none;
+      }
+      .splash {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        color: #000;
+        text-shadow: 0 2px 0 rgba(255,255,255,.5);
+      }
+      .splash-inner {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        top: 10%;
+        width: min(92%, 360px);
+        text-align: center;
+        pointer-events: none;
+      }
+      .title {
+        font-size: 36px;
+        margin: 2px 0 8px;
+      }
+      .subtitle {
+        font-size: 18px;
+        opacity: .95;
+      }
+      .splash-board {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 18px;
+        width: min(92%, 360px);
+        background: rgba(0,0,0,.65);
+        color: #f0f0f0;
+        border-radius: 18px;
+        padding: 14px;
+        box-shadow: 0 8px 30px rgba(0,0,0,.25);
+        pointer-events: auto;
+      }
+      .board-head {
+        font-size: 20px;
+        font-weight: 800;
+        text-align: center;
+        margin: 0 0 6px;
+      }
+      .board-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 16px;
+        padding: 6px 0;
+      }
+      .panel {
+        min-width: 280px;
+        max-width: 90vw;
+        background: var(--panel);
+        color: #111;
+        border-radius: 18px;
+        padding: 16px;
+        box-shadow: 0 8px 30px rgba(0,0,0,.25);
+        pointer-events: auto;
+        transform: translateY(8px);
+      }
+      .panel h2 {
+        margin: 0 0 8px 0;
+        font-size: 22px;
+        text-align: center;
+      }
+      .panel .row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 18px;
+        padding: 6px 0;
+      }
+      .panel .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(0,0,0,.08);
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 14px;
+      }
+      .sr-only {
+        position: absolute !important;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0,0,0,0);
+        white-space: nowrap;
+        border: 0;
+      }
+      .toast {
+        position: fixed;
+        bottom: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,.85);
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: 10px;
+        font-size: 14px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity .25s ease, transform .25s ease;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translate(-50%, -6px);
+      }
+      .soundbar {
+        position: fixed;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        pointer-events: auto;
+      }
+      .name-modal {
+        position: fixed;
+        inset: 0;
+        display: none;
+        place-items: center;
+        background: rgba(0,0,0,.35);
+      }
+      .name-card {
+        width: min(92%, 360px);
+        background: #fff;
+        color: #111;
+        border-radius: 18px;
+        padding: 16px;
+        box-shadow: 0 10px 40px rgba(0,0,0,.35);
+      }
+      .name-card h3 {
+        margin: 0 0 8px 0;
+        text-align: center;
+      }
+      .name-row {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .name-row input {
+        flex: 1;
+        border-radius: 12px;
+        border: 2px solid #ddd;
+        padding: 10px 12px;
+        font-size: 16px;
+      }
+      .name-row button {
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <canvas id="game" width="360" height="640" aria-label="Swimming Fish canvas"></canvas>
+    </div>
+    <div class="hud" aria-hidden="true">
+      <div class="soundbar"><button id="muteBtn" class="btn" aria-pressed="false" aria-label="Toggle sound">🔊 Sound</button></div>
+      <div id="scoreHud" class="score">0</div>
+      <div id="bestHud" class="best">Highest: 0</div>
+      <div id="splash" class="splash">
+        <div class="splash-inner">
+          <div class="title" style="color:#000;text-shadow:none;">Swimming Fish</div>
+          <div style="font-size:14px;opacity:.9;color:#000;text-shadow:none;">Made by Taylan&trade;</div>
+          <div class="subtitle">Tap the screen to start!</div>
+          <div style="margin-top:6px;font-size:14px;opacity:.9">Avoid the coral, collect shells. Good luck!</div>
+        </div>
+        <div id="splashBoard" class="splash-board">
+          <div class="board-head">🏆 Leaderboard</div>
+          <div id="leaderboardSplashBody" style="font-size:16px;text-align:center;">Coming Soon...</div>
+        </div>
       </div>
     </div>
-  </div>
-  <div id="gameOver" class="hud" style="display:none;">
-    <div class="panel" role="dialog" aria-modal="true" aria-labelledby="overTitle">
-      <h2 id="overTitle">Game Over</h2>
-      <div class="row"><span>Your Score</span><strong id="scoreNow">0</strong></div>
-      <div class="row"><span>Highest Score</span><span><strong id="bestNow">0</strong> <span id="medal" class="pill" aria-label="medal" style="display:none;">🥉 Bronze</span></span></div>
-      <div class="actions">
-        <button id="againBtn" class="btn">Play Again</button>
-        <button id="shareBtn" class="btn">Share</button>
-      </div>
-      <div id="leaderboardOver" class="panel dark" style="margin-top:12px;padding:12px;">
-        <div style="text-align:center;font-weight:800;">🏆 Leaderboard</div>
-        <div id="leaderboardOverBody" style="margin-top:6px;font-size:16px;">Loading...</div>
-      </div>
-    </div>
-  </div>
-  <div id="nameModal" class="name-modal" role="dialog" aria-modal="true" aria-labelledby="nameTitle">
-    <div class="name-card">
-      <h3 id="nameTitle">Welcome! Enter your name</h3>
-      <p style="margin:0 0 6px 0;text-align:center;opacity:.8;font-size:14px;">It’ll appear on the leaderboard across all devices.</p>
-      <div class="name-row">
-        <input id="playerNameInput" type="text" placeholder="e.g. Tay" maxlength="24" />
-        <button id="saveNameBtn" class="btn">Save</button>
+    <div id="gameOver" class="hud" style="display:none;">
+      <div class="panel" role="dialog" aria-modal="true" aria-labelledby="overTitle">
+        <h2 id="overTitle">Game Over</h2>
+        <div class="row"><span>Your Score</span><strong id="scoreNow">0</strong></div>
+        <div class="row"><span>Highest Score</span><span><strong id="bestNow">0</strong> <span id="medal" class="pill" aria-label="medal" style="display:none;">🥉 Bronze</span></span></div>
+        <div class="actions">
+          <button id="againBtn" class="btn">Play Again</button>
+          <button id="shareBtn" class="btn">Share</button>
+        </div>
+        <div id="leaderboardOver" class="panel dark" style="margin-top:12px;padding:12px;">
+          <div style="text-align:center;font-weight:800;">🏆 Leaderboard</div>
+          <div id="leaderboardOverBody" style="margin-top:6px;font-size:16px;">Loading...</div>
+        </div>
       </div>
     </div>
-  </div>
-  <div id="aria" class="sr-only" aria-live="polite"></div>
-  <div id="toast" class="toast" role="status"></div>
-  <audio id="bgMusic" loop preload="auto">
-    <source src="Flappy Bird Theme Song.mp3" type="audio/mpeg">
-  </audio>
-  <script>
+    <div id="nameModal" class="name-modal" role="dialog" aria-modal="true" aria-labelledby="nameTitle">
+      <div class="name-card">
+        <h3 id="nameTitle">Welcome! Enter your name</h3>
+        <p style="margin:0 0 6px 0;text-align:center;opacity:.8;font-size:14px;">It’ll appear on the leaderboard across all devices.</p>
+        <div class="name-row">
+          <input id="playerNameInput" type="text" placeholder="e.g. Tay" maxlength="24" />
+          <button id="saveNameBtn" class="btn">Save</button>
+        </div>
+      </div>
+    </div>
+    <div id="aria" class="sr-only" aria-live="polite"></div>
+    <div id="toast" class="toast" role="status"></div>
+    <script>
 (() => {
   'use strict';
   const playerFishImg = new Image();
@@ -392,6 +389,18 @@
     swoosh: () => beep('triangle', 300, 0.1, 0.12),
     collect: () => beep('sine', 1200, 0.1, 0.2)
   };
+  // Background Music 🎶
+  const bgMusic = new Audio("Flappy Bird Theme Song.mp3");
+  bgMusic.loop = true;
+  bgMusic.volume = 0.35; // Adjust volume if too loud
+  function playMusic() {
+    if (storage.muted) return;
+    bgMusic.play().catch(() => {});
+  }
+  function stopMusic() {
+    bgMusic.pause();
+    bgMusic.currentTime = 0;
+  }
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   const lerp = (a, b, t) => a + (b-a)*t;
   const easeT = (s, end) => clamp(s/end, 0, 1);
@@ -405,6 +414,7 @@
     pipes.length = 0; pops.length = 0; collectibles.length = 0; particles.length = 0;
     bird = { x: BIRD_X, y: H*0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };
     sfx.swoosh(); lastStage = -1;
+    stopMusic(); // Stop music on reset
     document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
   }
   function fitCanvas() {
@@ -434,20 +444,9 @@
     }
     if (state === 'ready') {
       state = 'running';
+      playMusic(); // Start music on game start
       announce('Game started');
       splashEl.style.display = 'none';
-      const music = document.getElementById('bgMusic');
-      music.volume = 0.5;
-      // tiny fade-in
-      music.currentTime = 0;
-      let fade = setInterval(() => {
-        if (music.volume < 1 && !storage.muted) {
-          music.volume += 0.02;
-        } else {
-          clearInterval(fade);
-        }
-      }, 120);
-      music.play().catch(() => {});
     }
     bird.vy = CFG.physics.flapImpulse; sfx.flap();
     for (let i = 0; i < CFG.particles.flapCount; i++) {
@@ -471,21 +470,15 @@
     if (k === 'p' && state === 'running') { paused = !paused; showToast(paused ? 'Paused' : 'Resumed'); }
   }, { passive: false });
   muteBtn.addEventListener('click', () => {
-    storage.muted = !storage.muted;
-    if (storage.muted) {
-      music.pause();
-    } else {
-      music.play().catch(() => {});
-    }
-    localStorage.setItem('sb_muted', storage.muted ? '1' : '0');
+    storage.muted = !storage.muted; localStorage.setItem('sb_muted', storage.muted ? '1' : '0');
     muteBtn.setAttribute('aria-pressed', storage.muted ? 'true' : 'false');
     muteBtn.textContent = storage.muted ? '🔇 Muted' : '🔊 Sound';
+    if (storage.muted) stopMusic();
+    else playMusic();
   });
   document.getElementById('againBtn').addEventListener('click', () => {
     overPanel.style.display = 'none'; splashEl.style.display = '';
-    state = 'ready'; resetGame();
-    if (!storage.muted) music.play().catch(() => {});
-    announce('Back to splash');
+    state = 'ready'; resetGame(); announce('Back to splash');
   });
   document.getElementById('shareBtn').addEventListener('click', async () => {
     const text = `I scored ${scoreNow.textContent} in Swimming Fish! Can you beat me?`;
@@ -600,11 +593,10 @@
     return overlap > needed;
   }
   function die() {
-    music.pause();
-    music.currentTime = 0;
     state = 'dead'; paused = false;
     if (navigator.vibrate) navigator.vibrate(80);
     sfx.die();
+    stopMusic(); // Stop music on death
     const fallUntil = () => {
       const now = performance.now();
       const dt = Math.min((now - lastMs)/1000, 1/30);
@@ -806,21 +798,6 @@
     }
     ctx.restore();
   }
-  function init() {
-    resetGame();
-    splashEl.style.display = '';
-    hudScore.textContent = '0';
-    document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
-    bestNow.textContent = String(storage.best);
-    overPanel.style.display = 'none';
-    lastMs = performance.now();
-    requestAnimationFrame(loop);
-    if (!localStorage.getItem('player_name')) openNameModal();
-  }
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden) music.pause();
-    else if (!storage.muted && state === 'running') music.play().catch(() => {});
-  });
   function loop(now) {
     try {
       const dt = clamp((now - lastMs)/1000, 0, 1/30);
@@ -833,8 +810,19 @@
     }
     requestAnimationFrame(loop);
   }
+  function init() {
+    resetGame();
+    splashEl.style.display = '';
+    hudScore.textContent = '0';
+    document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
+    bestNow.textContent = String(storage.best);
+    overPanel.style.display = 'none';
+    lastMs = performance.now();
+    requestAnimationFrame(loop);
+    if (!localStorage.getItem('player_name')) openNameModal();
+  }
   init();
 })();
-  </script>
-</body>
+    </script>
+  </body>
 </html>
