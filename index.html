@@ -398,7 +398,7 @@
             const CFG = {
                 canvas: { width: 360, height: 640 },
                 physics: { gravity: 1200, flapImpulse: -360, maxFallSpeed: 720 },
-                world: { speedStart: 180, speedEnd: 240, speedEndScore: 30 },
+                world: { speedStart: 184, speedEnd: 240, speedEndScore: 30 },
                 pipes: {
                     gapStart: 160, gapEnd: 135, gapEndScore: 20,
                     spawnStart: 1.2, spawnEnd: 0.95, spawnEndScore: 25,
@@ -583,6 +583,7 @@
                     }
                 }
                 if (state === 'ready') {
+                    updateShieldHud();
                     state = 'running';
                     playMusic();
                     announce('Game started');
@@ -731,12 +732,15 @@
                     updateShieldHud();
                     showToast('Shield broke!');
                     sfx.swoosh();
-                    bird.vy = -360; // bounce up out of danger
-                    return;
-                  } else {
-                    sfx.ha();
-                    die();
+                    // bounce clear of coral so we don't instantly die
+                    bird.vy = -360;
+                    bird.y -= 20;
+                    for (const p of pipes) p.scored = true; // avoid double scoring
+                    return; // stop death this frame
                   }
+                  sfx.ha();
+                  die();
+                  return;
                 }
                 for (let i = pops.length-1; i >= 0; i--) { const pop = pops[i]; pop.t += dt; if (pop.t >= pop.duration) pops.splice(i, 1); }
                 for (let i = particles.length-1; i >= 0; i--) {
