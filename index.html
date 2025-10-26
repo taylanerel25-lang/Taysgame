@@ -207,6 +207,17 @@
             opacity: 1;
             transform: translate(-50%, -6px);
         }
+        /* Shield icon next to score */
+        .shield {
+            position: fixed;
+            top: 28px;          /* lines up visually with the big score */
+            right: 86px;        /* sits just left of the score */
+            font-size: 28px;
+            color: #fff;
+            text-shadow: 0 2px 0 rgba(0,0,0,.6);
+            pointer-events: none;
+            display: none;      /* toggled via JS */
+        }
         .soundbar {
             position: fixed;
             top: 12px;
@@ -291,6 +302,7 @@
     </div>
     <div class="hud" aria-hidden="true">
         <div id="scoreHud" class="score">0</div>
+        <div id="shieldHud" class="shield" aria-hidden="true" title="Shield active">🛡</div>
         <div class="bank">
             <div style="font-size:12px;color:#ffa500;text-shadow:0 2px 0 rgba(0,0,0,.6);margin-bottom:2px;">Shell Bank</div>
             <div id="bankHud">0</div>
@@ -344,6 +356,15 @@
             <p style="opacity:.8;font-size:14px;margin-top:4px;">
                 Spend shells you collect in-game!
             </p>
+            <!-- Store item: Shield -->
+            <div id="shieldItem" style="margin-top:12px;padding:12px;border:2px solid #eee;border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+              <div style="text-align:left;">
+                <div style="font-weight:800;">🛡 Shield (one-hit)</div>
+                <div style="font-size:14px;opacity:.8;">Protects you from one crash this run.</div>
+                <div style="font-size:14px;margin-top:4px;">Cost: <strong>30</strong> 🐚</div>
+              </div>
+              <button id="buyShieldBtn" class="btn">Buy</button>
+            </div>
         </div>
     </div>
     <div id="aria" class="sr-only" aria-live="polite"></div>
@@ -410,6 +431,38 @@
             const nameInput = document.getElementById('playerNameInput');
             const saveNameBtn = document.getElementById('saveNameBtn');
             const setNameBtn = document.getElementById('setNameBtn');
+            // Store DOM
+            const storeModal = document.getElementById('storeModal');
+            const closeStoreBtn = document.getElementById('closeStoreBtn');
+            const buyShieldBtn = document.getElementById('buyShieldBtn');
+            // Open store from splash (the single button inside .splash-inner)
+            document.querySelector('.splash-inner .btn').addEventListener('click', () => {
+              storeModal.style.display = 'grid';
+            });
+            // Open store from Game Over panel
+            document.getElementById('storeBtn').addEventListener('click', () => {
+              storeModal.style.display = 'grid';
+            });
+            // Close store
+            closeStoreBtn.addEventListener('click', () => {
+              storeModal.style.display = 'none';
+            });
+            // Buy Shield for 30 shells
+            buyShieldBtn.addEventListener('click', () => {
+              if (shieldActive) {
+                showToast('Shield already equipped');
+                return;
+              }
+              const COST = 30;
+              if (shellBank < COST) {
+                showToast('Not enough shells');
+                return;
+              }
+              updateBank(-COST);
+              shieldActive = true;
+              updateShieldHud();
+              showToast('Shield equipped!');
+            });
             const W = CFG.canvas.width, H = CFG.canvas.height;
             const groundY = H - CFG.ground.height;
             let state = 'ready';
@@ -440,6 +493,11 @@
             window.score = 0;
             let collectibles = [];
             const particles = [];
+            let shieldActive = false; // one-hit protection for the current run
+            const shieldHud = document.getElementById('shieldHud');
+            function updateShieldHud() {
+              if (shieldHud) shieldHud.style.display = shieldActive ? '' : 'none';
+            }
             const medalFor = (s) => s>=50 ? ['🏆 Platinum', '#e5e4e2'] : s>=30 ? ['🥇 Gold', '#f7c32e'] : s>=20 ? ['🥈 Silver', '#c0c0c0'] : s>=10 ? ['🥉 Bronze', '#cd7f32'] : null;
             const stageSkies = ['#20b2aa', '#00bfff', '#4682b4', '#191970', '#00ced1'];
             const stagePipes = ['#ff7f50', '#ff4500', '#cd5b45', '#a52a2a', '#ff6347'];
@@ -498,6 +556,8 @@
                 bird = { x: BIRD_X, y: H*0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };
                 sfx.swoosh(); lastStage = -1;
                 stopMusic();
+                shieldActive = false;
+                updateShieldHud();
                 document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
             }
             function fitCanvas() {
@@ -576,20 +636,6 @@
             }
             saveNameBtn.addEventListener('click', saveName);
             nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') saveName(); });
-            const storeModal = document.getElementById('storeModal');
-            const closeStoreBtn = document.getElementById('closeStoreBtn');
-            // Splash screen Shell Store button (it is the ONLY button in splash-inner)
-            document.querySelector('.splash-inner button.btn:nth-of-type(1)').addEventListener('click', () => {
-                storeModal.style.display = 'grid';
-            });
-            // Game Over Shell Store button
-            document.getElementById('storeBtn').addEventListener('click', () => {
-                storeModal.style.display = 'grid';
-            });
-            // Close button
-            closeStoreBtn.addEventListener('click', () => {
-                storeModal.style.display = 'none';
-            });
             function spawnPipe() {
                 const gap = pipeGap();
                 const padBottom = CFG.pipes.maxGapCenterYPaddingBottom;
@@ -661,8 +707,36 @@
                     const botRect = { x: p.x, y: (p.gapY + p.gap/2), w: p.w, h: (groundY - (p.gapY + p.gap/2)) };
                     if (circleRectDeepOverlap(circle, topRect, penetrationNeeded) || circleRectDeepOverlap(circle, botRect, penetrationNeeded)) { hit = true; break; }
                 }
-                if (circle.y + circle.r >= groundY) { die(); return; }
-                if (hit) { sfx.ha(); die(); }
+                // Ground crash
+                if (circle.y + circle.r >= groundY) {
+                  if (shieldActive) {
+                    // consume shield and bounce
+                    shieldActive = false;
+                    updateShieldHud();
+                    showToast('Shield broke!');
+                    sfx.swoosh();
+                    bird.vy = -360; // bounce up
+                    bird.y = groundY - CFG.bird.hitboxRadius - 2; // nudge above ground to avoid re-trigger
+                    return;
+                  } else {
+                    die();
+                    return;
+                  }
+                }
+                // Pipe/coral crash
+                if (hit) {
+                  if (shieldActive) {
+                    shieldActive = false;
+                    updateShieldHud();
+                    showToast('Shield broke!');
+                    sfx.swoosh();
+                    bird.vy = -360; // bounce up out of danger
+                    return;
+                  } else {
+                    sfx.ha();
+                    die();
+                  }
+                }
                 for (let i = pops.length-1; i >= 0; i--) { const pop = pops[i]; pop.t += dt; if (pop.t >= pop.duration) pops.splice(i, 1); }
                 for (let i = particles.length-1; i >= 0; i--) {
                     const p = particles[i];
@@ -760,6 +834,8 @@
                 } else {
                     medalEl.style.display = 'none';
                 }
+                shieldActive = false;
+                updateShieldHud();
                 overPanel.style.display = '';
             }
             window.showGameOver = showGameOver;
@@ -989,6 +1065,7 @@
                 document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
                 bestNow.textContent = String(storage.best);
                 updateBank(0); // render current saved bank value
+                updateShieldHud();
                 overPanel.style.display = 'none';
                 lastMs = performance.now();
                 if (!localStorage.getItem('player_name')) {
