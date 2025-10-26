@@ -648,8 +648,10 @@
                 name,
                 score,
                 at: Date.now()
-              }).then(() => console.log("Score saved successfully"))
-                .catch(e => console.error("Score save failed:", e));
+              }).then(() => {
+                console.log("Score saved successfully");
+                loadLeaderboard(); // Immediately update leaderboard after save
+              }).catch(e => console.error("Score save failed:", e));
             } catch (e) {
               console.warn("Failed to save score:", e);
             }
@@ -671,27 +673,28 @@
             document.getElementById("leaderboardOverBody").innerHTML = "Error: Database reference not initialized";
             return;
           }
-          firebase.database().ref("leaderboard")
-            .on("value", snap => {
-              const list = [];
-              snap.forEach(s => list.push(s.val()));
-              // Sort highest first
-              list.sort((a, b) => b.score - a.score);
-              // Only keep top 5
-              list.splice(5);
-              const medal = i => i === 0 ? "🥇" : 
-                                 i === 1 ? "🥈" : 
-                                 i === 2 ? "🥉" : `${i+1}.`;
-              const html = list.map((p, i) =>
-                `<div class="board-row"><span>${medal(i)} ${p.name}</span><strong>${p.score}</strong></div>`
-              ).join("") || "No scores yet";
-              document.getElementById("leaderboardSplashBody").innerHTML = html;
-              document.getElementById("leaderboardOverBody").innerHTML = html;
-            }, error => {
-              console.error('Leaderboard fetch error:', error.code, error.message);
-              document.getElementById("leaderboardSplashBody").innerHTML = `Error: ${error.message}`;
-              document.getElementById("leaderboardOverBody").innerHTML = `Error: ${error.message}`;
-            });
+          firebase.database().ref("leaderboard").on("value", snap => {
+            const list = [];
+            snap.forEach(s => list.push(s.val()));
+            // Sort by highest score first, then by timestamp (newest first) for equal scores
+            list.sort((a, b) => b.score - a.score || b.at - a.at);
+            // Keep only top 5
+            list.splice(5);
+            // Generate HTML with medals
+            const medal = i => i === 0 ? "🥇" : 
+                              i === 1 ? "🥈" : 
+                              i === 2 ? "🥉" : `${i+1}.`;
+            const html = list.map((p, i) => 
+              `<div class="board-row"><span>${medal(i)} ${p.name || "Anonymous"}</span><strong>${p.score}</strong></div>`
+            ).join("") || "No scores yet";
+            // Update both leaderboard displays
+            document.getElementById("leaderboardSplashBody").innerHTML = html;
+            document.getElementById("leaderboardOverBody").innerHTML = html;
+          }, error => {
+            console.error('Leaderboard fetch error:', error.code, error.message);
+            document.getElementById("leaderboardSplashBody").innerHTML = `Error: ${error.message}`;
+            document.getElementById("leaderboardOverBody").innerHTML = `Error: ${error.message}`;
+          });
         }
         function roundedRect(x, y, w, h, r) {
           ctx.beginPath();
