@@ -71,13 +71,15 @@
       }
       .bank {
         position: fixed;
-        top: 18px;
+        top: 28px;
         left: 50%;
         transform: translateX(-50%);
-        font-size: 36px;
-        color: #ffa500; /* orange */
+        font-size: 28px;
+        color: #ffa500;
         text-shadow: 0 2px 0 rgba(0,0,0,.6);
         pointer-events: none;
+        text-align: center;
+        line-height: 1;
       }
       .best {
         position: fixed;
@@ -254,7 +256,10 @@
     </div>
     <div class="hud" aria-hidden="true">
       <div id="scoreHud" class="score">0</div>
-      <div id="bankHud" class="bank">0</div>
+      <div class="bank">
+        <div style="font-size:14px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.6);margin-bottom:2px;">Shell Bank</div>
+        <div id="bankHud">0</div>
+      </div>
       <div id="bestHud" class="best">Highest: 0</div>
       <div id="splash" class="splash">
         <div class="splash-inner">
