@@ -71,11 +71,11 @@
       }
       .bank {
         position: fixed;
-        top: 28px;
+        top: 14px;
         left: 50%;
         transform: translateX(-50%);
-        font-size: 28px;
-        color: #ffa500;
+        font-size: 20px;
+        color: #e69500;
         text-shadow: 0 2px 0 rgba(0,0,0,.6);
         pointer-events: none;
         text-align: center;
@@ -257,7 +257,7 @@
     <div class="hud" aria-hidden="true">
       <div id="scoreHud" class="score">0</div>
       <div class="bank">
-        <div style="font-size:14px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.6);margin-bottom:2px;">Shell Bank</div>
+        <div style="font-size:12px;color:#ffa500;text-shadow:0 2px 0 rgba(0,0,0,.6);margin-bottom:2px;">Shell Bank</div>
         <div id="bankHud">0</div>
       </div>
       <div id="bestHud" class="best">Highest: 0</div>
@@ -266,6 +266,7 @@
           <div class="title" style="color:#000;text-shadow:none;">Flipper Fish</div>
           <div style="font-size:14px;opacity:.9;color:#000;text-shadow:none;">Made by Taylan&trade;</div>
           <div class="subtitle">Tap the screen to start!</div>
+          <button class="btn" style="margin-top:10px;">Shell Store</button>
           <div style="margin-top:6px;font-size:14px;opacity:.9">Avoid the coral, collect shells. Good luck!</div>
         </div>
         <div id="splashBoard" class="splash-board">
@@ -283,6 +284,7 @@
           <button id="againBtn" class="btn">Play Again</button>
           <button id="shareBtn" class="btn">Share</button>
           <button id="setNameBtn" class="btn">Change Name</button>
+          <button id="storeBtn" class="btn">Shell Store</button>
         </div>
         <div id="leaderboardOver" class="panel dark" style="margin-top:12px;padding:12px;">
           <div style="text-align:center;font-weight:800;">🏆 Leaderboard</div>
