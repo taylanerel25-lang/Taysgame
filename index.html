@@ -69,6 +69,16 @@
         text-shadow: 0 2px 0 rgba(0,0,0,.6);
         pointer-events: none;
       }
+      .bank {
+        position: fixed;
+        top: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 36px;
+        color: #ffa500; /* orange */
+        text-shadow: 0 2px 0 rgba(0,0,0,.6);
+        pointer-events: none;
+      }
       .best {
         position: fixed;
         top: 18px;
@@ -243,8 +253,8 @@
       <canvas id="game" width="360" height="640" aria-label="Flipper Fish"></canvas>
     </div>
     <div class="hud" aria-hidden="true">
-      <div class="soundbar"><button id="muteBtn" class="btn" aria-pressed="false" aria-label="Toggle sound">🔊 Sound</button></div>
       <div id="scoreHud" class="score">0</div>
+      <div id="bankHud" class="bank">0</div>
       <div id="bestHud" class="best">Highest: 0</div>
       <div id="splash" class="splash">
         <div class="splash-inner">
@@ -338,11 +348,11 @@
         }
         const splashEl = document.getElementById('splash');
         const hudScore = document.getElementById('scoreHud');
+        const bankHud = document.getElementById('bankHud');
         const overPanel = document.getElementById('gameOver');
         const scoreNow = document.getElementById('scoreNow');
         const bestNow = document.getElementById('bestNow');
         const medalEl = document.getElementById('medal');
-        const muteBtn = document.getElementById('muteBtn');
         const ariaLive = document.getElementById('aria');
         const toast = document.getElementById('toast');
         const nameModal = document.getElementById('nameModal');
@@ -357,13 +367,9 @@
         let spawnTimer = 0;
         let lastMs = performance.now();
         const storage = {
-          best: Number(localStorage.getItem('sb_best') || 0),
-          muted: localStorage.getItem('sb_muted') === '1'
+          best: Number(localStorage.getItem('sb_best') || 0)
         };
-        if (storage.muted) {
-          muteBtn.setAttribute('aria-pressed', 'true');
-          muteBtn.textContent = '🔇 Muted';
-        }
+        let shellBank = Number(localStorage.getItem('sb_bank') || 0);
         const BIRD_X = Math.round(W * 0.28);
         let bird = { x: BIRD_X, y: H*0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };
         const pipes = [];
@@ -391,7 +397,7 @@
         const onStageChange = () => { showToast(`Stage ${currentStage()+1}!`); };
         let audioCtx = null;
         const beep = (type, freq, dur, vol=0.2) => {
-          if (!audioCtx || storage.muted) return;
+          if (!audioCtx) return;
           try {
             const o = audioCtx.createOscillator(), g = audioCtx.createGain();
             o.type = type; o.frequency.value = freq; g.gain.value = vol;
@@ -416,7 +422,6 @@
         const deathMusic = new Audio("Super%20Mario%20Bros%20-%20game%20over%20song.mp3");
         deathMusic.volume = 0.45;
         function playMusic() {
-          if (storage.muted) return;
           bgMusic.play().catch(() => {});
         }
         function stopMusic() {
@@ -431,6 +436,11 @@
         const speedBase = () => lerp(CFG.world.speedStart, CFG.world.speedEnd, easeT(score, CFG.world.speedEndScore));
         const showToast = (msg) => { toast.textContent = msg; toast.classList.add('show'); clearTimeout(showToast._t); showToast._t = setTimeout(() => toast.classList.remove('show'), 1200); };
         const announce = (msg) => { const a = document.getElementById('aria'); a.textContent = ''; setTimeout(() => a.textContent = msg, 30); };
+        function updateBank(delta = 0) {
+          shellBank = Math.max(0, shellBank + delta);
+          localStorage.setItem('sb_bank', String(shellBank));
+          if (bankHud) bankHud.textContent = String(shellBank);
+        }
         function resetGame() {
           score = 0; hudScore.textContent = '0'; worldTime = 0; spawnTimer = -0.5;
           pipes.length = 0; pops.length = 0; collectibles.length = 0; particles.length = 0;
@@ -487,13 +497,6 @@
           if ([' ', 'w', 'arrowup'].includes(k)) { e.preventDefault(); flap(); }
           if (k === 'p' && state === 'running') { paused = !paused; showToast(paused ? 'Paused' : 'Resumed'); }
         }, { passive: false });
-        muteBtn.addEventListener('click', () => {
-          storage.muted = !storage.muted; localStorage.setItem('sb_muted', storage.muted ? '1' : '0');
-          muteBtn.setAttribute('aria-pressed', storage.muted ? 'true' : 'false');
-          muteBtn.textContent = storage.muted ? '🔇 Muted' : '🔊 Sound';
-          if (storage.muted) stopMusic();
-          else playMusic();
-        });
         document.getElementById('againBtn').addEventListener('click', () => {
           overPanel.style.display = 'none'; splashEl.style.display = '';
           state = 'ready'; resetGame(); announce('Back to splash');
@@ -513,7 +516,7 @@
         function saveName() {
           const raw = (nameInput.value || '').trim();
           const clean = raw
-            .replace(/[.#$/[\]]/g, '')  // Firebase key safety
+            .replace(/[.#$/[\]]/g, '')
             .slice(0, 24);
           if (!clean) { showToast('Please enter a name'); nameInput.focus(); return; }
           localStorage.setItem('player_name', clean);
@@ -567,6 +570,7 @@
             if (!coll.collected && Math.hypot(bird.x - coll.x, bird.y - coll.y) < CFG.bird.hitboxRadius + CFG.collectibles.size / 2) {
               coll.collected = true;
               score += CFG.collectibles.bonus; hudScore.textContent = String(score);
+              updateBank(1); // +1 shell into the persistent bank
               sfx.collect(); showToast(`+${CFG.collectibles.bonus} Bonus!`);
               for (let i = 0; i < CFG.particles.collectCount; i++) {
                 particles.push({
@@ -617,10 +621,8 @@
           if (navigator.vibrate) navigator.vibrate(80);
           sfx.die();
           stopMusic();
-          if (!storage.muted) {
-            deathMusic.currentTime = 0;
-            deathMusic.play().catch(() => {});
-          }
+          deathMusic.currentTime = 0;
+          deathMusic.play().catch(() => {});
           const fallUntil = () => {
             const now = performance.now();
             const dt = Math.min((now - lastMs)/1000, 1/30);
@@ -636,13 +638,10 @@
           fallUntil();
         }
         function collapseLegacyFor(name, key) {
-          // If there are legacy pushes with the same display name, remove the lower ones.
           const ref = firebase.database().ref("leaderboard");
           ref.once("value").then(snap => {
             const toRemove = [];
-            let best = null;
-
-            snap.forEach(child => {
+            let best = null;  snap.forEach(child => {
               const v = child.val();
               if (!v || v.name !== name) return;
               if (!best || v.score > best.score || (v.score === best.score && v.at > best.at)) {
@@ -652,8 +651,6 @@
                 toRemove.push(child.key);
               }
             });
-
-            // Remove the losers
             toRemove.forEach(k => ref.child(k).remove().catch(() => {}));
           }).catch(() => {});
         }
@@ -668,21 +665,17 @@
           document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
           if (window.dbRef) {
             try {
-              // Normalize player key so "Tay" and "tay" map to the same record
               const key = (name || "Anonymous")
                 .trim()
                 .toLowerCase()
-                .replace(/\s+/g, ' ')        // collapse spaces
-                .replace(/[.#$/[\]]/g, '');  // Firebase key-safe
-
+                .replace(/\s+/g, ' ')
+                .replace(/[.#$/[\]]/g, '');
               const playerRef = firebase.database().ref("leaderboard").child(key);
-
               playerRef.once("value").then(snap => {
                 const current = snap.val();
-                // Only write if new or higher
                 if (!current || (typeof current.score !== 'number') || score > current.score) {
                   playerRef.set({
-                    name,        // keep original casing for display
+                    name,
                     score,
                     at: Date.now()
                   }).then(() => {
@@ -712,47 +705,31 @@
             document.getElementById("leaderboardOverBody").innerHTML = "Error: Database reference not initialized";
             return;
           }
-
-          // Use .on("value") as before (live updates)
           firebase.database().ref("leaderboard").on("value", snap => {
-            // Build a map of best score per name to handle any legacy duplicates
             const bestByName = Object.create(null);
-
-            // Snapshot may contain either:
-            // - keyed entries (after PATCH 1): {name, score, at}
-            // - legacy pushed entries:       {name, score, at}
             snap.forEach(child => {
               const v = child.val();
               if (!v) return;
               const nm = (v.name || "Anonymous").toString();
               const sc = Number(v.score || 0);
               const at = Number(v.at || 0);
-
               if (!bestByName[nm] || sc > bestByName[nm].score || (sc === bestByName[nm].score && at > bestByName[nm].at)) {
                 bestByName[nm] = { name: nm, score: sc, at };
               }
             });
-
-            // Convert to array, sort by score desc then by newest time
             const list = Object.values(bestByName)
               .sort((a, b) => b.score - a.score || b.at - a.at)
               .slice(0, 5);
-
-            // Medal display
             const medal = i => i === 0 ? "🥇" :
                               i === 1 ? "🥈" :
                               i === 2 ? "🥉" : `${i+1}.`;
-
             const html = list.length
               ? list.map((p, i) =>
                   `<div class="board-row"><span>${medal(i)} ${p.name || "Anonymous"}</span><strong>${p.score}</strong></div>`
                 ).join("")
               : "No scores yet";
-
-            // Update both leaderboard displays
             document.getElementById("leaderboardSplashBody").innerHTML = html;
             document.getElementById("leaderboardOverBody").innerHTML = html;
-
           }, error => {
             console.error('Leaderboard fetch error:', error.code, error.message);
             document.getElementById("leaderboardSplashBody").innerHTML = `Error: ${error.message}`;
@@ -946,6 +923,7 @@
           hudScore.textContent = '0';
           document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
           bestNow.textContent = String(storage.best);
+          updateBank(0); // render current saved bank value
           overPanel.style.display = 'none';
           lastMs = performance.now();
           if (!localStorage.getItem('player_name')) {
