@@ -512,7 +512,7 @@
             let shieldActive = false;
             const shieldHud = document.getElementById('shieldHud');
             function updateShieldHud() {
-              shieldHud.style.display = shieldActive ? '' : 'none';
+              shieldHud.style.display = shieldActive ? 'block' : 'none';
             }
             const particles = [];
             const medalFor = (s) => s>=50 ? ['🏆 Platinum', '#e5e4e2'] : s>=30 ? ['🥇 Gold', '#f7c32e'] : s>=20 ? ['🥈 Silver', '#c0c0c0'] : s>=10 ? ['🥉 Bronze', '#cd7f32'] : null;
