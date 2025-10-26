@@ -412,6 +412,8 @@
             playerFishImg.src = "https://pngimg.com/uploads/fish/small/fish_PNG25116.png";
             const bgFishImg = new Image();
             bgFishImg.src = "https://pngimg.com/uploads/fish/small/fish_PNG25109.png";
+            const seaweedImg = new Image();
+            seaweedImg.src = "seaweed.png";
             const CFG = {
                 canvas: { width: 360, height: 640 },
                 physics: { gravity: 1200, flapImpulse: -360, maxFallSpeed: 720 },
@@ -952,7 +954,17 @@
                         ctx.fill();
                     };
                     drawPipe(p.x, 0, p.w, topH, true);
-                    drawPipe(p.x, botY, p.w, botH, false);
+                    if (seaweedImg.complete && seaweedImg.naturalWidth > 0) {
+                        const imgRatio = seaweedImg.naturalHeight / seaweedImg.naturalWidth;
+                        const drawW = p.w;
+                        const drawH = drawW * imgRatio;
+                        for (let yy = botY; yy < botY + botH; yy += drawH) {
+                            const clipH = Math.min(drawH, (botY + botH) - yy);
+                            ctx.drawImage(seaweedImg, p.x, yy, drawW, clipH);
+                        }
+                    } else {
+                        drawPipe(p.x, botY, p.w, botH, false);
+                    }
                 }
             }
             function drawBubbles(bubbles, opacity=0.9) {
