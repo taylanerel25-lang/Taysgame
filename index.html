@@ -68,6 +68,7 @@
             color: #fff;
             text-shadow: 0 2px 0 rgba(0,0,0,.6);
             pointer-events: none;
+            z-index: 3;
         }
         .bank {
             position: fixed;
@@ -96,6 +97,7 @@
             pointer-events: none;
             color: #000;
             text-shadow: 0 2px 0 rgba(255,255,255,.5);
+            z-index: 2;
         }
         .splash-inner {
             position: absolute;
@@ -207,16 +209,16 @@
             opacity: 1;
             transform: translate(-50%, -6px);
         }
-        /* Shield icon next to score */
         .shield {
             position: fixed;
-            top: 28px;          /* lines up visually with the big score */
-            right: 86px;        /* sits just left of the score */
+            top: 28px;
+            right: 86px;
             font-size: 28px;
             color: #fff;
             text-shadow: 0 2px 0 rgba(0,0,0,.6);
             pointer-events: none;
-            display: none;      /* toggled via JS */
+            display: none;
+            z-index: 3;
         }
         .soundbar {
             position: fixed;
@@ -294,6 +296,22 @@
         .splash-inner .btn {
             pointer-events: auto;
         }
+        /* Ensure score/shield render above splash */
+        .score, .shield { z-index: 3; }
+        .splash { z-index: 2; }
+        /* Centered countdown */
+        .countdown {
+            position: fixed;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            font-size: 64px;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 2px 0 rgba(0,0,0,.6);
+            pointer-events: none;
+            z-index: 4;
+        }
     </style>
 </head>
 <body>
@@ -303,6 +321,7 @@
     <div class="hud" aria-hidden="true">
         <div id="scoreHud" class="score">0</div>
         <div id="shieldHud" class="shield" aria-hidden="true" title="Shield active">🛡</div>
+        <div id="countdownHud" class="countdown" aria-hidden="true" style="display:none;"></div>
         <div class="bank">
             <div style="font-size:12px;color:#ffa500;text-shadow:0 2px 0 rgba(0,0,0,.6);margin-bottom:2px;">Shell Bank</div>
             <div id="bankHud">0</div>
@@ -356,7 +375,6 @@
             <p style="opacity:.8;font-size:14px;margin-top:4px;">
                 Spend shells you collect in-game!
             </p>
-            <!-- Store item: Shield -->
             <div id="shieldItem" style="margin-top:12px;padding:12px;border:2px solid #eee;border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
               <div style="text-align:left;">
                 <div style="font-weight:800;">🛡 Shield (one-hit)</div>
@@ -431,23 +449,20 @@
             const nameInput = document.getElementById('playerNameInput');
             const saveNameBtn = document.getElementById('saveNameBtn');
             const setNameBtn = document.getElementById('setNameBtn');
-            // Store DOM
+            const countdownEl = document.getElementById('countdownHud');
+            let respawnCountdown = 0;
             const storeModal = document.getElementById('storeModal');
             const closeStoreBtn = document.getElementById('closeStoreBtn');
             const buyShieldBtn = document.getElementById('buyShieldBtn');
-            // Open store from splash (the single button inside .splash-inner)
             document.querySelector('.splash-inner .btn').addEventListener('click', () => {
               storeModal.style.display = 'grid';
             });
-            // Open store from Game Over panel
             document.getElementById('storeBtn').addEventListener('click', () => {
               storeModal.style.display = 'grid';
             });
-            // Close store
             closeStoreBtn.addEventListener('click', () => {
               storeModal.style.display = 'none';
             });
-            // Buy Shield for 30 shells
             buyShieldBtn.addEventListener('click', () => {
               if (shieldActive) {
                 showToast('Shield already equipped');
@@ -492,7 +507,6 @@
             const multiplier = 1;
             window.score = 0;
             let collectibles = [];
-            // Shield state (one-hit protection)
             let shieldActive = false;
             const shieldHud = document.getElementById('shieldHud');
             function updateShieldHud() {
@@ -557,8 +571,6 @@
                 bird = { x: BIRD_X, y: H*0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };
                 sfx.swoosh(); lastStage = -1;
                 stopMusic();
-                shieldActive = false;
-                updateShieldHud();
                 document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
             }
             function fitCanvas() {
@@ -651,6 +663,23 @@
                     collectibles.push({ x: W + 10 + CFG.pipes.width / 2, y: collY, collected: false });
                 }
             }
+            function startRespawn() {
+                shieldActive = false;
+                updateShieldHud();
+                state = 'respawn';
+                respawnCountdown = 3.0;
+                pipes.length = 0;
+                collectibles.length = 0;
+                pops.length = 0;
+                spawnTimer = -0.5;
+                bird.vy = 0;
+                bird.rot = 0;
+                bird.x = BIRD_X;
+                bird.y = H * 0.5;
+                countdownEl.style.display = '';
+                countdownEl.textContent = Math.ceil(respawnCountdown).toString();
+                stopMusic();
+            }
             function update(dt) {
                 if (state !== 'running' || paused) return;
                 const speed = speedBase();
@@ -683,7 +712,7 @@
                     if (!coll.collected && Math.hypot(bird.x - coll.x, bird.y - coll.y) < CFG.bird.hitboxRadius + CFG.collectibles.size / 2) {
                         coll.collected = true;
                         score += CFG.collectibles.bonus; hudScore.textContent = String(score);
-                        updateBank(1); // +1 shell into the persistent bank
+                        updateBank(1);
                         sfx.collect(); showToast(`+${CFG.collectibles.bonus} Bonus!`);
                         for (let i = 0; i < CFG.particles.collectCount; i++) {
                             particles.push({
@@ -709,38 +738,23 @@
                     const botRect = { x: p.x, y: (p.gapY + p.gap/2), w: p.w, h: (groundY - (p.gapY + p.gap/2)) };
                     if (circleRectDeepOverlap(circle, topRect, penetrationNeeded) || circleRectDeepOverlap(circle, botRect, penetrationNeeded)) { hit = true; break; }
                 }
-                // Ground crash
                 if (circle.y + circle.r >= groundY) {
-                  if (shieldActive) {
-                    // consume shield and bounce
-                    shieldActive = false;
-                    updateShieldHud();
-                    showToast('Shield broke!');
-                    sfx.swoosh();
-                    bird.vy = -360; // bounce up
-                    bird.y = groundY - CFG.bird.hitboxRadius - 2; // nudge above ground to avoid re-trigger
-                    return;
-                  } else {
+                    if (shieldActive) {
+                        startRespawn();
+                        return;
+                    } else {
+                        die();
+                        return;
+                    }
+                }
+                if (hit) {
+                    if (shieldActive) {
+                        startRespawn();
+                        return;
+                    }
+                    sfx.ha();
                     die();
                     return;
-                  }
-                }
-                // Pipe/coral crash
-                if (hit) {
-                  if (shieldActive) {
-                    shieldActive = false;
-                    updateShieldHud();
-                    showToast('Shield broke!');
-                    sfx.swoosh();
-                    // bounce clear of coral so we don't instantly die
-                    bird.vy = -360;
-                    bird.y -= 20;
-                    for (const p of pipes) p.scored = true; // avoid double scoring
-                    return; // stop death this frame
-                  }
-                  sfx.ha();
-                  die();
-                  return;
                 }
                 for (let i = pops.length-1; i >= 0; i--) { const pop = pops[i]; pop.t += dt; if (pop.t >= pop.duration) pops.splice(i, 1); }
                 for (let i = particles.length-1; i >= 0; i--) {
@@ -839,8 +853,6 @@
                 } else {
                     medalEl.style.display = 'none';
                 }
-                shieldActive = false;
-                updateShieldHud();
                 overPanel.style.display = '';
             }
             window.showGameOver = showGameOver;
@@ -1069,7 +1081,7 @@
                 hudScore.textContent = '0';
                 document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
                 bestNow.textContent = String(storage.best);
-                updateBank(0); // render current saved bank value
+                updateBank(0);
                 updateShieldHud();
                 overPanel.style.display = 'none';
                 lastMs = performance.now();
@@ -1085,9 +1097,23 @@
                 try {
                     const dt = clamp((now - lastMs)/1000, 0, 1/30);
                     lastMs = now;
-                    if (state === 'ready') worldTime += dt;
-                    else if (state === 'running' && !paused) { worldTime += dt; update(dt); }
+                    if (state === 'ready') {
+                        worldTime += dt;
+                    } else if (state === 'respawn') {
+                        respawnCountdown = Math.max(0, respawnCountdown - dt);
+                        const n = Math.ceil(respawnCountdown);
+                        countdownEl.textContent = n > 0 ? String(n) : '';
+                        worldTime += dt;
+                    } else if (state === 'running' && !paused) {
+                        worldTime += dt;
+                        update(dt);
+                    }
                     render();
+                    if (state === 'respawn' && respawnCountdown <= 0) {
+                        countdownEl.style.display = 'none';
+                        state = 'running';
+                        playMusic();
+                    }
                 } catch (e) {
                     console.error('Game loop error:', e);
                 }
