@@ -64,7 +64,7 @@
         position: fixed;
         top: 18px;
         right: 14px;
-        font-size: 56px; /* Doubled from 28px */
+        font-size: 56px;
         color: #fff;
         text-shadow: 0 2px 0 rgba(0,0,0,.6);
         pointer-events: none;
@@ -392,7 +392,10 @@
   // Background Music 🎶
   const bgMusic = new Audio("Flappy%20Bird%20Theme%20Song.mp3");
   bgMusic.loop = true;
-  bgMusic.volume = 0.35; // Adjust volume if too loud
+  bgMusic.volume = 0.35;
+  // Death Music 💀🎶
+  const deathMusic = new Audio("Super%20Mario%20Bros%20-%20game%20over%20song.mp3");
+  deathMusic.volume = 0.45;
   function playMusic() {
     if (storage.muted) return;
     bgMusic.play().catch(() => {});
@@ -414,7 +417,7 @@
     pipes.length = 0; pops.length = 0; collectibles.length = 0; particles.length = 0;
     bird = { x: BIRD_X, y: H*0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };
     sfx.swoosh(); lastStage = -1;
-    stopMusic(); // Stop music on reset
+    stopMusic();
     document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
   }
   function fitCanvas() {
@@ -444,7 +447,7 @@
     }
     if (state === 'ready') {
       state = 'running';
-      playMusic(); // Start music on game start
+      playMusic();
       announce('Game started');
       splashEl.style.display = 'none';
     }
@@ -596,7 +599,11 @@
     state = 'dead'; paused = false;
     if (navigator.vibrate) navigator.vibrate(80);
     sfx.die();
-    stopMusic(); // Stop music on death
+    stopMusic();
+    if (!storage.muted) {
+      deathMusic.currentTime = 0;
+      deathMusic.play().catch(() => {});
+    }
     const fallUntil = () => {
       const now = performance.now();
       const dt = Math.min((now - lastMs)/1000, 1/30);
