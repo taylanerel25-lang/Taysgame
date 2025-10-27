@@ -379,7 +379,7 @@
               <div style="text-align:left;">
                 <div style="font-weight:800;">🛡 Shield (one-hit)</div>
                 <div style="font-size:14px;opacity:.8;">Protects you from one crash this run.</div>
-                <div style="font-size:14px;margin-top:4px;">Cost: <strong>10</strong> 🐚</div>
+                <div style="font-size:14px;margin-top:4px;">Cost: <strong>30</strong> 🐚</div>
               </div>
               <button id="buyShieldBtn" class="btn">Buy</button>
             </div>
@@ -468,7 +468,7 @@
                 showToast('Shield already equipped');
                 return;
               }
-              const COST = 10;
+              const COST = 30;
               if (shellBank < COST) {
                 showToast('Not enough shells');
                 return;
