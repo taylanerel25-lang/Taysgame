@@ -1205,10 +1205,18 @@
                     if (state === 'ready') {
                         worldTime += dt;
                     } else if (state === 'respawn') {
-                        respawnCountdown = Math.max(0, respawnCountdown - dt);
-                        const n = Math.ceil(respawnCountdown);
-                        countdownEl.textContent = n > 0 ? String(n) : '';
-                        worldTime += dt;
+    respawnCountdown = Math.max(0, respawnCountdown - dt);
+    const n = Math.ceil(respawnCountdown);
+    countdownEl.textContent = n > 0 ? String(n) : '';
+    worldTime += dt;
+
+    if (respawnCountdown <= 0) {
+        state = 'running';
+        countdownEl.style.display = 'none';
+        playMusic();
+    }
+}
+
                     } else if (state === 'running' && !paused) {
                         worldTime += dt;
                         update(dt);
