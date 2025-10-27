@@ -335,6 +335,7 @@
                 <div style="font-size:14px;opacity:.9;color:#000;text-shadow:none;">Made by TayGames&trade;</div>
                 <div class="subtitle">Tap the screen to start!</div>
                 <button class="btn" style="margin-top:10px;">Shell Store</button>
+                <button id="howToPlayBtn" class="btn" style="margin-top:10px;">How to Play</button>
                 <div style="margin-top:6px;font-size:14px;opacity:.9">Avoid the sea pillars, collect shells. Good luck!</div>
             </div>
             <div id="splashBoard" class="splash-board">
@@ -388,6 +389,21 @@
             </div>
         </div>
     </div>
+    <div id="howToModal" class="store-modal" role="dialog" aria-modal="true">
+    <div class="store-card">
+      <button id="closeHowToBtn">✕</button>
+      <h3>How to Play</h3>
+      <p style="text-align:left;font-size:15px;margin-top:6px;">
+        • Tap to swim up<br>
+        • Avoid the coral pillars<br>
+        • Collect 🐚 shells for bonus points<br>
+        • Every 30 shells = buy a 🛡 shield in the store<br>
+        • Collect 15 shells in one run = 🧲 magnet power-up (pulls shells toward you!)<br><br>
+        This is the first app I’ve made — started for family & friends, and sharing it with the world 🐟<br>
+        More updates coming soon. Let me know if you enjoy it!
+      </p>
+    </div>
+  </div>
     <div id="aria" class="sr-only" aria-live="polite"></div>
     <div id="toast" class="toast" role="status"></div>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -461,7 +477,7 @@
                 "Y29jaz==", "Y29ja3M=", "Y29ja3N1Y2tlcg==", "Y29ja3N1Y2s=",
                 "Y3VudA==", "cHVzc3k=", "dHdhdA==", "c2x1dA==", "d2hvcmU=", "c2tpbmtlcg==", "bWlsZg==",
                 "cHVzc3lmYWNl", "em9vZmk=", "ZHVmZg==", "Y3JhcA==", "Ym9sbG9ja3M=", "YnVnZ2Vy", "dG9zc2Vy", "YmVsbGVuZA==",
-                "ZG91Y2hl", "ZG91Y2hiYWc=", "a25vYg==", "Z29kZGFtbg==", "ZGFtbml0", "c2NyZXc=", "c3Vja2l0",
+                "ZG91Y2hl", "ZG91Y2hiYWc=", "a25vYg==", "Z29kZGFtbg==", "ZGFtbml0", "c3VyZXc=", "c3Vja2l0",
                 "ZnVja3lvdQ==", "ZWF0c2hpdA==", "Z28tdG8taGVsbA==", "c3Vja215", "c3Vja2l0dXA=",
                 "aWRpb3Q=", "ZHVtYmFzcw==", "amFja2Fzcw==", "bW9yb24=", "aWRpb3RpYw==", "azlzcyI=",
                 "c3R1cGlk", "aG9yZWJhZw==", "bG93bGlmZQ==",
@@ -529,6 +545,14 @@
                 updateShieldHud();
                 showToast('Shield equipped!');
             });
+            document.getElementById('howToPlayBtn').addEventListener('click', () => {
+    document.getElementById('howToModal').style.display = 'grid';
+  });
+  document.getElementById('closeHowToBtn').addEventListener('click', () => {
+    document.getElementById('howToModal').style.display = 'none';
+  });
+            addEventListener('keydown', (e) => { if (e.key === 'Escape') document.getElementById('howToModal').style.display = 'none'; });
+  document.getElementById('howToModal').addEventListener('click', (e) => { if (e.target.id === 'howToModal') e.currentTarget.style.display = 'none'; });
             const W = CFG.canvas.width, H = CFG.canvas.height;
             const groundY = H - CFG.ground.height;
             let state = 'ready';
