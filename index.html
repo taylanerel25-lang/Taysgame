@@ -7,309 +7,309 @@
     <meta name="theme-color" content="#20b2aa" />
     <link rel="manifest" href="manifest.json">
     <style>
-        :root {  
-            --bg: #20b2aa;  
-            --panel: rgba(255,255,255,.9);  
-            --panel-dark: rgba(0,0,0,.65);  
-            --text: #1d1d1f;  
-        }  
-        html, body {  
-            height: 100%;  
-            margin: 0;  
-            background: #111;  
-            color: var(--text);  
-            font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans";  
-            overscroll-behavior: none;  
-        }  
-        .wrap {  
-            position: fixed;  
-            inset: 0;  
-            display: grid;  
-            place-items: center;  
-            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);  
-        }  
-        canvas {  
-            background: var(--bg);  
-            box-shadow: 0 10px 40px rgba(0,0,0,.35);  
-            border-radius: 16px;  
-            image-rendering: pixelated;  
-            touch-action: none;  
-        }  
-        .hud {  
-            position: fixed;  
-            inset: 0;  
-            pointer-events: none;  
-            display: grid;  
-            place-items: center;  
-            font-weight: 700;  
-            letter-spacing: .5px;  
-            user-select: none;  
-        }  
-        .btn {  
-            appearance: none;  
-            border: 0;  
-            background: var(--panel);  
-            color: #111;  
-            padding: 8px 12px;  
-            border-radius: 999px;  
-            font-weight: 700;  
-            box-shadow: 0 2px 8px rgba(0,0,0,.15);  
-            cursor: pointer;  
-            line-height: 1;  
-        }  
-        .btn:focus {  
-            outline: 3px solid #000;  
-            outline-offset: 2px;  
-        }  
-        .score {  
-            position: fixed;  
-            top: calc(env(safe-area-inset-top) + 24px);  
-            right: 14px;  
-            font-size: 56px;  
-            color: #fff;  
-            text-shadow: 0 2px 0 rgba(0,0,0,.6);  
-            pointer-events: none;  
-            z-index: 3;  
-            display: flex;  
-            align-items: center;  
-            gap: 8px;  
-        }  
-        .bank {  
-            position: fixed;  
-            top: calc(env(safe-area-inset-top) + 35px);  
-            left: 50%;  
-            transform: translateX(-50%);  
-            font-size: 20px;  
-            color: #e69500;  
-            text-shadow: 0 2px 0 rgba(0,0,0,.6);  
-            pointer-events: none;  
-            text-align: center;  
-            line-height: 1;  
-        }  
-        .best {  
-            position: fixed;  
-            top: calc(env(safe-area-inset-top) + 35px);  
-            left: 14px;  
-            font-size: 16px;  
-            color: #fff;  
-            text-shadow: 0 2px 0 rgba(0,0,0,.6);  
-            pointer-events: none;  
-        }  
-        .splash {  
-            position: absolute;  
-            inset: 0;  
-            pointer-events: none;  
-            color: #000;  
-            text-shadow: 0 2px 0 rgba(255,255,255,.5);  
-            z-index: 2;  
-        }  
-        .splash-inner {  
-            position: absolute;  
-            left: 50%;  
-            transform: translateX(-50%);  
-            top: 10%;  
-            width: min(92%, 360px);  
-            text-align: center;  
-            pointer-events: none;  
-        }  
-        .title {  
-            font-size: 36px;  
-            margin: 2px 0 8px;  
-        }  
-        .subtitle {  
-            font-size: 18px;  
-            opacity: .95;  
-        }  
-        .splash-board {  
-            position: absolute;  
-            left: 50%;  
-            transform: translateX(-50%);  
-            bottom: calc(env(safe-area-inset-bottom) + 40px) !important;  
-            width: min(92%, 360px);  
-            background: rgba(0,0,0,.65);  
-            color: #f0f0f0;  
-            border-radius: 18px;  
-            padding: 14px;  
-            box-shadow: 0 8px 30px rgba(0,0,0,.25);  
-            pointer-events: auto;  
-        }  
-        .board-head {  
-            font-size: 20px;  
-            font-weight: 800;  
-            text-align: center;  
-            margin: 0 0 6px;  
-        }  
-        .board-row {  
-            display: flex;  
-            justify-content: space-between;  
-            align-items: center;  
-            font-size: 16px;  
-            padding: 6px 0;  
-        }  
-        .panel {  
-            min-width: 280px;  
-            max-width: 90vw;  
-            background: var(--panel);  
-            color: #111;  
-            border-radius: 18px;  
-            padding: 16px;  
-            box-shadow: 0 8px 30px rgba(0,0,0,.25);  
-            pointer-events: auto;  
-            transform: translateY(8px);  
-        }  
-        .panel h2 {  
-            margin: 0 0 8px 0;  
-            font-size: 22px;  
-            text-align: center;  
-        }  
-        .panel .row {  
-            display: flex;  
-            justify-content: space-between;  
-            align-items: center;  
-            font-size: 18px;  
-            padding: 6px 0;  
-        }  
-        .panel .actions {  
-            display: grid;  
-            grid-template-columns: 1fr;  
-            gap: 10px;  
-            margin-top: 12px;  
+        :root {
+            --bg: #20b2aa;
+            --panel: rgba(255,255,255,.9);
+            --panel-dark: rgba(0,0,0,.65);
+            --text: #1d1d1f;
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            background: #111;
+            color: var(--text);
+            font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans";
+            overscroll-behavior: none;
+        }
+        .wrap {
+            position: fixed;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+        canvas {
+            background: var(--bg);
+            box-shadow: 0 10px 40px rgba(0,0,0,.35);
+            border-radius: 16px;
+            image-rendering: pixelated;
+            touch-action: none;
+        }
+        .hud {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            display: grid;
+            place-items: center;
+            font-weight: 700;
+            letter-spacing: .5px;
+            user-select: none;
+        }
+        .btn {
+            appearance: none;
+            border: 0;
+            background: var(--panel);
+            color: #111;
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(0,0,0,.15);
+            cursor: pointer;
+            line-height: 1;
+        }
+        .btn:focus {
+            outline: 3px solid #000;
+            outline-offset: 2px;
+        }
+        .score {
+            position: fixed;
+            top: calc(env(safe-area-inset-top) + 24px);
+            right: 14px;
+            font-size: 56px;
+            color: #fff;
+            text-shadow: 0 2px 0 rgba(0,0,0,.6);
+            pointer-events: none;
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .bank {
+            position: fixed;
+            top: calc(env(safe-area-inset-top) + 35px);
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            color: #e69500;
+            text-shadow: 0 2px 0 rgba(0,0,0,.6);
+            pointer-events: none;
+            text-align: center;
+            line-height: 1;
+        }
+        .best {
+            position: fixed;
+            top: calc(env(safe-area-inset-top) + 35px);
+            left: 14px;
+            font-size: 16px;
+            color: #fff;
+            text-shadow: 0 2px 0 rgba(0,0,0,.6);
+            pointer-events: none;
+        }
+        .splash {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            color: #000;
+            text-shadow: 0 2px 0 rgba(255,255,255,.5);
+            z-index: 2;
+        }
+        .splash-inner {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 10%;
+            width: min(92%, 360px);
+            text-align: center;
+            pointer-events: none;
+        }
+        .title {
+            font-size: 36px;
+            margin: 2px 0 8px;
+        }
+        .subtitle {
+            font-size: 18px;
+            opacity: .95;
+        }
+        .splash-board {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: calc(env(safe-area-inset-bottom) + 40px) !important;
+            width: min(92%, 360px);
+            background: rgba(0,0,0,.65);
+            color: #f0f0f0;
+            border-radius: 18px;
+            padding: 14px;
+            box-shadow: 0 8px 30px rgba(0,0,0,.25);
+            pointer-events: auto;
+        }
+        .board-head {
+            font-size: 20px;
+            font-weight: 800;
+            text-align: center;
+            margin: 0 0 6px;
+        }
+        .board-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+            padding: 6px 0;
+        }
+        .panel {
+            min-width: 280px;
+            max-width: 90vw;
+            background: var(--panel);
+            color: #111;
+            border-radius: 18px;
+            padding: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,.25);
+            pointer-events: auto;
+            transform: translateY(8px);
+        }
+        .panel h2 {
+            margin: 0 0 8px 0;
+            font-size: 22px;
+            text-align: center;
+        }
+        .panel .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 18px;
+            padding: 6px 0;
+        }
+        .panel .actions {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-top: 12px;
             justify-items: center;
-        }  
-        .pill {  
-            display: inline-flex;  
-            align-items: center;  
-            gap: 6px;  
-            background: rgba(0,0,0,.08);  
-            padding: 4px 10px;  
-            border-radius: 999px;  
-            font-size: 14px;  
-        }  
-        .sr-only {  
-            position: absolute !important;  
-            width: 1px;  
-            height: 1px;  
-            padding: 0;  
-            margin: -1px;  
-            overflow: hidden;  
-            clip: rect(0,0,0,0);  
-            white-space: nowrap;  
-            border: 0;  
-        }  
-        .toast {  
-            position: fixed;  
-            bottom: 16px;  
-            left: 50%;  
-            transform: translateX(-50%);  
-            background: rgba(0,0,0,.85);  
-            color: #fff;  
-            padding: 8px 12px;  
-            border-radius: 10px;  
-            font-size: 14px;  
-            pointer-events: none;  
-            opacity: 0;  
-            transition: opacity .25s ease, transform .25s ease;  
-        }  
-        .toast.show {  
-            opacity: 1;  
-            transform: translate(-50%, -6px);  
-        }  
-        .shield {  
-            font-size: 24px;  
-            color: #fff;  
-            text-shadow: 0 2px 0 rgba(0,0,0,.6);  
-            pointer-events: none;  
-            display: none;  
-        }  
-        .soundbar {  
-            position: fixed;  
-            top: 12px;  
-            left: 50%;  
-            transform: translateX(-50%);  
-            pointer-events: auto;  
-        }  
-        .name-modal {  
-            position: fixed;  
-            inset: 0;  
-            display: none;  
-            place-items: center;  
-            background: rgba(0,0,0,.35);  
-        }  
-        .name-card {  
-            width: min(92%, 360px);  
-            background: #fff;  
-            color: #111;  
-            border-radius: 18px;  
-            padding: 16px;  
-            box-shadow: 0 10px 40px rgba(0,0,0,.35);  
-        }  
-        .name-card h3 {  
-            margin: 0 0 8px 0;  
-            text-align: center;  
-        }  
-        .name-row {  
-            display: flex;  
-            gap: 8px;  
-            margin-top: 10px;  
-        }  
-        .name-row input {  
-            flex: 1;  
-            border-radius: 12px;  
-            border: 2px solid #ddd;  
-            padding: 10px 12px;  
-            font-size: 16px;  
-        }  
-        .name-row button {  
-            white-space: nowrap;  
-        }  
-        .store-modal {  
-            position: fixed;  
-            inset: 0;  
-            display: none;  
-            place-items: center;  
-            background: rgba(0,0,0,.35);  
-            z-index: 9999;  
-        }  
-        .store-card {  
-            width: min(92%, 400px);  
-            background: #fff;  
-            color: #111;  
-            border-radius: 18px;  
-            padding: 16px;  
-            box-shadow: 0 10px 40px rgba(0,0,0,.35);  
-            position: relative;  
-            text-align: center;  
-        }  
-        #closeStoreBtn {  
-            position: absolute;  
-            top: 8px;  
-            right: 8px;  
-            background: var(--panel-dark);  
-            color: #fff;  
-            border: none;  
-            width: 30px;  
-            height: 30px;  
-            border-radius: 50%;  
-            font-size: 18px;  
-            line-height: 30px;  
-            cursor: pointer;  
-        }  
-        .splash-inner .btn {  
-            pointer-events: auto;  
-        }  
-        .score { z-index: 3; }  
-        .splash { z-index: 2; }  
-        .countdown {  
-            position: fixed;  
-            inset: 0;  
-            display: grid;  
-            place-items: center;  
-            font-size: 64px;  
-            font-weight: 900;  
-            color: #fff;  
-            text-shadow: 0 2px 0 rgba(0,0,0,.6);  
-            pointer-events: none;  
-            z-index: 4;  
+        }
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0,0,0,.08);
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 14px;
+        }
+        .sr-only {
+            position: absolute !important;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border: 0;
+        }
+        .toast {
+            position: fixed;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,.85);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity .25s ease, transform .25s ease;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translate(-50%, -6px);
+        }
+        .shield {
+            font-size: 24px;
+            color: #fff;
+            text-shadow: 0 2px 0 rgba(0,0,0,.6);
+            pointer-events: none;
+            display: none;
+        }
+        .soundbar {
+            position: fixed;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            pointer-events: auto;
+        }
+        .name-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            place-items: center;
+            background: rgba(0,0,0,.35);
+        }
+        .name-card {
+            width: min(92%, 360px);
+            background: #fff;
+            color: #111;
+            border-radius: 18px;
+            padding: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,.35);
+        }
+        .name-card h3 {
+            margin: 0 0 8px 0;
+            text-align: center;
+        }
+        .name-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .name-row input {
+            flex: 1;
+            border-radius: 12px;
+            border: 2px solid #ddd;
+            padding: 10px 12px;
+            font-size: 16px;
+        }
+        .name-row button {
+            white-space: nowrap;
+        }
+        .store-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            place-items: center;
+            background: rgba(0,0,0,.35);
+            z-index: 9999;
+        }
+        .store-card {
+            width: min(92%, 400px);
+            background: #fff;
+            color: #111;
+            border-radius: 18px;
+            padding: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,.35);
+            position: relative;
+            text-align: center;
+        }
+        #closeStoreBtn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--panel-dark);
+            color: #fff;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            font-size: 18px;
+            line-height: 30px;
+            cursor: pointer;
+        }
+        .splash-inner .btn {
+            pointer-events: auto;
+        }
+        .score { z-index: 3; }
+        .splash { z-index: 2; }
+        .countdown {
+            position: fixed;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            font-size: 64px;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 2px 0 rgba(0,0,0,.6);
+            pointer-events: none;
+            z-index: 4;
         }
     </style>
 </head>
@@ -433,10 +433,10 @@
                 collectibles: { chance: 0.4, bonus: 2, size: 16 }
             };
             // --- Magnet settings ---
-            const MAGNET_THRESHOLD = 1;      // shells in a single run to trigger
-            const MAGNET_DURATION  = 30;      // seconds
-            const MAGNET_RADIUS    = 110;     // px pull radius
-            const MAGNET_STRENGTH  = 6;       // higher = faster pull
+            const MAGNET_THRESHOLD = 1;      // shells in a single run to trigger (set back to 15 later)
+            const MAGNET_DURATION = 30;      // seconds
+            const MAGNET_RADIUS = 110;       // px pull radius
+            const MAGNET_STRENGTH = 6;       // higher = faster pull
             // --- Normalization and profanity gate -------------------------------------
             const LEET_MAP = {
                 '@': 'a', '4': 'a', 'á': 'a', 'à': 'a', 'ä': 'a', 'â': 'a', 'å': 'a', 'æ': 'ae',
@@ -449,10 +449,10 @@
             function normalizeBad(s) {
                 return (s || '')
                     .toLowerCase()
-                    .normalize('NFKD').replace(/[\u0300-\u036f]/g, '') // strip diacritics
-                    .replace(/./g, ch => LEET_MAP[ch] ?? ch) // leet fold
-                    .replace(/[^a-z0-9]/g, '') // drop non-alnum
-                    .replace(/(.)\1{2,}/g, '$1$1'); // fuuuu -> fu
+                    .normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+                    .replace(/./g, ch => LEET_MAP[ch] ?? ch)
+                    .replace(/[^a-z0-9]/g, '')
+                    .replace(/(.)\1{2,}/g, '$1$1');
             }
             const BAD_WORDS_B64 = [
                 "ZnVjaw==", "ZnVja2Vy", "ZnVja2luZw==", "bXRoZmFjaw==", "bW90aGVyZnVja2Vy", "ZnVja2Vk", "ZnVja3M=",
@@ -539,7 +539,7 @@
             let runShellsCollected = 0;
             let magnetActive = false;
             let magnetT = 0;
-            let magnetUsedThisRun = false; // one activation per run
+            let magnetUsedThisRun = false;
             const storage = {
                 best: Number(localStorage.getItem('sb_best') || 0)
             };
@@ -756,7 +756,6 @@
                 bird.y += bird.vy*dt; bird.y = clamp(bird.y, 2, H+1000);
                 const targetRot = bird.vy < 0 ? -15*Math.PI/180 : Math.min(60*Math.PI/180, bird.vy/CFG.physics.maxFallSpeed*(60*Math.PI/180));
                 bird.rot = lerp(bird.rot, targetRot, 0.12);
-                // Magnet pull
                 if (magnetActive) {
                     magnetT = Math.max(0, magnetT - dt);
                     if (magnetT === 0) {
@@ -764,14 +763,13 @@
                         updateMagnetHud();
                         showToast('🧲 Magnet OFF');
                     }
-                    // Nudge uncollected shells toward the bird
                     for (const coll of collectibles) {
                         if (coll.collected) continue;
                         const dx = bird.x - coll.x;
                         const dy = bird.y - coll.y;
                         const dist = Math.hypot(dx, dy);
                         if (dist < MAGNET_RADIUS && dist > 0.0001) {
-                            const pull = MAGNET_STRENGTH * dt * (1 - dist / MAGNET_RADIUS); // stronger when closer
+                            const pull = MAGNET_STRENGTH * dt * (1 - dist / MAGNET_RADIUS);
                             coll.x += dx * pull;
                             coll.y += dy * pull;
                         }
@@ -799,7 +797,6 @@
                         if (Math.hypot(bird.x - coll.x, bird.y - coll.y) < pickupR) {
                             coll.collected = true;
                             runShellsCollected += 1;
-                            // Turn on magnet once per run when threshold reached
                             if (!magnetUsedThisRun && runShellsCollected >= MAGNET_THRESHOLD) {
                                 magnetActive = true;
                                 magnetT = MAGNET_DURATION;
@@ -1205,18 +1202,15 @@
                     if (state === 'ready') {
                         worldTime += dt;
                     } else if (state === 'respawn') {
-    respawnCountdown = Math.max(0, respawnCountdown - dt);
-    const n = Math.ceil(respawnCountdown);
-    countdownEl.textContent = n > 0 ? String(n) : '';
-    worldTime += dt;
-
-    if (respawnCountdown <= 0) {
-        state = 'running';
-        countdownEl.style.display = 'none';
-        playMusic();
-    }
-}
-
+                        respawnCountdown = Math.max(0, respawnCountdown - dt);
+                        const n = Math.ceil(respawnCountdown);
+                        countdownEl.textContent = n > 0 ? String(n) : '';
+                        worldTime += dt;
+                        if (respawnCountdown <= 0) {
+                            state = 'running';
+                            countdownEl.style.display = 'none';
+                            playMusic();
+                        }
                     } else if (state === 'running' && !paused) {
                         worldTime += dt;
                         update(dt);
