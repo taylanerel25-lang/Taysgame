@@ -448,7 +448,6 @@
             const nameModal = document.getElementById('nameModal');
             const nameInput = document.getElementById('playerNameInput');
             const saveNameBtn = document.getElementById('saveNameBtn');
-            const setNameBtn = document.getElementById('setNameBtn');
             const countdownEl = document.getElementById('countdownHud');
             let respawnCountdown = 0;
             const storeModal = document.getElementById('storeModal');
@@ -632,11 +631,6 @@
                     if (navigator.share) await navigator.share({ text, title: "Swimming Fish" });
                     else { await navigator.clipboard.writeText(text); showToast('Copied to clipboard!'); }
                 } catch {}
-            });
-            document.getElementById('setNameBtn').addEventListener('click', () => {
-                nameModal.style.display = 'grid';
-                nameInput.value = localStorage.getItem('player_name') || '';
-                setTimeout(() => nameInput.focus(), 10);
             });
             function saveName() {
                 const raw = (nameInput.value || '').trim();
