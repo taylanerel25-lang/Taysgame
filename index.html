@@ -1132,17 +1132,6 @@
                 drawCoralAndSharks();
                 drawCollectibles();
                 drawFish();
-                // Magnet ring
-                if (magnetActive) {
-                    ctx.save();
-                    ctx.globalAlpha = 0.25 + 0.1 * Math.sin(worldTime * 3);
-                    ctx.strokeStyle = '#ffffff';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.arc(bird.x, bird.y, MAGNET_RADIUS, 0, Math.PI * 2);
-                    ctx.stroke();
-                    ctx.restore();
-                }
                 drawParticles();
                 drawSeabed();
                 ctx.strokeStyle = '#228b22';
