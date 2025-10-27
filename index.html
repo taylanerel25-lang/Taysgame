@@ -5,313 +5,310 @@
     <title>Flipper Fish</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
     <meta name="theme-color" content="#20b2aa" />
-    <!-- Added as requested -->
     <link rel="manifest" href="manifest.json">
     <style>
-        :root {
-            --bg: #20b2aa;
-            --panel: rgba(255,255,255,.9);
-            --panel-dark: rgba(0,0,0,.65);
-            --text: #1d1d1f;
-        }
-        html, body {
-            height: 100%;
-            margin: 0;
-            background: #111;
-            color: var(--text);
-            font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans";
-            overscroll-behavior: none;
-        }
-        .wrap {
-            position: fixed;
-            inset: 0;
-            display: grid;
-            place-items: center;
-            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-        }
-        canvas {
-            background: var(--bg);
-            box-shadow: 0 10px 40px rgba(0,0,0,.35);
-            border-radius: 16px;
-            image-rendering: pixelated;
-            touch-action: none;
-        }
-        .hud {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            display: grid;
-            place-items: center;
-            font-weight: 700;
-            letter-spacing: .5px;
-            user-select: none;
-        }
-        .btn {
-            appearance: none;
-            border: 0;
-            background: var(--panel);
-            color: #111;
-            padding: 8px 12px;
-            border-radius: 999px;
-            font-weight: 700;
-            box-shadow: 0 2px 8px rgba(0,0,0,.15);
-            cursor: pointer;
-            line-height: 1;
-        }
-        .btn:focus {
-            outline: 3px solid #000;
-            outline-offset: 2px;
-        }
-        .score {
-            position: fixed;
-            top: 18px;
-            right: 14px;
-            font-size: 56px;
-            color: #fff;
-            text-shadow: 0 2px 0 rgba(0,0,0,.6);
-            pointer-events: none;
-            z-index: 3;
-            display: flex; /* ADDED: Flexbox for shield and score alignment */
-            align-items: center; /* ADDED: Center vertically */
-            gap: 8px; /* ADDED: Space between shield and score */
-        }
-        .bank {
-            position: fixed;
-            top: 14px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 20px;
-            color: #e69500;
-            text-shadow: 0 2px 0 rgba(0,0,0,.6);
-            pointer-events: none;
-            text-align: center;
-            line-height: 1;
-        }
-        .best {
-            position: fixed;
-            top: 18px;
-            left: 14px;
-            font-size: 16px;
-            color: #fff;
-            text-shadow: 0 2px 0 rgba(0,0,0,.6);
-            pointer-events: none;
-        }
-        .splash {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-            color: #000;
-            text-shadow: 0 2px 0 rgba(255,255,255,.5);
-            z-index: 2;
-        }
-        .splash-inner {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            top: 10%;
-            width: min(92%, 360px);
-            text-align: center;
-            pointer-events: none;
-        }
-        .title {
-            font-size: 36px;
-            margin: 2px 0 8px;
-        }
-        .subtitle {
-            font-size: 18px;
-            opacity: .95;
-        }
-        .splash-board {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            bottom: 18px;
-            width: min(92%, 360px);
-            background: rgba(0,0,0,.65);
-            color: #f0f0f0;
-            border-radius: 18px;
-            padding: 14px;
-            box-shadow: 0 8px 30px rgba(0,0,0,.25);
-            pointer-events: auto;
-        }
-        .board-head {
-            font-size: 20px;
-            font-weight: 800;
-            text-align: center;
-            margin: 0 0 6px;
-        }
-        .board-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 16px;
-            padding: 6px 0;
-        }
-        .panel {
-            min-width: 280px;
-            max-width: 90vw;
-            background: var(--panel);
-            color: #111;
-            border-radius: 18px;
-            padding: 16px;
-            box-shadow: 0 8px 30px rgba(0,0,0,.25);
-            pointer-events: auto;
-            transform: translateY(8px);
-        }
-        .panel h2 {
-            margin: 0 0 8px 0;
-            font-size: 22px;
-            text-align: center;
-        }
-        .panel .row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 18px;
-            padding: 6px 0;
-        }
-        .panel .actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-top: 12px;
-        }
-        .pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(0,0,0,.08);
-            padding: 4px 10px;
-            border-radius: 999px;
-            font-size: 14px;
-        }
-        .sr-only {
-            position: absolute !important;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0,0,0,0);
-            white-space: nowrap;
-            border: 0;
-        }
-        .toast {
-            position: fixed;
-            bottom: 16px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,.85);
-            color: #fff;
-            padding: 8px 12px;
-            border-radius: 10px;
-            font-size: 14px;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity .25s ease, transform .25s ease;
-        }
-        .toast.show {
-            opacity: 1;
-            transform: translate(-50%, -6px);
-        }
-        .shield {
-            font-size: 24px;
-            color: #fff;
-            text-shadow: 0 2px 0 rgba(0,0,0,.6);
-            pointer-events: none;
-            display: none; /* UPDATED: Simplified, removed positioning */
-        }
-        .soundbar {
-            position: fixed;
-            top: 12px;
-            left: 50%;
-            transform: translateX(-50%);
-            pointer-events: auto;
-        }
-        .name-modal {
-            position: fixed;
-            inset: 0;
-            display: none;
-            place-items: center;
-            background: rgba(0,0,0,.35);
-        }
-        .name-card {
-            width: min(92%, 360px);
-            background: #fff;
-            color: #111;
-            border-radius: 18px;
-            padding: 16px;
-            box-shadow: 0 10px 40px rgba(0,0,0,.35);
-        }
-        .name-card h3 {
-            margin: 0 0 8px 0;
-            text-align: center;
-        }
-        .name-row {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-        }
-        .name-row input {
-            flex: 1;
-            border-radius: 12px;
-            border: 2px solid #ddd;
-            padding: 10px 12px;
-            font-size: 16px;
-        }
-        .name-row button {
-            white-space: nowrap;
-        }
-        .store-modal {
-            position: fixed;
-            inset: 0;
-            display: none;
-            place-items: center;
-            background: rgba(0,0,0,.35);
-            z-index: 9999;
-        }
-        .store-card {
-            width: min(92%, 400px);
-            background: #fff;
-            color: #111;
-            border-radius: 18px;
-            padding: 16px;
-            box-shadow: 0 10px 40px rgba(0,0,0,.35);
-            position: relative;
-            text-align: center;
-        }
-        #closeStoreBtn {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            background: var(--panel-dark);
-            color: #fff;
-            border: none;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            font-size: 18px;
-            line-height: 30px;
-            cursor: pointer;
-        }
-        .splash-inner .btn {
-            pointer-events: auto;
-        }
-        /* Ensure score/shield render above splash */
-        .score { z-index: 3; } /* UPDATED: Only .score needs z-index now */
-        .splash { z-index: 2; }
-        /* Centered countdown */
-        .countdown {
-            position: fixed;
-            inset: 0;
-            display: grid;
-            place-items: center;
-            font-size: 64px;
-            font-weight: 900;
-            color: #fff;
-            text-shadow: 0 2px 0 rgba(0,0,0,.6);
-            pointer-events: none;
-            z-index: 4;
+        :root {  
+            --bg: #20b2aa;  
+            --panel: rgba(255,255,255,.9);  
+            --panel-dark: rgba(0,0,0,.65);  
+            --text: #1d1d1f;  
+        }  
+        html, body {  
+            height: 100%;  
+            margin: 0;  
+            background: #111;  
+            color: var(--text);  
+            font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans";  
+            overscroll-behavior: none;  
+        }  
+        .wrap {  
+            position: fixed;  
+            inset: 0;  
+            display: grid;  
+            place-items: center;  
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);  
+        }  
+        canvas {  
+            background: var(--bg);  
+            box-shadow: 0 10px 40px rgba(0,0,0,.35);  
+            border-radius: 16px;  
+            image-rendering: pixelated;  
+            touch-action: none;  
+        }  
+        .hud {  
+            position: fixed;  
+            inset: 0;  
+            pointer-events: none;  
+            display: grid;  
+            place-items: center;  
+            font-weight: 700;  
+            letter-spacing: .5px;  
+            user-select: none;  
+        }  
+        .btn {  
+            appearance: none;  
+            border: 0;  
+            background: var(--panel);  
+            color: #111;  
+            padding: 8px 12px;  
+            border-radius: 999px;  
+            font-weight: 700;  
+            box-shadow: 0 2px 8px rgba(0,0,0,.15);  
+            cursor: pointer;  
+            line-height: 1;  
+        }  
+        .btn:focus {  
+            outline: 3px solid #000;  
+            outline-offset: 2px;  
+        }  
+        .score {  
+            position: fixed;  
+            top: calc(env(safe-area-inset-top) + 10px);  
+            right: 14px;  
+            font-size: 56px;  
+            color: #fff;  
+            text-shadow: 0 2px 0 rgba(0,0,0,.6);  
+            pointer-events: none;  
+            z-index: 3;  
+            display: flex;  
+            align-items: center;  
+            gap: 8px;  
+        }  
+        .bank {  
+            position: fixed;  
+            top: calc(env(safe-area-inset-top) + 34px);  
+            left: 50%;  
+            transform: translateX(-50%);  
+            font-size: 20px;  
+            color: #e69500;  
+            text-shadow: 0 2px 0 rgba(0,0,0,.6);  
+            pointer-events: none;  
+            text-align: center;  
+            line-height: 1;  
+        }  
+        .best {  
+            position: fixed;  
+            top: calc(env(safe-area-inset-top) + 10px);  
+            left: 14px;  
+            font-size: 16px;  
+            color: #fff;  
+            text-shadow: 0 2px 0 rgba(0,0,0,.6);  
+            pointer-events: none;  
+        }  
+        .splash {  
+            position: absolute;  
+            inset: 0;  
+            pointer-events: none;  
+            color: #000;  
+            text-shadow: 0 2px 0 rgba(255,255,255,.5);  
+            z-index: 2;  
+        }  
+        .splash-inner {  
+            position: absolute;  
+            left: 50%;  
+            transform: translateX(-50%);  
+            top: 10%;  
+            width: min(92%, 360px);  
+            text-align: center;  
+            pointer-events: none;  
+        }  
+        .title {  
+            font-size: 36px;  
+            margin: 2px 0 8px;  
+        }  
+        .subtitle {  
+            font-size: 18px;  
+            opacity: .95;  
+        }  
+        .splash-board {  
+            position: absolute;  
+            left: 50%;  
+            transform: translateX(-50%);  
+            bottom: calc(env(safe-area-inset-bottom) + 20px) !important;  
+            width: min(92%, 360px);  
+            background: rgba(0,0,0,.65);  
+            color: #f0f0f0;  
+            border-radius: 18px;  
+            padding: 14px;  
+            box-shadow: 0 8px 30px rgba(0,0,0,.25);  
+            pointer-events: auto;  
+        }  
+        .board-head {  
+            font-size: 20px;  
+            font-weight: 800;  
+            text-align: center;  
+            margin: 0 0 6px;  
+        }  
+        .board-row {  
+            display: flex;  
+            justify-content: space-between;  
+            align-items: center;  
+            font-size: 16px;  
+            padding: 6px 0;  
+        }  
+        .panel {  
+            min-width: 280px;  
+            max-width: 90vw;  
+            background: var(--panel);  
+            color: #111;  
+            border-radius: 18px;  
+            padding: 16px;  
+            box-shadow: 0 8px 30px rgba(0,0,0,.25);  
+            pointer-events: auto;  
+            transform: translateY(8px);  
+        }  
+        .panel h2 {  
+            margin: 0 0 8px 0;  
+            font-size: 22px;  
+            text-align: center;  
+        }  
+        .panel .row {  
+            display: flex;  
+            justify-content: space-between;  
+            align-items: center;  
+            font-size: 18px;  
+            padding: 6px 0;  
+        }  
+        .panel .actions {  
+            display: grid;  
+            grid-template-columns: 1fr 1fr;  
+            gap: 8px;  
+            margin-top: 12px;  
+        }  
+        .pill {  
+            display: inline-flex;  
+            align-items: center;  
+            gap: 6px;  
+            background: rgba(0,0,0,.08);  
+            padding: 4px 10px;  
+            border-radius: 999px;  
+            font-size: 14px;  
+        }  
+        .sr-only {  
+            position: absolute !important;  
+            width: 1px;  
+            height: 1px;  
+            padding: 0;  
+            margin: -1px;  
+            overflow: hidden;  
+            clip: rect(0,0,0,0);  
+            white-space: nowrap;  
+            border: 0;  
+        }  
+        .toast {  
+            position: fixed;  
+            bottom: 16px;  
+            left: 50%;  
+            transform: translateX(-50%);  
+            background: rgba(0,0,0,.85);  
+            color: #fff;  
+            padding: 8px 12px;  
+            border-radius: 10px;  
+            font-size: 14px;  
+            pointer-events: none;  
+            opacity: 0;  
+            transition: opacity .25s ease, transform .25s ease;  
+        }  
+        .toast.show {  
+            opacity: 1;  
+            transform: translate(-50%, -6px);  
+        }  
+        .shield {  
+            font-size: 24px;  
+            color: #fff;  
+            text-shadow: 0 2px 0 rgba(0,0,0,.6);  
+            pointer-events: none;  
+            display: none;  
+        }  
+        .soundbar {  
+            position: fixed;  
+            top: 12px;  
+            left: 50%;  
+            transform: translateX(-50%);  
+            pointer-events: auto;  
+        }  
+        .name-modal {  
+            position: fixed;  
+            inset: 0;  
+            display: none;  
+            place-items: center;  
+            background: rgba(0,0,0,.35);  
+        }  
+        .name-card {  
+            width: min(92%, 360px);  
+            background: #fff;  
+            color: #111;  
+            border-radius: 18px;  
+            padding: 16px;  
+            box-shadow: 0 10px 40px rgba(0,0,0,.35);  
+        }  
+        .name-card h3 {  
+            margin: 0 0 8px 0;  
+            text-align: center;  
+        }  
+        .name-row {  
+            display: flex;  
+            gap: 8px;  
+            margin-top: 10px;  
+        }  
+        .name-row input {  
+            flex: 1;  
+            border-radius: 12px;  
+            border: 2px solid #ddd;  
+            padding: 10px 12px;  
+            font-size: 16px;  
+        }  
+        .name-row button {  
+            white-space: nowrap;  
+        }  
+        .store-modal {  
+            position: fixed;  
+            inset: 0;  
+            display: none;  
+            place-items: center;  
+            background: rgba(0,0,0,.35);  
+            z-index: 9999;  
+        }  
+        .store-card {  
+            width: min(92%, 400px);  
+            background: #fff;  
+            color: #111;  
+            border-radius: 18px;  
+            padding: 16px;  
+            box-shadow: 0 10px 40px rgba(0,0,0,.35);  
+            position: relative;  
+            text-align: center;  
+        }  
+        #closeStoreBtn {  
+            position: absolute;  
+            top: 8px;  
+            right: 8px;  
+            background: var(--panel-dark);  
+            color: #fff;  
+            border: none;  
+            width: 30px;  
+            height: 30px;  
+            border-radius: 50%;  
+            font-size: 18px;  
+            line-height: 30px;  
+            cursor: pointer;  
+        }  
+        .splash-inner .btn {  
+            pointer-events: auto;  
+        }  
+        .score { z-index: 3; }  
+        .splash { z-index: 2; }  
+        .countdown {  
+            position: fixed;  
+            inset: 0;  
+            display: grid;  
+            place-items: center;  
+            font-size: 64px;  
+            font-weight: 900;  
+            color: #fff;  
+            text-shadow: 0 2px 0 rgba(0,0,0,.6);  
+            pointer-events: none;  
+            z-index: 4;  
         }
     </style>
 </head>
@@ -320,7 +317,7 @@
         <canvas id="game" width="360" height="640" aria-label="Flipper Fish"></canvas>
     </div>
     <div class="hud" aria-hidden="true">
-        <div class="score"> <!-- UPDATED: New structure for score and shield -->
+        <div class="score">
             <div id="shieldHud" class="shield" aria-hidden="true" title="Shield active">🛡</div>
             <span id="scoreHud">0</span>
         </div>
@@ -364,7 +361,7 @@
     <div id="nameModal" class="name-modal" role="dialog" aria-modal="true" aria-labelledby="nameTitle">
         <div class="name-card">
             <h3 id="nameTitle">Welcome! Enter your name</h3>
-            <p style="margin:0 0 6px 0;text-align:center;opacity:.8;font-size:14px;">It’ll appear on the leaderboard across all devices.</p>
+            <p style="margin:0 0 6px 0;text-align:center;opacity:.8;font-size:14px;">It’ll appear on the leaderboard across all devices.</ the leaderboard across all devices.</p>
             <div class="name-row">
                 <input id="playerNameInput" type="text" placeholder="e.g. Tay" maxlength="24" />
                 <button id="saveNameBtn" class="btn">Save</button>
@@ -410,7 +407,6 @@
         window.dbRef = dbRef;
     </script>
     <script>
-        // JavaScript remains unchanged
         (() => {
             'use strict';
             const playerFishImg = new Image();
@@ -1128,7 +1124,6 @@
             init();
         })();
     </script>
-    <!-- Added as requested -->
     <script>
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js');
