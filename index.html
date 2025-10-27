@@ -571,7 +571,7 @@
             const stageSkies = ['#20b2aa', '#00bfff', '#4682b4', '#191970', '#00ced1'];
             const stagePipes = ['#ff7f50', '#ff4500', '#cd5b45', '#a52a2a', '#ff6347'];
             let lastStage = -1;
-            const currentStage = () => Math.min(Math.floor(score/10), stageSkies.length-1);
+            const currentStage = () => 0;
             const onStageChange = () => { showToast(`Stage ${currentStage()+1}!`); };
             let audioCtx = null;
             const beep = (type, freq, dur, vol=0.2) => {
