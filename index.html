@@ -123,7 +123,7 @@
             position: absolute;
             left: 50%;
             transform: translateX(-50%);
-            bottom: calc(env(safe-area-inset-bottom) + 40px) !important;
+            bottom: calc(env(safe-area-inset-bottom) + 120px) !important;
             width: min(92%, 360px);
             background: rgba(0,0,0,.65);
             color: #f0f0f0;
@@ -386,7 +386,11 @@
                 <button id="shareBtn" class="btn">Share</button>
                 <button id="storeBtn" class="btn">Shell Store</button>
             </div>
-            <div id="ad-banner" aria-hidden="true">[ Banner Ad ]</div>
+            <div id="ad-container"
+     style="width:100%;height:60px;margin:10px 0;
+            display:flex;justify-content:center;align-items:center;">
+</div>
+
             <div id="leaderboardOver" class="panel dark" style="padding:12px;">
                 <div style="text-align:center;font-weight:800;">🏆 Leaderboard</div>
                 <div id="leaderboardOverBody" style="margin-top:6px;font-size:16px;">Loading...</div>
@@ -554,10 +558,11 @@ overPanel.style.display = 'none'; // ensure game over panel hidden
 startRespawn();
 }
 function onNewRunStart() {
-  paused = false;                // <-- add
+  paused = false;
   window.reviveUsed = false;
   window._reviveFlowActive = false;
-Ads.showBanner(); // banner during gameplay
+  if (window.AdsBridge?.hideBanner) AdsBridge.hideBanner();
+  else Ads.hideBanner?.();
 }
 // Fallback to original game over path
 function proceedToGameOver() {
@@ -928,7 +933,16 @@ collectibles.push({ x: W + 10 + CFG.pipes.width / 2, y: collY, collected: false 
 }
 }
 function startRespawn() {
-  paused = false;                // <-- add
+  paused = false; 
+function startRespawn() {
+    paused = false;
+
+    // Hide banner during gameplay
+    if (window.AdsBridge?.hideBanner) AdsBridge.hideBanner();
+    else Ads.hideBanner?.();
+
+}
+               // <-- add
   shieldActive = false;
 updateShieldHud();
 runShellsCollected = 0;
@@ -1062,10 +1076,12 @@ return;
 }
 }
 if (hit) {
-if (shieldActive) {
-startRespawn();
-return;
+  sfx.ha();
+  if (window.AdsBridge) AdsBridge.hideBanner();
+  startRespawn();
+  return;
 }
+
 sfx.ha();
 // Attempt ad-based revive once per run
 if (!window.reviveUsed && tryReviveFlow()) return;
@@ -1093,7 +1109,11 @@ return overlap > needed;
 function die() {
 state = 'dead'; paused = false;
 if (navigator.vibrate) navigator.vibrate(80);
-sfx.die();
+sfx_die();
+
+// ✅ Show ad banner at game over
+if (window.AdsBridge) AdsBridge.showBanner();
+
 stopMusic();
 deathMusic.currentTime = 0;
 deathMusic.play().catch(() => {});
