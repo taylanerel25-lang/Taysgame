@@ -1,477 +1,477 @@
-<!DOCTYPE html>    <html lang="en">    
-<head>    
-    <meta charset="utf-8" />    
-    <title>Flipper Fish</title>    
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />    
-    <meta name="theme-color" content="#20b2aa" />    
-    <link rel="manifest" href="manifest.json">    
-    <style>    
-        :root {    
-            --bg: #20b2aa;    
-            --panel: rgba(255,255,255,.9);    
-            --panel-dark: rgba(0,0,0,.65);    
-            --text: #1d1d1f;    
-        }    
-        html, body {    
-            height: 100%;    
-            margin: 0;    
-            background: #111;    
-            color: var(--text);    
-            font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans";    
-            overscroll-behavior: none;    
-        }    
-        .wrap {    
-            position: fixed;    
-            inset: 0;    
-            display: grid;    
-            place-items: center;    
-            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);    
-        }    
-        canvas {    
-            background: var(--bg);    
-            box-shadow: 0 10px 40px rgba(0,0,0,.35);    
-            border-radius: 16px;    
-            image-rendering: pixelated;    
-            touch-action: none;    
-        }    
-        .hud {    
-            position: fixed;    
-            inset: 0;    
-            pointer-events: none;    
-            display: grid;    
-            place-items: center;    
-            font-weight: 700;    
-            letter-spacing: .5px;    
-            user-select: none;    
-        }    
-        .btn {    
-            appearance: none;    
-            border: 0;    
-            background: var(--panel);    
-            color: #111;    
-            padding: 8px 12px;    
-            border-radius: 999px;    
-            font-weight: 700;    
-            box-shadow: 0 2px 8px rgba(0,0,0,.15);    
-            cursor: pointer;    
-            line-height: 1;    
-        }    
-        .btn:focus {    
-            outline: 3px solid #000;    
-            outline-offset: 2px;    
-        }    
-        .score {    
-            position: fixed;    
-            top: calc(env(safe-area-inset-top) + 24px);    
-            right: 14px;    
-            font-size: 56px;    
-            color: #fff;    
-            text-shadow: 0 2px 0 rgba(0,0,0,.6);    
-            pointer-events: none;    
-            z-index: 3;    
-            display: flex;    
-            align-items: center;    
-            gap: 8px;    
-        }    
-        .bank {    
-            position: fixed;    
-            top: calc(env(safe-area-inset-top) + 35px);    
-            left: 50%;    
-            transform: translateX(-50%);    
-            font-size: 20px;    
-            color: #e69500;    
-            text-shadow: 0 2px 0 rgba(0,0,0,.6);    
-            pointer-events: none;    
-            text-align: center;    
-            line-height: 1;    
-        }    
-        .best {    
-            position: fixed;    
-            top: calc(env(safe-area-inset-top) + 35px);    
-            left: 14px;    
-            font-size: 16px;    
-            color: #fff;    
-            text-shadow: 0 2px 0 rgba(0,0,0,.6);    
-            pointer-events: none;    
-        }    
-        .splash {    
-            position: absolute;    
-            inset: 0;    
-            pointer-events: none;    
-            color: #000;    
-            text-shadow: 0 2px 0 rgba(255,255,255,.5);    
-            z-index: 2;    
-        }    
-        .splash-inner {    
-            position: absolute;    
-            left: 50%;    
-            transform: translateX(-50%);    
-            top: 10%;    
-            width: min(92%, 360px);    
-            text-align: center;    
-            pointer-events: none;    
-        }    
-        .title {    
-            font-size: 36px;    
-            margin: 2px 0 8px;    
-        }    
-        .subtitle {    
-            font-size: 18px;    
-            opacity: .95;    
-        }    
-        .splash-board {    
-            position: absolute;    
-            left: 50%;    
-            transform: translateX(-50%);    
-            bottom: calc(env(safe-area-inset-bottom) + 40px) !important;    
-            width: min(92%, 360px);    
-            background: rgba(0,0,0,.65);    
-            color: #f0f0f0;    
-            border-radius: 18px;    
-            padding: 14px;    
-            box-shadow: 0 8px 30px rgba(0,0,0,.25);    
-            pointer-events: auto;    
-        }    
-        .board-head {    
-            font-size: 20px;    
-            font-weight: 800;    
-            text-align: center;    
-            margin: 0 0 6px;    
-        }    
-        .board-row {    
-            display: flex;    
-            justify-content: space-between;    
-            align-items: center;    
-            font-size: 16px;    
-            padding: 6px 0;    
-        }    
-        .panel {    
-            min-width: 280px;    
-            max-width: 90vw;    
-            background: var(--panel);    
-            color: #111;    
-            border-radius: 18px;    
-            padding: 16px;    
-            box-shadow: 0 8px 30px rgba(0,0,0,.25);    
-            pointer-events: auto;    
-            transform: translateY(8px);    
-        }    
-        .panel h2 {    
-            margin: 0 0 8px 0;    
-            font-size: 22px;    
-            text-align: center;    
-        }    
-        .panel .row {    
-            display: flex;    
-            justify-content: space-between;    
-            align-items: center;    
-            font-size: 18px;    
-            padding: 6px 0;    
-        }    
-        .panel .actions {    
-            display: grid;    
-            grid-template-columns: 1fr;    
-            gap: 10px;    
-            margin-top: 12px;    
-            justify-items: center;    
-        }    
-        .pill {    
-            display: inline-flex;    
-            align-items: center;    
-            gap: 6px;    
-            background: rgba(0,0,0,.08);    
-            padding: 4px 10px;    
-            border-radius: 999px;    
-            font-size: 14px;    
-        }    
-        .sr-only {    
-            position: absolute !important;    
-            width: 1px;    
-            height: 1px;    
-            padding: 0;    
-            margin: -1px;    
-            overflow: hidden;    
-            clip: rect(0,0,0,0);    
-            white-space: nowrap;    
-            border: 0;    
-        }    
-        .toast {    
-            position: fixed;    
-            bottom: 16px;    
-            left: 50%;    
-            transform: translateX(-50%);    
-            background: rgba(0,0,0,.85);    
-            color: #fff;    
-            padding: 8px 12px;    
-            border-radius: 10px;    
-            font-size: 14px;    
-            pointer-events: none;    
-            opacity: 0;    
-            transition: opacity .25s ease, transform .25s ease;    
-        }    
-        .toast.show {    
-            opacity: 1;    
-            transform: translate(-50%, -6px);    
-        }    
-        .shield {    
-            font-size: 24px;    
-            color: #fff;    
-            text-shadow: 0 2px 0 rgba(0,0,0,.6);    
-            pointer-events: none;    
-            display: none;    
-        }    
-        .soundbar {    
-            position: fixed;    
-            top: 12px;    
-            left: 50%;    
-            transform: translateX(-50%);    
-            pointer-events: auto;    
-        }    
-        .name-modal {    
-            position: fixed;    
-            inset: 0;    
-            display: none;    
-            place-items: center;    
-            background: rgba(0,0,0,.35);    
-        }    
-        .name-card {    
-            width: min(92%, 360px);    
-            background: #fff;    
-            color: #111;    
-            border-radius: 18px;    
-            padding: 16px;    
-            box-shadow: 0 10px 40px rgba(0,0,0,.35);    
-        }    
-        .name-card h3 {    
-            margin: 0 0 8px 0;    
-            text-align: center;    
-        }    
-        .name-row {    
-            display: flex;    
-            gap: 8px;    
-            margin-top: 10px;    
-        }    
-        .name-row input {    
-            flex: 1;    
-            border-radius: 12px;    
-            border: 2px solid #ddd;    
-            padding: 10px 12px;    
-            font-size: 16px;    
-        }    
-        .name-row button {    
-            white-space: nowrap;    
-        }    
-        .store-modal {    
-            position: fixed;    
-            inset: 0;    
-            display: none;    
-            place-items: center;    
-            background: rgba(0,0,0,.35);    
-            z-index: 9999;    
-        }    
-        .store-card {    
-            width: min(92%, 400px);    
-            background: #fff;    
-            color: #111;    
-            border-radius: 18px;    
-            padding: 16px;    
-            box-shadow: 0 10px 40px rgba(0,0,0,.35);    
-            position: relative;    
-            text-align: center;    
-        }    
-        #closeStoreBtn {    
-            position: absolute;    
-            top: 8px;    
-            right: 8px;    
-            background: var(--panel-dark);    
-            color: #fff;    
-            border: none;    
-            width: 30px;    
-            height: 30px;    
-            border-radius: 50%;    
-            font-size: 18px;    
-            line-height: 30px;    
-            cursor: pointer;    
-        }    
-        .splash-inner .btn {    
-            pointer-events: auto;    
-        }    
-        .score { z-index: 3; }    
-        .splash { z-index: 2; }    
-        .countdown {    
-            position: fixed;    
-            inset: 0;    
-            display: grid;    
-            place-items: center;    
-            font-size: 64px;    
-            font-weight: 900;    
-            color: #fff;    
-            text-shadow: 0 2px 0 rgba(0,0,0,.6);    
-            pointer-events: none;    
-            z-index: 4;    
-        }    
-/* --- ADS REVIVE POPUP --- */  
-#revive-popup {  
-  position: fixed; inset: 0; display: none; place-items: center;  
-  background: rgba(0,0,0,.55); z-index: 9999;  
-}  
-#revive-popup.show { display: grid; }  
-.revive-modal {  
-  background: #fff; color:#111; padding:16px 20px; border-radius:14px;  
-  width: 82%; max-width: 360px; text-align:center;  
-  box-shadow: 0 10px 30px rgba(0,0,0,.35);  
-  font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Arial;  
-}  
-.revive-modal h3 { margin: 0 0 8px; font-size: 18px; }  
-.revive-actions { display:flex; gap:10px; justify-content:center; margin-top:12px; }  
-.revive-actions button {  
-  padding:10px 14px; border-radius:10px; border:none; font-weight:700; cursor:pointer;  
-  background: var(--panel); color:#111; box-shadow: 0 2px 8px rgba(0,0,0,.15);  
-}  
-    </style>    
-</head>    
-<body>    
-    <div class="wrap">    
-        <canvas id="game" width="360" height="640" aria-label="Flipper Fish"></canvas>    
-    </div>    
-    <div class="hud" aria-hidden="true">    
-        <div class="score">    
-            <div id="shieldHud" class="shield" aria-hidden="true" title="Shield active">🛡</div>    
-            <div id="magnetHud" class="shield" aria-hidden="true" title="Magnet active">🧲</div>    
-            <div id="doublerHud" class="shield" aria-hidden="true" title="2x points">✖️2</div>    
-            <span id="scoreHud">0</span>    
-        </div>    
-        <div id="countdownHud" class="countdown" aria-hidden="true" style="display:none;"></div>    
-        <div class="bank">    
-            <div style="font-size:12px;color:#ffa500;text-shadow:0 2px 0 rgba(0,0,0,.6);margin-bottom:2px;">Shell Bank</div>    
-            <div id="bankHud">0</div>    
-        </div>    
-        <div id="bestHud" class="best">Highest: 0</div>    
-        <div id="splash" class="splash">    
-            <div class="splash-inner">    
-                <div class="title" style="color:#000;text-shadow:none;">Flipper Fish</div>    
-                <div style="font-size:14px;opacity:.9;color:#000;text-shadow:none;">Made by TayGames&trade;</div>    
-                <div class="subtitle">Tap the screen to start!</div>    
-                <button class="btn" style="margin-top:10px;">Shell Store</button>    
-                <button id="howToPlayBtn" class="btn" style="margin-top:10px;">How to Play</button>    
-                <div style="margin-top:6px;font-size:14px;opacity:.9">Avoid the sea pillars, collect shells. Good luck!</div>    
-            </div>    
-            <div id="splashBoard" class="splash-board">    
-                <div class="board-head">🏆 Leaderboard</div>    
-                <div id="leaderboardSplashBody" style="font-size:16px;text-align:center;">Loading...</div>    
-            </div>    
-        </div>    
-    </div>    
-    <div id="gameOver" class="hud" style="display:none;">    
-        <div class="panel" role="dialog" aria-modal="true" aria-labelledby="overTitle">    
-            <h2 id="overTitle">Game Over</h2>    
-            <div class="row"><span>Your Score</span><strong id="scoreNow">0</strong></div>    
-            <div class="row"><span>Highest Score</span><span><strong id="bestNow">0</strong> <span id="medal" class="pill" aria-label="medal" style="display:none;">🥉 Bronze</span></span></div>    
-            <div class="actions">    
-                <button id="againBtn" class="btn">Play Again</button>    
-                <button id="shareBtn" class="btn">Share</button>    
-                <button id="storeBtn" class="btn">Shell Store</button>    
-            </div>    
-            <div id="leaderboardOver" class="panel dark" style="margin-top:12px;padding:12px;">    
-                <div style="text-align:center;font-weight:800;">🏆 Leaderboard</div>    
-                <div id="leaderboardOverBody" style="margin-top:6px;font-size:16px;">Loading...</div>    
-            </div>    
-        </div>    
-    </div>    
-    <div id="nameModal" class="name-modal" role="dialog" aria-modal="true" aria-labelledby="nameTitle">    
-        <div class="name-card">    
-            <h3 id="nameTitle">Welcome! Enter your name</h3>    
-            <p style="margin:0 0 6px 0;text-align:center;opacity:.8;font-size:14px;">    
-                It’ll appear on the leaderboard across all devices.    
-            </p>    
-            <div class="name-row">    
-                <input id="playerNameInput" type="text" placeholder="e.g. Tay" maxlength="24" />    
-                <button id="saveNameBtn" class="btn">Save</button>    
-            </div>    
-        </div>    
-    </div>    
-    <div id="storeModal" class="store-modal" role="dialog" aria-modal="true">    
-        <div class="store-card">    
-            <button id="closeStoreBtn">✕</button>    
-            <h3>Shell Store</h3>    
-            <p style="opacity:.8;font-size:14px;margin-top:4px;">    
-                Spend shells you collect in-game!    
-            </p>    
-            <div id="shieldItem" style="margin-top:12px;padding:12px;border:2px solid #eee;border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;">    
-              <div style="text-align:left;">    
-                <div style="font-weight:800;">🛡 Shield (one-hit)</div>    
-                <div style="font-size:14px;opacity:.8;">Protects you from one crash this run.</div>    
-                <div style="font-size:14px;margin-top:4px;">Cost: <strong>30</strong> 🐚</div>    
-              </div>    
-              <button id="buyShieldBtn" class="btn">Buy</button>    
-            </div>    
-<div id="doublerItem" style="margin-top:12px;padding:12px;border:2px solid #eee;border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;">    
-  <div style="text-align:left;">    
-    <div style="font-weight:800;">✖️2 Points (30s)</div>    
-    <div style="font-size:14px;opacity:.8;">Double score from pipes & shells for 30s.</div>    
-    <div style="font-size:14px;margin-top:4px;">Cost: <strong>40</strong> 🐚</div>    
-  </div>    
-  <button id="buyDoublerBtn" class="btn">Buy</button>    
-</div>    
-        </div>    
-    </div>    
-    <div id="howToModal" class="store-modal" role="dialog" aria-modal="true">    
-    <div class="store-card">    
-      <button id="closeHowToBtn">✕</button>    
-      <h3>How to Play</h3>    
-      <p style="text-align:left;font-size:15px;margin-top:6px;">    
-        • Tap to swim up<br>    
-        • Avoid the coral pillars<br>    
-        • Collect 🐚 shells for bonus points<br>    
-        • Every 30 shells = buy a 🛡 shield in the store<br>    
-        • Every 40 shells = buy a ✖️2 Points for 30 seconds in the store<br>    
-        • Collect 15 shells in one run = 🧲 magnet power-up for 30 seconds! (pulls shells toward you!)<br><br>    
-        This is the first app I’ve made — started for family & friends, and sharing it with the world 🐟<br>    
-        More updates coming soon. Let me know if you enjoy it!    
-      </p>    
-    </div>    
-  </div>    
-    <div id="aria" class="sr-only" aria-live="polite"></div>    
-    <div id="toast" class="toast" role="status"></div>    
-<!-- Rewarded Revive Popup -->  
-<div id="revive-popup" aria-hidden="true">  
-  <div class="revive-modal" role="dialog" aria-modal="true" aria-labelledby="reviveTitle">  
-    <h3 id="reviveTitle">Watch ad to revive?</h3>  
-    <div class="revive-actions">  
-      <button id="revive-watch" type="button">Watch Ad</button>  
-      <button id="revive-cancel" type="button">No thanks</button>  
-    </div>  
-  </div>  
-</div>  
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>    
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>    
-    <script>    
-        const firebaseConfig = {    
-            apiKey: "AIzaSyDsfk9nWTl-FYLJlrmfiG0jYRez6461OMw",    
-            authDomain: "flappy-fish-25f36.firebaseapp.com",    
-            databaseURL: "https://flappy-fish-25f36-default-rtdb.firebaseio.com",    
-            projectId: "flappy-fish-25f36",    
-            storageBucket: "flappy-fish-25f36.appspot.com",    
-            messagingSenderId: "787422563403",    
-            appId: "1:787422563403:web:662ba16a0c580f10ffd1ce",    
-            measurementId: "G-C0LBVK4Y8W"    
-        };    
-        firebase.initializeApp(firebaseConfig);    
-        const db = firebase.database();    
-        const dbRef = db.ref("leaderboard");    
-        window.db = db;    
-        window.dbRef = dbRef;    
-    </script>    
-    <script>    
-        (() => {    
-            'use strict';    
-// --- ADS SHIM (safe if native AdsBridge isn't present)  
-window.Ads = {  
-  showBanner: () => (window.AdsBridge && AdsBridge.showBanner) ? AdsBridge.showBanner() : void 0,  
-  hideBanner: () => (window.AdsBridge && AdsBridge.hideBanner) ? AdsBridge.hideBanner() : void 0,  
-  preloadRewarded: () => (window.AdsBridge && AdsBridge.preloadRewarded) ? AdsBridge.preloadRewarded() : void 0,  
-  showRewardedForRevive: () => (window.AdsBridge && AdsBridge.showRewardedForRevive) ? AdsBridge.showRewardedForRevive() : (window.onRewardedNotAvailable && onRewardedNotAvailable())  
-};  // Called from native when reward granted
+<!DOCTYPE html> <html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Flipper Fish</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <meta name="theme-color" content="#20b2aa" />
+    <link rel="manifest" href="manifest.json">
+    <style>
+        :root {
+            --bg: #20b2aa;
+            --panel: rgba(255,255,255,.9);
+            --panel-dark: rgba(0,0,0,.65);
+            --text: #1d1d1f;
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            background: #111;
+            color: var(--text);
+            font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans";
+            overscroll-behavior: none;
+        }
+        .wrap {
+            position: fixed;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+        canvas {
+            background: var(--bg);
+            box-shadow: 0 10px 40px rgba(0,0,0,.35);
+            border-radius: 16px;
+            image-rendering: pixelated;
+            touch-action: none;
+        }
+        .hud {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            display: grid;
+            place-items: center;
+            font-weight: 700;
+            letter-spacing: .5px;
+            user-select: none;
+        }
+        .btn {
+            appearance: none;
+            border: 0;
+            background: var(--panel);
+            color: #111;
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(0,0,0,.15);
+            cursor: pointer;
+            line-height: 1;
+        }
+        .btn:focus {
+            outline: 3px solid #000;
+            outline-offset: 2px;
+        }
+        .score {
+            position: fixed;
+            top: calc(env(safe-area-inset-top) + 24px);
+            right: 14px;
+            font-size: 56px;
+            color: #fff;
+            text-shadow: 0 2px 0 rgba(0,0,0,.6);
+            pointer-events: none;
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .bank {
+            position: fixed;
+            top: calc(env(safe-area-inset-top) + 35px);
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            color: #e69500;
+            text-shadow: 0 2px 0 rgba(0,0,0,.6);
+            pointer-events: none;
+            text-align: center;
+            line-height: 1;
+        }
+        .best {
+            position: fixed;
+            top: calc(env(safe-area-inset-top) + 35px);
+            left: 14px;
+            font-size: 16px;
+            color: #fff;
+            text-shadow: 0 2px 0 rgba(0,0,0,.6);
+            pointer-events: none;
+        }
+        .splash {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            color: #000;
+            text-shadow: 0 2px 0 rgba(255,255,255,.5);
+            z-index: 2;
+        }
+        .splash-inner {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 10%;
+            width: min(92%, 360px);
+            text-align: center;
+            pointer-events: none;
+        }
+        .title {
+            font-size: 36px;
+            margin: 2px 0 8px;
+        }
+        .subtitle {
+            font-size: 18px;
+            opacity: .95;
+        }
+        .splash-board {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: calc(env(safe-area-inset-bottom) + 40px) !important;
+            width: min(92%, 360px);
+            background: rgba(0,0,0,.65);
+            color: #f0f0f0;
+            border-radius: 18px;
+            padding: 14px;
+            box-shadow: 0 8px 30px rgba(0,0,0,.25);
+            pointer-events: auto;
+        }
+        .board-head {
+            font-size: 20px;
+            font-weight: 800;
+            text-align: center;
+            margin: 0 0 6px;
+        }
+        .board-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+            padding: 6px 0;
+        }
+        .panel {
+            min-width: 280px;
+            max-width: 90vw;
+            background: var(--panel);
+            color: #111;
+            border-radius: 18px;
+            padding: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,.25);
+            pointer-events: auto;
+            transform: translateY(8px);
+        }
+        .panel h2 {
+            margin: 0 0 8px 0;
+            font-size: 22px;
+            text-align: center;
+        }
+        .panel .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 18px;
+            padding: 6px 0;
+        }
+        .panel .actions {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-top: 12px;
+            justify-items: center;
+        }
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0,0,0,.08);
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 14px;
+        }
+        .sr-only {
+            position: absolute !important;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border: 0;
+        }
+        .toast {
+            position: fixed;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,.85);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity .25s ease, transform .25s ease;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translate(-50%, -6px);
+        }
+        .shield {
+            font-size: 24px;
+            color: #fff;
+            text-shadow: 0 2px 0 rgba(0,0,0,.6);
+            pointer-events: none;
+            display: none;
+        }
+        .soundbar {
+            position: fixed;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            pointer-events: auto;
+        }
+        .name-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            place-items: center;
+            background: rgba(0,0,0,.35);
+        }
+        .name-card {
+            width: min(92%, 360px);
+            background: #fff;
+            color: #111;
+            border-radius: 18px;
+            padding: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,.35);
+        }
+        .name-card h3 {
+            margin: 0 0 8px 0;
+            text-align: center;
+        }
+        .name-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .name-row input {
+            flex: 1;
+            border-radius: 12px;
+            border: 2px solid #ddd;
+            padding: 10px 12px;
+            font-size: 16px;
+        }
+        .name-row button {
+            white-space: nowrap;
+        }
+        .store-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            place-items: center;
+            background: rgba(0,0,0,.35);
+            z-index: 9999;
+        }
+        .store-card {
+            width: min(92%, 400px);
+            background: #fff;
+            color: #111;
+            border-radius: 18px;
+            padding: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,.35);
+            position: relative;
+            text-align: center;
+        }
+        #closeStoreBtn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--panel-dark);
+            color: #fff;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            font-size: 18px;
+            line-height: 30px;
+            cursor: pointer;
+        }
+        .splash-inner .btn {
+            pointer-events: auto;
+        }
+        .score { z-index: 3; }
+        .splash { z-index: 2; }
+        .countdown {
+            position: fixed;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            font-size: 64px;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 2px 0 rgba(0,0,0,.6);
+            pointer-events: none;
+            z-index: 4;
+        }
+/* --- ADS REVIVE POPUP --- */
+#revive-popup {
+  position: fixed; inset: 0; display: none; place-items: center;
+  background: rgba(0,0,0,.55); z-index: 9999;
+}
+#revive-popup.show { display: grid; }
+.revive-modal {
+  background: #fff; color:#111; padding:16px 20px; border-radius:14px;
+  width: 82%; max-width: 360px; text-align:center;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+}
+.revive-modal h3 { margin: 0 0 8px; font-size: 18px; }
+.revive-actions { display:flex; gap:10px; justify-content:center; margin-top:12px; }
+.revive-actions button {
+  padding:10px 14px; border-radius:10px; border:none; font-weight:700; cursor:pointer;
+  background: var(--panel); color:#111; box-shadow: 0 2px 8px rgba(0,0,0,.15);
+}
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <canvas id="game" width="360" height="640" aria-label="Flipper Fish"></canvas>
+    </div>
+    <div class="hud" aria-hidden="true">
+        <div class="score">
+            <div id="shieldHud" class="shield" aria-hidden="true" title="Shield active">🛡</div>
+            <div id="magnetHud" class="shield" aria-hidden="true" title="Magnet active">🧲</div>
+            <div id="doublerHud" class="shield" aria-hidden="true" title="2x points">✖️2</div>
+            <span id="scoreHud">0</span>
+        </div>
+        <div id="countdownHud" class="countdown" aria-hidden="true" style="display:none;"></div>
+        <div class="bank">
+            <div style="font-size:12px;color:#ffa500;text-shadow:0 2px 0 rgba(0,0,0,.6);margin-bottom:2px;">Shell Bank</div>
+            <div id="bankHud">0</div>
+        </div>
+        <div id="bestHud" class="best">Highest: 0</div>
+        <div id="splash" class="splash">
+            <div class="splash-inner">
+                <div class="title" style="color:#000;text-shadow:none;">Flipper Fish</div>
+                <div style="font-size:14px;opacity:.9;color:#000;text-shadow:none;">Made by TayGames&trade;</div>
+                <div class="subtitle">Tap the screen to start!</div>
+                <button class="btn" style="margin-top:10px;">Shell Store</button>
+                <button id="howToPlayBtn" class="btn" style="margin-top:10px;">How to Play</button>
+                <div style="margin-top:6px;font-size:14px;opacity:.9">Avoid the sea pillars, collect shells. Good luck!</div>
+            </div>
+            <div id="splashBoard" class="splash-board">
+                <div class="board-head">🏆 Leaderboard</div>
+                <div id="leaderboardSplashBody" style="font-size:16px;text-align:center;">Loading...</div>
+            </div>
+        </div>
+    </div>
+    <div id="gameOver" class="hud" style="display:none;">
+        <div class="panel" role="dialog" aria-modal="true" aria-labelledby="overTitle">
+            <h2 id="overTitle">Game Over</h2>
+            <div class="row"><span>Your Score</span><strong id="scoreNow">0</strong></div>
+            <div class="row"><span>Highest Score</span><span><strong id="bestNow">0</strong> <span id="medal" class="pill" aria-label="medal" style="display:none;">🥉 Bronze</span></span></div>
+            <div class="actions">
+                <button id="againBtn" class="btn">Play Again</button>
+                <button id="shareBtn" class="btn">Share</button>
+                <button id="storeBtn" class="btn">Shell Store</button>
+            </div>
+            <div id="leaderboardOver" class="panel dark" style="margin-top:12px;padding:12px;">
+                <div style="text-align:center;font-weight:800;">🏆 Leaderboard</div>
+                <div id="leaderboardOverBody" style="margin-top:6px;font-size:16px;">Loading...</div>
+            </div>
+        </div>
+    </div>
+    <div id="nameModal" class="name-modal" role="dialog" aria-modal="true" aria-labelledby="nameTitle">
+        <div class="name-card">
+            <h3 id="nameTitle">Welcome! Enter your name</h3>
+            <p style="margin:0 0 6px 0;text-align:center;opacity:.8;font-size:14px;">
+                It’ll appear on the leaderboard across all devices.
+            </p>
+            <div class="name-row">
+                <input id="playerNameInput" type="text" placeholder="e.g. Tay" maxlength="24" />
+                <button id="saveNameBtn" class="btn">Save</button>
+            </div>
+        </div>
+    </div>
+    <div id="storeModal" class="store-modal" role="dialog" aria-modal="true">
+        <div class="store-card">
+            <button id="closeStoreBtn">✕</button>
+            <h3>Shell Store</h3>
+            <p style="opacity:.8;font-size:14px;margin-top:4px;">
+                Spend shells you collect in-game!
+            </p>
+            <div id="shieldItem" style="margin-top:12px;padding:12px;border:2px solid #eee;border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+              <div style="text-align:left;">
+                <div style="font-weight:800;">🛡 Shield (one-hit)</div>
+                <div style="font-size:14px;opacity:.8;">Protects you from one crash this run.</div>
+                <div style="font-size:14px;margin-top:4px;">Cost: <strong>30</strong> 🐚</div>
+              </div>
+              <button id="buyShieldBtn" class="btn">Buy</button>
+            </div>
+<div id="doublerItem" style="margin-top:12px;padding:12px;border:2px solid #eee;border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+  <div style="text-align:left;">
+    <div style="font-weight:800;">✖️2 Points (30s)</div>
+    <div style="font-size:14px;opacity:.8;">Double score from pipes & shells for 30s.</div>
+    <div style="font-size:14px;margin-top:4px;">Cost: <strong>40</strong> 🐚</div>
+  </div>
+  <button id="buyDoublerBtn" class="btn">Buy</button>
+</div>
+        </div>
+    </div>
+    <div id="howToModal" class="store-modal" role="dialog" aria-modal="true">
+    <div class="store-card">
+      <button id="closeHowToBtn">✕</button>
+      <h3>How to Play</h3>
+      <p style="text-align:left;font-size:15px;margin-top:6px;">
+        • Tap to swim up<br>
+        • Avoid the coral pillars<br>
+        • Collect 🐚 shells for bonus points<br>
+        • Every 30 shells = buy a 🛡 shield in the store<br>
+        • Every 40 shells = buy a ✖️2 Points for 30 seconds in the store<br>
+        • Collect 15 shells in one run = 🧲 magnet power-up for 30 seconds! (pulls shells toward you!)<br><br>
+        This is the first app I’ve made — started for family & friends, and sharing it with the world 🐟<br>
+        More updates coming soon. Let me know if you enjoy it!
+      </p>
+    </div>
+  </div>
+    <div id="aria" class="sr-only" aria-live="polite"></div>
+    <div id="toast" class="toast" role="status"></div>
+<!-- Rewarded Revive Popup -->
+<div id="revive-popup" aria-hidden="true">
+  <div class="revive-modal" role="dialog" aria-modal="true" aria-labelledby="reviveTitle">
+    <h3 id="reviveTitle">Watch ad to revive?</h3>
+    <div class="revive-actions">
+      <button id="revive-watch" type="button">Watch Ad</button>
+      <button id="revive-cancel" type="button">No thanks</button>
+    </div>
+  </div>
+</div>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDsfk9nWTl-FYLJlrmfiG0jYRez6461OMw",
+            authDomain: "flappy-fish-25f36.firebaseapp.com",
+            databaseURL: "https://flappy-fish-25f36-default-rtdb.firebaseio.com",
+            projectId: "flappy-fish-25f36",
+            storageBucket: "flappy-fish-25f36.appspot.com",
+            messagingSenderId: "787422563403",
+            appId: "1:787422563403:web:662ba16a0c580f10ffd1ce",
+            measurementId: "G-C0LBVK4Y8W"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const dbRef = db.ref("leaderboard");
+        window.db = db;
+        window.dbRef = dbRef;
+    </script>
+    <script>
+        (() => {
+            'use strict';
+// --- ADS SHIM (safe if native AdsBridge isn't present)
+window.Ads = {
+  showBanner: () => (window.AdsBridge && AdsBridge.showBanner) ? AdsBridge.showBanner() : void 0,
+  hideBanner: () => (window.AdsBridge && AdsBridge.hideBanner) ? AdsBridge.hideBanner() : void 0,
+  preloadRewarded: () => (window.AdsBridge && AdsBridge.preloadRewarded) ? AdsBridge.preloadRewarded() : void 0,
+  showRewardedForRevive: () => (window.AdsBridge && AdsBridge.showRewardedForRevive) ? AdsBridge.showRewardedForRevive() : (window.onRewardedNotAvailable && onRewardedNotAvailable())
+}; // Called from native when reward granted
 window.onRewardEarned = function () {
 try { revivePlayer(); } catch (e) { console.warn(e); }
 };
@@ -480,15 +480,12 @@ window.onRewardedNotAvailable = function () {
 closeRevivePopup();
 proceedToGameOver();
 };
-
 // Revive flags
 window.reviveUsed = false;
 window._reviveFlowActive = false; // prevents duplicate popups
-window._lastSafe = null;          // snapshot of last safe player state
-
+window._lastSafe = null; // snapshot of last safe player state
 function pauseGame(){ paused = true; }
 function resumeGameLoopIfPaused(){ paused = false; state = 'running'; }
-
 // Popup helpers
 function openRevivePopup() {
 const el = document.getElementById('revive-popup');
@@ -506,7 +503,6 @@ if (!el) return;
 el.classList.remove('show');
 el.setAttribute('aria-hidden', 'true');
 }
-
 // Try to start revive flow once per run
 function tryReviveFlow() {
 if (window.reviveUsed || window._reviveFlowActive) return false;
@@ -516,7 +512,6 @@ Ads.preloadRewarded();
 openRevivePopup();
 return true; // caller should early-return from game over
 }
-
 // Restore player to last safe state and continue
 function revivePlayer() {
 window.reviveUsed = true;
@@ -528,18 +523,16 @@ bird.y = window._lastSafe.y;
 bird.vy = 0;
 bird.rot = 0;
 }
-overPanel.style.display = 'none';   // ensure game over panel hidden
-resumeGameLoopIfPaused();           // resume play
-playMusic();                        // resume bgm if applicable
+overPanel.style.display = 'none'; // ensure game over panel hidden
+resumeGameLoopIfPaused(); // resume play
+playMusic(); // resume bgm if applicable
 }
-
 // Called when a brand new run begins
 function onNewRunStart() {
 window.reviveUsed = false;
 window._reviveFlowActive = false;
 Ads.showBanner(); // banner during gameplay
 }
-
 // Fallback to original game over path
 function proceedToGameOver() {
 overPanel.style.display = '';
@@ -669,7 +662,7 @@ if (doublerQueued) { showToast('2× already armed'); return; }
 const COST = 40;
 if (shellBank < COST) { showToast('Not enough shells'); return; }
 updateBank(-COST);
-doublerQueued = true;          // arm for next run
+doublerQueued = true; // arm for next run
 updateDoublerHud();
 showToast('✖️2 armed for next run!');
 sfx.swoosh && sfx.swoosh();
@@ -695,9 +688,8 @@ let magnetT = 0;
 let magnetUsedThisRun = false;
 const DOUBLER_DURATION = 30; // seconds
 let doublerActive = false;
-let doublerT = 0;  // ADD THIS LINE:
+let doublerT = 0; // ADD THIS LINE:
 let doublerQueued = false; // armed for next run (survives resetGame)
-
 const doublerHud = document.getElementById('doublerHud');
 function updateDoublerHud(){
 if (doublerActive || doublerQueued) {
@@ -740,7 +732,7 @@ const stageSkies = ['#20b2aa', '#00bfff', '#4682b4', '#191970', '#00ced1'];
 const stagePipes = ['#ff7f50', '#ff4500', '#cd5b45', '#a52a2a', '#ff6347'];
 let lastStage = -1;
 const currentStage = () => 0;
-const onStageChange = () => { showToast(Stage ${currentStage()+1}!); };
+const onStageChange = () => { showToast(`Stage ${currentStage()+1}!`); };
 let audioCtx = null;
 const beep = (type, freq, dur, vol = 0.2) => {
   if (!audioCtx) return;
@@ -750,7 +742,6 @@ const beep = (type, freq, dur, vol = 0.2) => {
     o.type = type;
     o.frequency.value = freq;
     o.connect(g).connect(audioCtx.destination);
-
     const t = audioCtx.currentTime;
     g.gain.setValueAtTime(Math.max(vol, 0.0001), t);
     o.start(t);
@@ -782,7 +773,7 @@ bgMusic.pause();
 bgMusic.currentTime = 0;
 }
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-const lerp = (a, b, t) => a + (b-a)t;
+const lerp = (a, b, t) => a + (b - a) * t;
 const easeT = (s, end) => clamp(s/end, 0, 1);
 const pipeGap = () => (window.dynamicPipeGap ?? lerp(CFG.pipes.gapStart, CFG.pipes.gapEnd, easeT(score, CFG.pipes.gapEndScore)));
 const spawnInterval = () => lerp(CFG.pipes.spawnStart, CFG.pipes.spawnEnd, easeT(score, CFG.pipes.spawnEndScore));
@@ -810,16 +801,16 @@ updateDoublerHud();
 stopMusic();
 deathMusic.pause();
 deathMusic.currentTime = 0;
-document.getElementById('bestHud').textContent = Highest: ${storage.best};
+document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
 }
 function fitCanvas() {
 const aspect = W/H;
 const vw = innerWidth, vh = innerHeight;
 let cssW, cssH;
-if (vw/vh < aspect) { cssW = Math.min(vw, W2.5); cssH = Math.round(cssW/aspect); }
-else { cssH = Math.min(vh, H2.5); cssW = Math.round(cssHaspect); }
+if (vw/vh < aspect) { cssW = Math.min(vw, W*2.5); cssH = Math.round(cssW/aspect); }
+else { cssH = Math.min(vh, H*2.5); cssW = Math.round(cssH*aspect); }
 canvas.style.width = cssW + 'px'; canvas.style.height = cssH + 'px';
-canvas.width = Math.round(WDPR); canvas.height = Math.round(HDPR);
+canvas.width = Math.round(W*DPR); canvas.height = Math.round(H*DPR);
 ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.scale(DPR, DPR); ctx.imageSmoothingEnabled = false;
 }
 addEventListener('resize', fitCanvas, { passive: true }); fitCanvas();
@@ -841,7 +832,7 @@ state = 'running';
 if (doublerQueued && !doublerActive) {
 doublerActive = true;
 doublerT = DOUBLER_DURATION;
-doublerQueued = false;    // consume it
+doublerQueued = false; // consume it
 updateDoublerHud();
 showToast('✖️2 Points ON for 30s!');
 }
@@ -852,12 +843,12 @@ splashEl.style.display = 'none';
 bird.vy = CFG.physics.flapImpulse; sfx.flap();
 for (let i = 0; i < CFG.pipes.flapCount; i++) {
 particles.push({
-x: bird.x + Math.random()10,
-y: bird.y + Math.random()CFG.bird.size.h - CFG.bird.size.h/2,
-vx: -speedBase()0.3 + Math.random()30 - 15,
-vy: Math.random()-50 - 20,
-life: 1.0 + Math.random()0.8,
-size: 2 + Math.random()4,
+x: bird.x + Math.random()*10,
+y: bird.y + Math.random()*CFG.bird.size.h - CFG.bird.size.h/2,
+vx: -speedBase()*0.3 + Math.random()*30 - 15,
+vy: Math.random()*-50 - 20,
+life: 1.0 + Math.random()*0.8,
+size: 2 + Math.random()*4,
 color: 'rgba(255,255,255,0.6)',
 t: 0
 });
@@ -876,7 +867,7 @@ overPanel.style.display = 'none'; splashEl.style.display = '';
 state = 'ready'; resetGame(); announce('Back to splash');
 });
 document.getElementById('shareBtn').addEventListener('click', async () => {
-const text = I scored ${scoreNow.textContent} in Flipper Fish! Can you beat me?;
+const text = `I scored ${scoreNow.textContent} in Flipper Fish! Can you beat me?`;
 try {
 if (navigator.share) await navigator.share({ text, title: "Flipper Fish" });
 else { await navigator.clipboard.writeText(text); showToast('Copied to clipboard!'); }
@@ -885,13 +876,13 @@ else { await navigator.clipboard.writeText(text); showToast('Copied to clipboard
 function saveName() {
 const raw = (nameInput.value || '').trim();
 const clean = raw
-.replace(/[.#$/[]]/g, '')
+.replace(/[.#$/[\]]/g, '')
 .slice(0, 24);
 if (!clean) { showToast('Please enter a name'); nameInput.focus(); return; }
 if (containsOffense(clean)) { showToast('That name isn’t allowed'); nameInput.focus(); return; }
 localStorage.setItem('player_name', clean);
 nameModal.style.display = 'none';
-showToast(Hi, ${clean}!);
+showToast(`Hi, ${clean}!`);
 }
 document.getElementById('saveNameBtn').addEventListener('click', saveName);
 nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') saveName(); });
@@ -938,16 +929,16 @@ if (state !== 'running' || paused) return;
 const speed = speedBase();
 worldTime += dt; spawnTimer += dt;
 if (spawnTimer >= spawnInterval()) { spawnTimer = 0; spawnPipe(); }
-for (const c of bubblesFg) { c.x -= speedc.sdt; if (c.x < -80) c.x += W+160; }
-for (const c of bubblesBg) { c.x -= speedc.sdt; if (c.x < -80) c.x += W+160; }
+for (const c of bubblesFg) { c.x -= speed*c.s*dt; if (c.x < -80) c.x += W+160; }
+for (const c of bubblesBg) { c.x -= speed*c.s*dt; if (c.x < -80) c.x += W+160; }
 // Snapshot last safe player position before movement (used for revive)
 if (!window._reviveFlowActive) {
 window._lastSafe = { x: bird.x, y: bird.y };
 }
-bird.vy += CFG.physics.gravitydt;
+bird.vy += CFG.physics.gravity*dt;
 bird.vy = clamp(bird.vy, -9999, CFG.physics.maxFallSpeed);
-bird.y += bird.vydt; bird.y = clamp(bird.y, 2, H+1000);
-const targetRot = bird.vy < 0 ? -15Math.PI/180 : Math.min(60Math.PI/180, bird.vy/CFG.physics.maxFallSpeed(60Math.PI/180));
+bird.y += bird.vy*dt; bird.y = clamp(bird.y, 2, H+1000);
+const targetRot = bird.vy < 0 ? -15Math.PI/180 : Math.min(60*Math.PI/180, (bird.vy/CFG.physics.maxFallSpeed)*(60*Math.PI/180));
 bird.rot = lerp(bird.rot, targetRot, 0.12);
 if (magnetActive) {
 magnetT = Math.max(0, magnetT - dt);
@@ -980,9 +971,9 @@ p.scored = true;
 const addScore = doublerActive ? 2 : 1;
 score += addScore; hudScore.textContent = String(score);
 window.score = score;
-pops.push({ x: cx, y: p.gapY, t: 0, duration: CFG.scorePopup.duration, text: +${addScore} });
+pops.push({ x: cx, y: p.gapY, t: 0, duration: CFG.scorePopup.duration, text: `+${addScore}` });
 if (navigator.vibrate) navigator.vibrate(20);
-sfx.point(); announce(Score ${score});
+sfx.point(); announce(`Score ${score}`);
 const st = currentStage(); if (st !== lastStage) { lastStage = st; onStageChange(); }
 }
 }
@@ -1004,15 +995,15 @@ sfx.swoosh && sfx.swoosh();
 }
 score += CFG.collectibles.bonus * (doublerActive ? 2 : 1); hudScore.textContent = String(score);
 updateBank(1);
-sfx.collect(); showToast(+${CFG.collectibles.bonus} Bonus!);
+sfx.collect(); showToast(`+${CFG.collectibles.bonus} Bonus!`);
 for (let i = 0; i < CFG.particles.collectCount; i++) {
 particles.push({
 x: coll.x,
 y: coll.y,
-vx: Math.random()100 - 50,
-vy: Math.random()100 - 150,
-life: 0.8 + Math.random()0.4,
-size: 3 + Math.random()3,
+vx: Math.random()*100 - 50,
+vy: Math.random()*100 - 150,
+life: 0.8 + Math.random()*0.4,
+size: 3 + Math.random()*3,
 color: '#ffcc00',
 t: 0
 });
@@ -1023,7 +1014,7 @@ t: 0
 collectibles = collectibles.filter(c => c.x > -20 && !c.collected);
 const r = CFG.bird.hitboxRadius;
 const circle = { x: bird.x+2, y: bird.y, r };
-const penetrationNeeded = 0.1r;
+const penetrationNeeded = 0.1 * r;
 let hit = false;
 for (const p of pipes) {
 const topRect = { x: p.x, y: -10000, w: p.w, h: (p.gapY - p.gap/2) + 10000 };
@@ -1081,10 +1072,10 @@ const fallUntil = () => {
 const now = performance.now();
 const dt = Math.min((now - lastMs)/1000, 1/30);
 lastMs = now;
-bird.vy += CFG.physics.gravitydt;
+bird.vy += CFG.physics.gravity*dt;
 bird.vy = Math.min(bird.vy, CFG.physics.maxFallSpeed);
-bird.y += bird.vydt;
-bird.rot = lerp(bird.rot, 90Math.PI/180, 0.12);
+bird.y += bird.vy*dt;
+bird.rot = lerp(bird.rot, 90*Math.PI/180, 0.12);
 render();
 if (bird.y + CFG.bird.hitboxRadius < groundY) requestAnimationFrame(fallUntil);
 else { bird.y = groundY - CFG.bird.hitboxRadius; setTimeout(showGameOver, 800); }
@@ -1117,14 +1108,14 @@ storage.best = score;
 localStorage.setItem('sb_best', String(score));
 }
 bestNow.textContent = String(storage.best);
-document.getElementById('bestHud').textContent = Highest: ${storage.best};
+document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
 if (window.dbRef) {
 try {
 const key = (name || "Anonymous")
 .trim()
 .toLowerCase()
 .replace(/\s+/g, ' ')
-.replace(/[.#$/[]]/g, '');
+.replace(/[.#$/[\]]/g, '');
 const playerRef = firebase.database().ref("leaderboard").child(key);
 playerRef.once("value").then(snap => {
 const current = snap.val();
@@ -1175,18 +1166,18 @@ bestByName[nm] = { name: nm, score: sc, at };
 const list = Object.values(bestByName)
 .sort((a, b) => b.score - a.score || b.at - a.at)
 .slice(0, 5);
-const medal = i => i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : ${i+1}.;
+const medal = (i) => (i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i+1}.`);
 const html = list.length
-? list.map((p, i) =>
-<div class="board-row"><span>${medal(i)} ${p.name || "Anonymous"}</span><strong>${p.score}</strong></div>
-).join("")
-: "No scores yet";
+  ? list.map((p, i) =>
+      `<div class="board-row"><span>${medal(i)} ${p.name || "Anonymous"}</span><strong>${p.score}</strong></div>`
+    ).join("")
+  : "No scores yet";
 document.getElementById("leaderboardSplashBody").innerHTML = html;
 document.getElementById("leaderboardOverBody").innerHTML = html;
 }, error => {
 console.error('Leaderboard fetch error:', error.code, error.message);
-document.getElementById("leaderboardSplashBody").innerHTML = Error: ${error.message};
-document.getElementById("leaderboardOverBody").innerHTML = Error: ${error.message};
+document.getElementById("leaderboardSplashBody").innerHTML = `Error: ${error.message}`;
+document.getElementById("leaderboardOverBody").innerHTML = `Error: ${error.message}`;
 });
 }
 function roundedRect(x, y, w, h, r) {
@@ -1201,7 +1192,7 @@ ctx.closePath();
 function drawBubbles(bubbles, opacity=0.9) {
 for (const c of bubbles) {
 ctx.save(); ctx.translate(c.x, c.y);
-ctx.fillStyle = rgba(255,255,255,${opacity});
+ctx.fillStyle = `rgba(255,255,255,${opacity})`;
 ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI * 2); ctx.fill();
 ctx.beginPath(); ctx.arc(8, -6, 12, 0, Math.PI * 2); ctx.fill();
 ctx.beginPath(); ctx.arc(-10, 4, 15, 0, Math.PI * 2); ctx.fill();
@@ -1265,7 +1256,7 @@ ctx.restore();
 }
 function drawSeabed() {
 const speed = speedBase();
-const t = (worldTimespeed)%48;
+const t = (worldTime*speed)%48;
 const y = groundY;
 ctx.fillStyle = '#f4a460';
 ctx.fillRect(0, y, W, H-y);
@@ -1287,7 +1278,7 @@ ctx.beginPath();
 ctx.moveTo(coll.x, coll.y);
 for (let i = 0; i < Math.PI * 2; i += 0.1) {
 const r = (CFG.collectibles.size / 2) * (1 - i/(Math.PI * 2));
-ctx.lineTo(coll.x + Math.cos(i)r, coll.y + Math.sin(i)r);
+ctx.lineTo(coll.x + Math.cos(i)*r, coll.y + Math.sin(i)*r);
 }
 ctx.closePath();
 ctx.fill();
@@ -1350,16 +1341,16 @@ ctx.stroke();
 const fishX = (worldTime * 50) % (W + 100) - 100;
 const bgYOffset = Math.sin(worldTime * 2) * 4;
 if (bgFishImg.complete && bgFishImg.naturalWidth > 0) {
-ctx.drawImage(bgFishImg, W - fishX, H0.3 + bgYOffset, 20, 10);
-ctx.drawImage(bgFishImg, W - fishX - 20, H0.7 + bgYOffset, 15, 8);
+ctx.drawImage(bgFishImg, W - fishX, H*0.3 + bgYOffset, 20, 10);
+ctx.drawImage(bgFishImg, W - fishX - 20, H*0.7 + bgYOffset, 15, 8);
 } else {
 ctx.fillStyle = '#ff4500';
-roundedRect(W - fishX, H0.3 + bgYOffset, 20, 10, 4); ctx.fill();
-roundedRect(W - fishX - 20, H0.7 + bgYOffset, 15, 8, 3); ctx.fill();
+roundedRect(W - fishX, H*0.3 + bgYOffset, 20, 10, 4); ctx.fill();
+roundedRect(W - fishX - 20, H*0.7 + bgYOffset, 15, 8, 3); ctx.fill();
 }
 for (const pop of pops) {
 const t = clamp(pop.t/pop.duration, 0, 1);
-const y = pop.y - tCFG.scorePopup.dy;
+const y = pop.y - t*CFG.scorePopup.dy;
 ctx.globalAlpha = 1-t;
 ctx.fillStyle = '#fff'; ctx.font = 'bold 20px ui-rounded, system-ui, sans-serif'; ctx.textAlign = 'center';
 ctx.fillText(pop.text, pop.x, y);
@@ -1375,7 +1366,7 @@ loadLeaderboard();
 splashEl.style.display = '';
 Ads.hideBanner(); // hide on splash
 hudScore.textContent = '0';
-document.getElementById('bestHud').textContent = Highest: ${storage.best};
+document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
 bestNow.textContent = String(storage.best);
 updateBank(0);
 updateShieldHud();
@@ -1429,10 +1420,9 @@ requestAnimationFrame(loop);
 init();
 })();
 </script>
-
-<script>  
-if ('serviceWorker' in navigator) {  
-navigator.serviceWorker.register('./sw.js');  
-}  
-</script>  </body>    
+<script>
+if ('serviceWorker' in navigator) {
+navigator.serviceWorker.register('./sw.js');
+}
+</script> </body>
 </html>
