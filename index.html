@@ -544,7 +544,7 @@
                     showToast('Shield already equipped');
                     return;
                 }
-                const COST = 30;
+                const COST = 1;
                 if (shellBank < COST) {
                     showToast('Not enough shells');
                     return;
@@ -558,7 +558,7 @@ const buyDoublerBtn = document.getElementById('buyDoublerBtn');
 buyDoublerBtn.addEventListener('click', () => {
   if (doublerActive) { showToast('2× already active'); return; }
   if (doublerQueued) { showToast('2× already armed'); return; }
-  const COST = 40;
+  const COST = 1;
   if (shellBank < COST) { showToast('Not enough shells'); return; }
   updateBank(-COST);
   doublerQueued = true;          // arm for next run
