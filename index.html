@@ -321,6 +321,7 @@
         <div class="score">
             <div id="shieldHud" class="shield" aria-hidden="true" title="Shield active">🛡</div>
             <div id="magnetHud" class="shield" aria-hidden="true" title="Magnet active">🧲</div>
+            <div id="doublerHud" class="shield" aria-hidden="true" title="2x points">✖️2</div>
             <span id="scoreHud">0</span>
         </div>
         <div id="countdownHud" class="countdown" aria-hidden="true" style="display:none;"></div>
@@ -387,6 +388,14 @@
               </div>
               <button id="buyShieldBtn" class="btn">Buy</button>
             </div>
+<div id="doublerItem" style="margin-top:12px;padding:12px;border:2px solid #eee;border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+  <div style="text-align:left;">
+    <div style="font-weight:800;">✖️2 Points (30s)</div>
+    <div style="font-size:14px;opacity:.8;">Double score from pipes & shells for 30s.</div>
+    <div style="font-size:14px;margin-top:4px;">Cost: <strong>40</strong> 🐚</div>
+  </div>
+  <button id="buyDoublerBtn" class="btn">Buy</button>
+</div>
         </div>
     </div>
     <div id="howToModal" class="store-modal" role="dialog" aria-modal="true">
@@ -449,10 +458,10 @@
                 collectibles: { chance: 0.4, bonus: 2, size: 16 }
             };
             // --- Magnet settings ---
-            const MAGNET_THRESHOLD = 15;      // shells in a single run to trigger (set back to 15 later)
-            const MAGNET_DURATION = 30;      // seconds
-            const MAGNET_RADIUS = 110;       // px pull radius
-            const MAGNET_STRENGTH = 6;       // higher = faster pull
+            const MAGNET_THRESHOLD = 15; // shells in a single run to trigger (set back to 15 later)
+            const MAGNET_DURATION = 30; // seconds
+            const MAGNET_RADIUS = 110; // px pull radius
+            const MAGNET_STRENGTH = 6; // higher = faster pull
             // --- Normalization and profanity gate -------------------------------------
             const LEET_MAP = {
                 '@': 'a', '4': 'a', 'á': 'a', 'à': 'a', 'ä': 'a', 'â': 'a', 'å': 'a', 'æ': 'ae',
@@ -545,6 +554,18 @@
                 updateShieldHud();
                 showToast('Shield equipped!');
             });
+const buyDoublerBtn = document.getElementById('buyDoublerBtn');
+buyDoublerBtn.addEventListener('click', () => {
+  if (doublerActive && doublerT > 0) { showToast('2× already active'); return; }
+  const COST = 40;
+  if (shellBank < COST) { showToast('Not enough shells'); return; }
+  updateBank(-COST);
+  doublerActive = true;
+  doublerT = DOUBLER_DURATION;
+  updateDoublerHud();
+  showToast('✖️2 Points for 30s!');
+  sfx.swoosh && sfx.swoosh();
+});
             document.getElementById('howToPlayBtn').addEventListener('click', () => {
     document.getElementById('howToModal').style.display = 'grid';
   });
@@ -564,6 +585,12 @@
             let magnetActive = false;
             let magnetT = 0;
             let magnetUsedThisRun = false;
+            const DOUBLER_DURATION = 30; // seconds
+let doublerActive = false;
+let doublerT = 0;
+
+const doublerHud = document.getElementById('doublerHud');
+function updateDoublerHud(){ doublerHud.style.display = doublerActive ? 'block' : 'none'; }
             const storage = {
                 best: Number(localStorage.getItem('sb_best') || 0)
             };
@@ -654,6 +681,9 @@
                 magnetT = 0;
                 magnetUsedThisRun = false;
                 updateMagnetHud();
+                doublerActive = false;
+doublerT = 0;
+updateDoublerHud();
                 stopMusic();
                 deathMusic.pause();
                 deathMusic.currentTime = 0;
@@ -754,6 +784,9 @@
                 magnetT = 0;
                 magnetUsedThisRun = false;
                 updateMagnetHud();
+                doublerActive = false;
+doublerT = 0;
+updateDoublerHud();
                 state = 'respawn';
                 respawnCountdown = 3.0;
                 pipes.length = 0;
@@ -799,12 +832,16 @@
                         }
                     }
                 }
+if (doublerActive) {
+  doublerT = Math.max(0, doublerT - dt);
+  if (doublerT === 0) { doublerActive = false; updateDoublerHud(); showToast('✖️2 ended'); }
+}
                 for (const p of pipes) {
                     p.x -= speed*dt;
                     const cx = p.x + p.w/2;
                     if (!p.scored && cx < bird.x) {
                         p.scored = true;
-                        const addScore = 1;
+                        const addScore = doublerActive ? 2 : 1;
                         score += addScore; hudScore.textContent = String(score);
                         window.score = score;
                         pops.push({ x: cx, y: p.gapY, t: 0, duration: CFG.scorePopup.duration, text: `+${addScore}` });
@@ -829,7 +866,7 @@
                                 showToast('🧲 Magnet ON for 30s!');
                                 sfx.swoosh && sfx.swoosh();
                             }
-                            score += CFG.collectibles.bonus; hudScore.textContent = String(score);
+                            score += CFG.collectibles.bonus * (doublerActive ? 2 : 1); hudScore.textContent = String(score);
                             updateBank(1);
                             sfx.collect(); showToast(`+${CFG.collectibles.bonus} Bonus!`);
                             for (let i = 0; i < CFG.particles.collectCount; i++) {
@@ -918,7 +955,7 @@
                 const ref = firebase.database().ref("leaderboard");
                 ref.once("value").then(snap => {
                     const toRemove = [];
-                    let best = null;  snap.forEach(child => {
+                    let best = null; snap.forEach(child => {
                         const v = child.val();
                         if (!v || v.name !== name) return;
                         if (!best || v.score > best.score || (v.score === best.score && v.at > best.at)) {
@@ -1203,6 +1240,7 @@
                 updateBank(0);
                 updateShieldHud();
                 updateMagnetHud();
+updateDoublerHud();
                 overPanel.style.display = 'none';
                 lastMs = performance.now();
                 const existing = localStorage.getItem('player_name');
@@ -1242,6 +1280,7 @@
                     render();
                     updateShieldHud();
                     updateMagnetHud();
+updateDoublerHud();
                 } catch (e) {
                     console.error('Game loop error:', e);
                 }
