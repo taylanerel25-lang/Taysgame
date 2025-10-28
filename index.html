@@ -328,6 +328,20 @@
   padding:10px 14px; border-radius:10px; border:none; font-weight:700; cursor:pointer;
   background: var(--panel); color:#111; box-shadow: 0 2px 8px rgba(0,0,0,.15);
 }
+#ad-banner {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 64px;
+  display: none;                 /* hidden by default */
+  background: rgba(0,0,0,.85);
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: .5px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
     </style>
 </head>
 <body>
@@ -466,12 +480,30 @@
         (() => {
             'use strict';
 // --- ADS SHIM (safe if native AdsBridge isn't present)
+const WEB_REWARDED_MODE = 'grant'; // 'grant' to demo revive; change to 'fail' to test no-ad path
+
 window.Ads = {
-  showBanner: () => (window.AdsBridge && AdsBridge.showBanner) ? AdsBridge.showBanner() : void 0,
-  hideBanner: () => (window.AdsBridge && AdsBridge.hideBanner) ? AdsBridge.hideBanner() : void 0,
-  preloadRewarded: () => (window.AdsBridge && AdsBridge.preloadRewarded) ? AdsBridge.preloadRewarded() : void 0,
-  showRewardedForRevive: () => (window.AdsBridge && AdsBridge.showRewardedForRevive) ? AdsBridge.showRewardedForRevive() : (window.onRewardedNotAvailable && onRewardedNotAvailable())
-}; // Called from native when reward granted
+  showBanner: () => {
+    if (window.AdsBridge?.showBanner) return AdsBridge.showBanner();
+    const b = document.getElementById('ad-banner'); if (b) b.style.display = 'flex';
+  },
+  hideBanner: () => {
+    if (window.AdsBridge?.hideBanner) return AdsBridge.hideBanner();
+    const b = document.getElementById('ad-banner'); if (b) b.style.display = 'none';
+  },
+  preloadRewarded: () => (window.AdsBridge?.preloadRewarded ? AdsBridge.preloadRewarded() : void 0),
+  showRewardedForRevive: () => {
+    if (window.AdsBridge?.showRewardedForRevive) return AdsBridge.showRewardedForRevive();
+    // Web fallback: fake a short "ad", then either grant or fail
+    const el = document.getElementById('revive-popup');
+    if (el) el.querySelector('h3').textContent = 'Playing ad…';
+    setTimeout(() => {
+      if (WEB_REWARDED_MODE === 'grant') { window.onRewardEarned(); }
+      else { window.onRewardedNotAvailable(); }
+    }, 2500);
+  }
+};
+// Called from native when reward granted
 window.onRewardEarned = function () {
 try { revivePlayer(); } catch (e) { console.warn(e); }
 };
@@ -529,8 +561,9 @@ playMusic(); // resume bgm if applicable
 }
 // Called when a brand new run begins
 function onNewRunStart() {
-window.reviveUsed = false;
-window._reviveFlowActive = false;
+  paused = false;                // <-- add
+  window.reviveUsed = false;
+  window._reviveFlowActive = false;
 Ads.showBanner(); // banner during gameplay
 }
 // Fallback to original game over path
@@ -786,7 +819,8 @@ localStorage.setItem('sb_bank', String(shellBank));
 if (bankHud) bankHud.textContent = String(shellBank);
 }
 function resetGame() {
-score = 0; hudScore.textContent = '0'; worldTime = 0; spawnTimer = -0.5;
+  paused = false;                // <-- add
+  score = 0; hudScore.textContent = '0'; worldTime = 0; spawnTimer = -0.5;
 pipes.length = 0; pops.length = 0; collectibles.length = 0; particles.length = 0;
 bird = { x: BIRD_X, y: H * 0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };
 sfx.swoosh(); lastStage = -1;
@@ -862,8 +896,9 @@ if ([' ', 'w', 'arrowup'].includes(k)) { e.preventDefault(); flap(); }
 if (k === 'p' && state === 'running') { paused = !paused; showToast(paused ? 'Paused' : 'Resumed'); }
 }, { passive: false });
 document.getElementById('againBtn').addEventListener('click', () => {
-Ads.hideBanner();
-overPanel.style.display = 'none'; splashEl.style.display = '';
+  Ads.hideBanner();
+  paused = false;                // <-- add
+  overPanel.style.display = 'none'; splashEl.style.display = '';
 state = 'ready'; resetGame(); announce('Back to splash');
 });
 document.getElementById('shareBtn').addEventListener('click', async () => {
@@ -900,7 +935,8 @@ collectibles.push({ x: W + 10 + CFG.pipes.width / 2, y: collY, collected: false 
 }
 }
 function startRespawn() {
-shieldActive = false;
+  paused = false;                // <-- add
+  shieldActive = false;
 updateShieldHud();
 runShellsCollected = 0;
 magnetActive = false;
@@ -938,7 +974,7 @@ window._lastSafe = { x: bird.x, y: bird.y };
 bird.vy += CFG.physics.gravity*dt;
 bird.vy = clamp(bird.vy, -9999, CFG.physics.maxFallSpeed);
 bird.y += bird.vy*dt; bird.y = clamp(bird.y, 2, H+1000);
-const targetRot = bird.vy < 0 ? -15*Math.PI/180 : Math.min(60*Math.PI/180, (bird.vy/CFG.physics.maxFallSpeed)*(60*Math.PI/180));
+const targetRot = bird.vy < 0 ? -15Math.PI/180 : Math.min(60*Math.PI/180, (bird.vy/CFG.physics.maxFallSpeed)*(60*Math.PI/180));
 bird.rot = lerp(bird.rot, targetRot, 0.12);
 if (magnetActive) {
 magnetT = Math.max(0, magnetT - dt);
@@ -964,7 +1000,7 @@ doublerT = Math.max(0, doublerT - dt);
 if (doublerT === 0) { doublerActive = false; updateDoublerHud(); showToast('✖️2 ended'); }
 }
 for (const p of pipes) {
-p.x -= speed*dt;
+p.x -= speeddt;
 const cx = p.x + p.w/2;
 if (!p.scored && cx < bird.x) {
 p.scored = true;
@@ -1424,5 +1460,7 @@ init();
 if ('serviceWorker' in navigator) {
 navigator.serviceWorker.register('./sw.js');
 }
-</script> </body>
+</script> 
+<div id="ad-banner" aria-hidden="true">[ Banner Ad ]</div>
+</body>
 </html>
