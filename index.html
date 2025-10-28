@@ -337,7 +337,6 @@
   color: #fff;
   font-weight: 700;
   letter-spacing: .5px;
-  display: none;
   align-items: center;
   justify-content: center;
   z-index: 10000;
@@ -974,7 +973,7 @@ window._lastSafe = { x: bird.x, y: bird.y };
 bird.vy += CFG.physics.gravity*dt;
 bird.vy = clamp(bird.vy, -9999, CFG.physics.maxFallSpeed);
 bird.y += bird.vy*dt; bird.y = clamp(bird.y, 2, H+1000);
-const targetRot = bird.vy < 0 ? -15Math.PI/180 : Math.min(60*Math.PI/180, (bird.vy/CFG.physics.maxFallSpeed)*(60*Math.PI/180));
+const targetRot = bird.vy < 0 ? -15 * Math.PI / 180 : Math.min(60 * Math.PI / 180, (bird.vy / CFG.physics.maxFallSpeed) * (60 * Math.PI / 180));
 bird.rot = lerp(bird.rot, targetRot, 0.12);
 if (magnetActive) {
 magnetT = Math.max(0, magnetT - dt);
@@ -1000,7 +999,7 @@ doublerT = Math.max(0, doublerT - dt);
 if (doublerT === 0) { doublerActive = false; updateDoublerHud(); showToast('✖️2 ended'); }
 }
 for (const p of pipes) {
-p.x -= speeddt;
+p.x -= speed * dt;
 const cx = p.x + p.w/2;
 if (!p.scored && cx < bird.x) {
 p.scored = true;
