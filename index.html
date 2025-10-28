@@ -329,8 +329,6 @@
   background: var(--panel); color:#111; box-shadow: 0 2px 8px rgba(0,0,0,.15);
 }
 #ad-banner {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
   height: 64px;
   display: none;                 /* hidden by default */
   background: rgba(0,0,0,.85);
@@ -340,6 +338,9 @@
   align-items: center;
   justify-content: center;
   z-index: 10000;
+  margin-top: 20px; /* extra spacing above leaderboard */
+  margin-bottom: 12px; /* extra spacing below banner */
+  border-radius: 10px;
 }
     </style>
 </head>
@@ -385,7 +386,8 @@
                 <button id="shareBtn" class="btn">Share</button>
                 <button id="storeBtn" class="btn">Shell Store</button>
             </div>
-            <div id="leaderboardOver" class="panel dark" style="margin-top:12px;padding:12px;">
+            <div id="ad-banner" aria-hidden="true">[ Banner Ad ]</div>
+            <div id="leaderboardOver" class="panel dark" style="padding:12px;">
                 <div style="text-align:center;font-weight:800;">🏆 Leaderboard</div>
                 <div id="leaderboardOverBody" style="margin-top:6px;font-size:16px;">Loading...</div>
             </div>
@@ -548,17 +550,9 @@ function revivePlayer() {
 window.reviveUsed = true;
 window._reviveFlowActive = false;
 closeRevivePopup();
-if (window._lastSafe) {
-bird.x = window._lastSafe.x;
-bird.y = window._lastSafe.y;
-bird.vy = 0;
-bird.rot = 0;
-}
 overPanel.style.display = 'none'; // ensure game over panel hidden
-resumeGameLoopIfPaused(); // resume play
-playMusic(); // resume bgm if applicable
+startRespawn();
 }
-// Called when a brand new run begins
 function onNewRunStart() {
   paused = false;                // <-- add
   window.reviveUsed = false;
@@ -623,7 +617,7 @@ const BAD_WORDS_B64 = [
 "ZnVja3lvdQ==", "ZWF0c2hpdA==", "Z28tdG8taGVsbA==", "c3Vja215", "c3Vja2l0dXA=",
 "aWRpb3Q=", "ZHVtYmFzcw==", "amFja2Fzcw==", "bW9yb24=", "aWRpb3RpYw==", "azlzcyI=",
 "c3R1cGlk", "aG9yZWJhZw==", "bG93bGlmZQ==",
-"Ym9sbG94", "YnVnZ2VyZQ==", "d2Fua2Vy", "c25pdmZsZQ==", "bm9i", "bm9iZW5k"
+"Ym9sbG94", "YnVnZ2VyZQ==", "d2Fua2Vy", "c25pdmZsZQ==", "bn9i", "bm9iZW5k"
 ].map(atob);
 const BAD = new Set(BAD_WORDS_B64.map(normalizeBad));
 function containsOffense(name) {
@@ -1460,6 +1454,5 @@ if ('serviceWorker' in navigator) {
 navigator.serviceWorker.register('./sw.js');
 }
 </script> 
-<div id="ad-banner" aria-hidden="true">[ Banner Ad ]</div>
 </body>
 </html>
