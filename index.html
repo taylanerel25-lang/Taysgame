@@ -716,7 +716,7 @@ best: Number(localStorage.getItem('sb_best') || 0)
 };
 let shellBank = Number(localStorage.getItem('sb_bank') || 0);
 const BIRD_X = Math.round(W * 0.28);
-let bird = { x: BIRD_X, y: H0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };
+let bird = { x: BIRD_X, y: H * 0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };
 const pipes = [];
 const pops = [];
 const bubblesBg = [
@@ -743,7 +743,7 @@ const stageSkies = ['#20b2aa', '#00bfff', '#4682b4', '#191970', '#00ced1'];
 const stagePipes = ['#ff7f50', '#ff4500', '#cd5b45', '#a52a2a', '#ff6347'];
 let lastStage = -1;
 const currentStage = () => 0;
-const onStageChange = () => { showToast(Stage ${currentStage()+1}!); };
+const onStageChange = () => { showToast(`Stage ${currentStage()+1}!`); };
 let audioCtx = null;
 const beep = (type, freq, dur, vol=0.2) => {
 if (!audioCtx) return;
@@ -779,7 +779,7 @@ bgMusic.pause();
 bgMusic.currentTime = 0;
 }
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-const lerp = (a, b, t) => a + (b-a)t;
+const lerp = (a, b, t) => a + (b-a)*t;
 const easeT = (s, end) => clamp(s/end, 0, 1);
 const pipeGap = () => (window.dynamicPipeGap ?? lerp(CFG.pipes.gapStart, CFG.pipes.gapEnd, easeT(score, CFG.pipes.gapEndScore)));
 const spawnInterval = () => lerp(CFG.pipes.spawnStart, CFG.pipes.spawnEnd, easeT(score, CFG.pipes.spawnEndScore));
@@ -794,7 +794,7 @@ if (bankHud) bankHud.textContent = String(shellBank);
 function resetGame() {
 score = 0; hudScore.textContent = '0'; worldTime = 0; spawnTimer = -0.5;
 pipes.length = 0; pops.length = 0; collectibles.length = 0; particles.length = 0;
-bird = { x: BIRD_X, y: H0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };
+bird = { x: BIRD_X, y: H * 0.5, vy: 0, rot: 0, frame: 0, frameTimer: 0 };
 sfx.swoosh(); lastStage = -1;
 runShellsCollected = 0;
 magnetActive = false;
@@ -807,17 +807,17 @@ updateDoublerHud();
 stopMusic();
 deathMusic.pause();
 deathMusic.currentTime = 0;
-document.getElementById('bestHud').textContent = Highest: ${storage.best};
+document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
 }
 function fitCanvas() {
-const aspect = W/H;
-const vw = innerWidth, vh = innerHeight;
-let cssW, cssH;
-if (vw/vh < aspect) { cssW = Math.min(vw, W2.5); cssH = Math.round(cssW/aspect); }
-else { cssH = Math.min(vh, H2.5); cssW = Math.round(cssHaspect); }
-canvas.style.width = cssW + 'px'; canvas.style.height = cssH + 'px';
-canvas.width = Math.round(WDPR); canvas.height = Math.round(HDPR);
-ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.scale(DPR, DPR); ctx.imageSmoothingEnabled = false;
+  const aspect = W/H;
+  const vw = innerWidth, vh = innerHeight;
+  let cssW, cssH;
+  if (vw/vh < aspect) { cssW = Math.min(vw, W*2.5); cssH = Math.round(cssW/aspect); }
+  else { cssH = Math.min(vh, H*2.5); cssW = Math.round(cssH*aspect); }
+  canvas.style.width = cssW + 'px'; canvas.style.height = cssH + 'px';
+  canvas.width = Math.round(W*DPR); canvas.height = Math.round(H*DPR);
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.scale(DPR, DPR); ctx.imageSmoothingEnabled = false;
 }
 addEventListener('resize', fitCanvas, { passive: true }); fitCanvas();
 const flap = () => {
@@ -849,14 +849,14 @@ splashEl.style.display = 'none';
 bird.vy = CFG.physics.flapImpulse; sfx.flap();
 for (let i = 0; i < CFG.pipes.flapCount; i++) {
 particles.push({
-x: bird.x + Math.random()10,
-y: bird.y + Math.random()CFG.bird.size.h - CFG.bird.size.h/2,
-vx: -speedBase()0.3 + Math.random()30 - 15,
-vy: Math.random()-50 - 20,
-life: 1.0 + Math.random()0.8,
-size: 2 + Math.random()4,
-color: 'rgba(255,255,255,0.6)',
-t: 0
+  x: bird.x + Math.random()*10,
+  y: bird.y + Math.random()*CFG.bird.size.h - CFG.bird.size.h/2,
+  vx: -speedBase()*0.3 + Math.random()*30 - 15,
+  vy: Math.random()*-50 - 20,
+  life: 1.0 + Math.random()*0.8,
+  size: 2 + Math.random()*4,
+  color: 'rgba(255,255,255,0.6)',
+  t: 0
 });
 }
 };
@@ -873,7 +873,7 @@ Ads.hideBanner();
     state = 'ready'; resetGame(); announce('Back to splash');
 });
 document.getElementById('shareBtn').addEventListener('click', async () => {
-const text = I scored ${scoreNow.textContent} in Flipper Fish! Can you beat me?;
+const text = `I scored ${scoreNow.textContent} in Flipper Fish! Can you beat me?`;
 try {
 if (navigator.share) await navigator.share({ text, title: "Flipper Fish" });
 else { await navigator.clipboard.writeText(text); showToast('Copied to clipboard!'); }
@@ -882,13 +882,13 @@ else { await navigator.clipboard.writeText(text); showToast('Copied to clipboard
 function saveName() {
 const raw = (nameInput.value || '').trim();
 const clean = raw
-.replace(/[.#$/[]]/g, '')
+.replace(/[.#$/[\]]/g, '')
 .slice(0, 24);
 if (!clean) { showToast('Please enter a name'); nameInput.focus(); return; }
 if (containsOffense(clean)) { showToast('That name isn’t allowed'); nameInput.focus(); return; }
 localStorage.setItem('player_name', clean);
 nameModal.style.display = 'none';
-showToast(Hi, ${clean}!);
+showToast(`Hi, ${clean}!`);
 }
 document.getElementById('saveNameBtn').addEventListener('click', saveName);
 nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') saveName(); });
@@ -935,16 +935,16 @@ if (state !== 'running' || paused) return;
 const speed = speedBase();
 worldTime += dt; spawnTimer += dt;
 if (spawnTimer >= spawnInterval()) { spawnTimer = 0; spawnPipe(); }
-for (const c of bubblesFg) { c.x -= speedc.sdt; if (c.x < -80) c.x += W+160; }
-for (const c of bubblesBg) { c.x -= speedc.sdt; if (c.x < -80) c.x += W+160; }
+for (const c of bubblesFg) { c.x -= speed*c.s*dt; if (c.x < -80) c.x += W+160; }
+for (const c of bubblesBg) { c.x -= speed*c.s*dt; if (c.x < -80) c.x += W+160; }
 // Snapshot last safe player position before movement (used for revive)
 if (!window._reviveFlowActive) {
   window._lastSafe = { x: bird.x, y: bird.y };
 }
-bird.vy += CFG.physics.gravitydt;
+bird.vy += CFG.physics.gravity*dt;
 bird.vy = clamp(bird.vy, -9999, CFG.physics.maxFallSpeed);
-bird.y += bird.vydt; bird.y = clamp(bird.y, 2, H+1000);
-const targetRot = bird.vy < 0 ? -15Math.PI/180 : Math.min(60Math.PI/180, bird.vy/CFG.physics.maxFallSpeed*(60Math.PI/180));
+bird.y += bird.vy*dt; bird.y = clamp(bird.y, 2, H+1000);
+const targetRot = bird.vy < 0 ? -15*Math.PI/180 : Math.min(60*Math.PI/180, bird.vy/CFG.physics.maxFallSpeed*(60*Math.PI/180));
 bird.rot = lerp(bird.rot, targetRot, 0.12);
 if (magnetActive) {
 magnetT = Math.max(0, magnetT - dt);
@@ -970,16 +970,16 @@ doublerT = Math.max(0, doublerT - dt);
 if (doublerT === 0) { doublerActive = false; updateDoublerHud(); showToast('✖️2 ended'); }
 }
 for (const p of pipes) {
-p.x -= speeddt;
+p.x -= speed*dt;
 const cx = p.x + p.w/2;
 if (!p.scored && cx < bird.x) {
 p.scored = true;
 const addScore = doublerActive ? 2 : 1;
 score += addScore; hudScore.textContent = String(score);
 window.score = score;
-pops.push({ x: cx, y: p.gapY, t: 0, duration: CFG.scorePopup.duration, text: +${addScore} });
+pops.push({ x: cx, y: p.gapY, t: 0, duration: CFG.scorePopup.duration, text: `+${addScore}` });
 if (navigator.vibrate) navigator.vibrate(20);
-sfx.point(); announce(Score ${score});
+sfx.point(); announce(`Score ${score}`);
 const st = currentStage(); if (st !== lastStage) { lastStage = st; onStageChange(); }
 }
 }
@@ -1001,15 +1001,15 @@ sfx.swoosh && sfx.swoosh();
 }
 score += CFG.collectibles.bonus * (doublerActive ? 2 : 1); hudScore.textContent = String(score);
 updateBank(1);
-sfx.collect(); showToast(+${CFG.collectibles.bonus} Bonus!);
+sfx.collect(); showToast(`+${CFG.collectibles.bonus} Bonus!`);
 for (let i = 0; i < CFG.particles.collectCount; i++) {
 particles.push({
 x: coll.x,
 y: coll.y,
-vx: Math.random()100 - 50,
-vy: Math.random()100 - 150,
-life: 0.8 + Math.random()0.4,
-size: 3 + Math.random()3,
+vx: Math.random()*100 - 50,
+vy: Math.random()*100 - 150,
+life: 0.8 + Math.random()*0.4,
+size: 3 + Math.random()*3,
 color: '#ffcc00',
 t: 0
 });
@@ -1020,7 +1020,7 @@ t: 0
 collectibles = collectibles.filter(c => c.x > -20 && !c.collected);
 const r = CFG.bird.hitboxRadius;
 const circle = { x: bird.x+2, y: bird.y, r };
-const penetrationNeeded = 0.1r;
+const penetrationNeeded = 0.1*r;
 let hit = false;
 for (const p of pipes) {
 const topRect = { x: p.x, y: -10000, w: p.w, h: (p.gapY - p.gap/2) + 10000 };
@@ -1078,10 +1078,10 @@ const fallUntil = () => {
 const now = performance.now();
 const dt = Math.min((now - lastMs)/1000, 1/30);
 lastMs = now;
-bird.vy += CFG.physics.gravitydt;
+bird.vy += CFG.physics.gravity*dt;
 bird.vy = Math.min(bird.vy, CFG.physics.maxFallSpeed);
-bird.y += bird.vydt;
-bird.rot = lerp(bird.rot, 90Math.PI/180, 0.12);
+bird.y += bird.vy*dt;
+bird.rot = lerp(bird.rot, 90*Math.PI/180, 0.12);
 render();
 if (bird.y + CFG.bird.hitboxRadius < groundY) requestAnimationFrame(fallUntil);
 else { bird.y = groundY - CFG.bird.hitboxRadius; setTimeout(showGameOver, 800); }
@@ -1114,14 +1114,14 @@ storage.best = score;
 localStorage.setItem('sb_best', String(score));
 }
 bestNow.textContent = String(storage.best);
-document.getElementById('bestHud').textContent = Highest: ${storage.best};
+document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
 if (window.dbRef) {
 try {
 const key = (name || "Anonymous")
 .trim()
 .toLowerCase()
 .replace(/\s+/g, ' ')
-.replace(/[.#$/[]]/g, '');
+.replace(/[.#$/[\]]/g, '');
 const playerRef = firebase.database().ref("leaderboard").child(key);
 playerRef.once("value").then(snap => {
 const current = snap.val();
@@ -1172,20 +1172,18 @@ bestByName[nm] = { name: nm, score: sc, at };
 const list = Object.values(bestByName)
 .sort((a, b) => b.score - a.score || b.at - a.at)
 .slice(0, 5);
-const medal = i => i === 0 ? "🥇" :
-i === 1 ? "🥈" :
-i === 2 ? "🥉" : ${i+1}.;
+const medal = i => i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i+1}.`;
 const html = list.length
-? list.map((p, i) =>
-<div class="board-row"><span>${medal(i)} ${p.name || "Anonymous"}</span><strong>${p.score}</strong></div>
-).join("")
-: "No scores yet";
+  ? list.map((p, i) =>
+      `<div class="board-row"><span>${medal(i)} ${p.name || "Anonymous"}</span><strong>${p.score}</strong></div>`
+    ).join("")
+  : "No scores yet";
 document.getElementById("leaderboardSplashBody").innerHTML = html;
 document.getElementById("leaderboardOverBody").innerHTML = html;
 }, error => {
 console.error('Leaderboard fetch error:', error.code, error.message);
-document.getElementById("leaderboardSplashBody").innerHTML = Error: ${error.message};
-document.getElementById("leaderboardOverBody").innerHTML = Error: ${error.message};
+document.getElementById("leaderboardSplashBody").innerHTML = `Error: ${error.message}`;
+document.getElementById("leaderboardOverBody").innerHTML = `Error: ${error.message}`;
 });
 }
 function roundedRect(x, y, w, h, r) {
@@ -1198,14 +1196,14 @@ ctx.arcTo(x, y, x+w, y, r);
 ctx.closePath();
 }
 function drawBubbles(bubbles, opacity=0.9) {
-for (const c of bubbles) {
-ctx.save(); ctx.translate(c.x, c.y);
-ctx.fillStyle = rgba(255,255,255,${opacity});
-ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI2); ctx.fill();
-ctx.beginPath(); ctx.arc(8, -6, 12, 0, Math.PI2); ctx.fill();
-ctx.beginPath(); ctx.arc(-10, 4, 15, 0, Math.PI2); ctx.fill();
-ctx.restore();
-}
+  for (const c of bubbles) {
+    ctx.save(); ctx.translate(c.x, c.y);
+    ctx.fillStyle = `rgba(255,255,255,${opacity})`;
+    ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(8, -6, 12, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(-10, 4, 15, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
 }
 function drawCoralAndSharks() {
 const stage = currentStage();
@@ -1243,7 +1241,7 @@ ctx.fill();
 function drawFish() {
 ctx.save();
 const w = CFG.bird.size.w, h = CFG.bird.size.h;
-const idleBob = (state === 'ready') ? Math.sin(worldTimeMath.PI4)CFG.birdIdleBobPx : 0;
+const idleBob = (state === 'ready') ? Math.sin(worldTime * Math.PI * 4) * CFG.birdIdleBobPx : 0;
 ctx.translate(bird.x, bird.y + idleBob);
 ctx.rotate(bird.rot);
 if (playerFishImg.complete && playerFishImg.naturalWidth > 0) {
@@ -1264,15 +1262,15 @@ ctx.restore();
 }
 function drawSeabed() {
 const speed = speedBase();
-const t = (worldTimespeed)%48;
+const t = (worldTime*speed)%48;
 const y = groundY;
 ctx.fillStyle = '#f4a460';
 ctx.fillRect(0, y, W, H-y);
 ctx.fillStyle = '#20b2aa'; ctx.fillRect(0, y-8, W, 8);
 ctx.fillStyle = 'rgba(255,255,255,.2)';
 for (let x = -t; x < W; x += 48) {
-ctx.beginPath(); ctx.arc(x+12, y+12, 8, 0, Math.PI2); ctx.fill();
-ctx.beginPath(); ctx.arc(x+36, y+24, 6, 0, Math.PI2); ctx.fill();
+ctx.beginPath(); ctx.arc(x+12, y+12, 8, 0, Math.PI * 2); ctx.fill();
+ctx.beginPath(); ctx.arc(x+36, y+24, 6, 0, Math.PI * 2); ctx.fill();
 }
 }
 function drawCollectibles() {
@@ -1284,9 +1282,9 @@ grad.addColorStop(1, '#ffd700');
 ctx.fillStyle = grad;
 ctx.beginPath();
 ctx.moveTo(coll.x, coll.y);
-for (let i = 0; i < Math.PI2; i += 0.1) {
-const r = (CFG.collectibles.size / 2) * (1 - i/(Math.PI2));
-ctx.lineTo(coll.x + Math.cos(i)r, coll.y + Math.sin(i)r);
+for (let i = 0; i < Math.PI * 2; i += 0.1) {
+const r = (CFG.collectibles.size / 2) * (1 - i/(Math.PI * 2));
+ctx.lineTo(coll.x + Math.cos(i)*r, coll.y + Math.sin(i)*r);
 }
 ctx.closePath();
 ctx.fill();
@@ -1349,16 +1347,16 @@ ctx.stroke();
 const fishX = (worldTime * 50) % (W + 100) - 100;
 const bgYOffset = Math.sin(worldTime * 2) * 4;
 if (bgFishImg.complete && bgFishImg.naturalWidth > 0) {
-ctx.drawImage(bgFishImg, W - fishX, H0.3 + bgYOffset, 20, 10);
-ctx.drawImage(bgFishImg, W - fishX - 20, H0.7 + bgYOffset, 15, 8);
+ctx.drawImage(bgFishImg, W - fishX, H*0.3 + bgYOffset, 20, 10);
+ctx.drawImage(bgFishImg, W - fishX - 20, H*0.7 + bgYOffset, 15, 8);
 } else {
 ctx.fillStyle = '#ff4500';
-roundedRect(W - fishX, H0.3 + bgYOffset, 20, 10, 4); ctx.fill();
-roundedRect(W - fishX - 20, H0.7 + bgYOffset, 15, 8, 3); ctx.fill();
+roundedRect(W - fishX, H*0.3 + bgYOffset, 20, 10, 4); ctx.fill();
+roundedRect(W - fishX - 20, H*0.7 + bgYOffset, 15, 8, 3); ctx.fill();
 }
 for (const pop of pops) {
 const t = clamp(pop.t/pop.duration, 0, 1);
-const y = pop.y - tCFG.scorePopup.dy;
+const y = pop.y - t*CFG.scorePopup.dy;
 ctx.globalAlpha = 1-t;
 ctx.fillStyle = '#fff'; ctx.font = 'bold 20px ui-rounded, system-ui, sans-serif'; ctx.textAlign = 'center';
 ctx.fillText(pop.text, pop.x, y);
@@ -1374,7 +1372,7 @@ loadLeaderboard();
 splashEl.style.display = '';
 Ads.hideBanner(); // hide on splash
 hudScore.textContent = '0';
-document.getElementById('bestHud').textContent = Highest: ${storage.best};
+document.getElementById('bestHud').textContent = `Highest: ${storage.best}`;
 bestNow.textContent = String(storage.best);
 updateBank(0);
 updateShieldHud();
