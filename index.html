@@ -932,36 +932,26 @@ collectibles.push({ x: W + 10 + CFG.pipes.width / 2, y: collY, collected: false 
 }
 function startRespawn() {
   paused = false;
-function startRespawn() {
-    paused = false;
-    // Hide banner during gameplay
-    if (window.AdsBridge?.hideBanner) AdsBridge.hideBanner();
-    else Ads.hideBanner?.();
-}
-               // <-- add
-  shieldActive = false;
-updateShieldHud();
-runShellsCollected = 0;
-magnetActive = false;
-magnetT = 0;
-magnetUsedThisRun = false;
-updateMagnetHud();
-doublerActive = false;
-doublerT = 0;
-updateDoublerHud();
-state = 'respawn';
-respawnCountdown = 3.0;
-pipes.length = 0;
-collectibles.length = 0;
-pops.length = 0;
-spawnTimer = -0.5;
-bird.vy = 0;
-bird.rot = 0;
-bird.x = BIRD_X;
-bird.y = H * 0.5;
-countdownEl.style.display = '';
-countdownEl.textContent = Math.ceil(respawnCountdown).toString();
-stopMusic();
+  // Hide banner during gameplay
+  if (window.AdsBridge?.hideBanner) AdsBridge.hideBanner();
+  else Ads.hideBanner?.();
+  shieldActive = false; updateShieldHud();
+  runShellsCollected = 0;
+  // reset magnet
+  magnetActive = false; magnetT = 0; magnetUsedThisRun = false; updateMagnetHud();
+  // reset 2x
+  doublerActive = false; doublerT = 0; updateDoublerHud();
+  state = 'respawn';
+  respawnCountdown = 3.0;
+  // clear world
+  pipes.length = 0; collectibles.length = 0; pops.length = 0;
+  spawnTimer = -0.5;
+  // reset bird
+  bird.vy = 0; bird.rot = 0; bird.x = BIRD_X; bird.y = H * 0.5;
+  // countdown UI
+  countdownEl.style.display = '';
+  countdownEl.textContent = Math.ceil(respawnCountdown).toString();
+  stopMusic();
 }
 function update(dt) {
 if (state !== 'running' || paused) return;
@@ -1061,27 +1051,14 @@ const botRect = { x: p.x, y: (p.gapY + p.gap/2), w: p.w, h: (groundY - (p.gapY +
 if (circleRectDeepOverlap(circle, topRect, penetrationNeeded) || circleRectDeepOverlap(circle, botRect, penetrationNeeded)) { hit = true; break; }
 }
 if (circle.y + circle.r >= groundY) {
-if (shieldActive) {
-startRespawn();
-return;
-} else {
-// Attempt ad-based revive once per run
-if (!window.reviveUsed && tryReviveFlow()) return;
-die();
-return;
-}
+  if (shieldActive) { startRespawn(); return; }
+  if (!window.reviveUsed && tryReviveFlow()) return;
+  die(); return;
 }
 if (hit) {
-  sfx.ha();
-  if (window.AdsBridge) AdsBridge.hideBanner();
-  startRespawn();
-  return;
-}
-sfx.ha();
-// Attempt ad-based revive once per run
-if (!window.reviveUsed && tryReviveFlow()) return;
-die();
-return;
+  if (shieldActive) { startRespawn(); return; }
+  if (!window.reviveUsed && tryReviveFlow()) return;
+  die(); return;
 }
 for (let i = pops.length-1; i >= 0; i--) { const pop = pops[i]; pop.t += dt; if (pop.t >= pop.duration) pops.splice(i, 1); }
 for (let i = particles.length-1; i >= 0; i--) {
@@ -1104,7 +1081,7 @@ return overlap > needed;
 function die() {
 state = 'dead'; paused = false;
 if (navigator.vibrate) navigator.vibrate(80);
-sfx_die();
+sfx.die();
 // ✅ Show ad banner at game over
 if (window.AdsBridge) AdsBridge.showBanner();
 stopMusic();
@@ -1469,82 +1446,3 @@ navigator.serviceWorker.register('./sw.js');
 </script>
 </body>
 </html>
----
-📋 GROK TODO (do only these changes)
-Scope rule: Do not reformat, reorder, or “clean up” anything else. Only the exact blocks below.
----
-1) Fix duplicate startRespawn() (this freezes the game)
-Find the section that currently looks like this (it has TWO function headers):
-function startRespawn() {
-  paused = false;
-function startRespawn() {
-    paused = false;
-    // Hide banner during gameplay
-    if (window.AdsBridge?.hideBanner) AdsBridge.hideBanner();
-    else Ads.hideBanner?.();
-    ...
-Replace that whole function with this single clean version:
-function startRespawn() {
-  paused = false;
-  // Hide banner during gameplay
-  if (window.AdsBridge?.hideBanner) AdsBridge.hideBanner();
-  else Ads.hideBanner?.();
-  shieldActive = false; updateShieldHud();
-  runShellsCollected = 0;
-  // reset magnet
-  magnetActive = false; magnetT = 0; magnetUsedThisRun = false; updateMagnetHud();
-  // reset 2x
-  doublerActive = false; doublerT = 0; updateDoublerHud();
-  state = 'respawn';
-  respawnCountdown = 3.0;
-  // clear world
-  pipes.length = 0; collectibles.length = 0; pops.length = 0;
-  spawnTimer = -0.5;
-  // reset bird
-  bird.vy = 0; bird.rot = 0; bird.x = BIRD_X; bird.y = H * 0.5;
-  // countdown UI
-  countdownEl.style.display = '';
-  countdownEl.textContent = Math.ceil(respawnCountdown).toString();
-  stopMusic();
-}
----
-2) Fix duplicated collision end block (causes instant die/freeze)
-Find the whole region starting after the ground collision check and ending before the particle loop. It currently contains BOTH an if (hit) { ... startRespawn(); } and then another loose sfx.ha(); ... die(); return; block. It will look like this:
-if (circle.y + circle.r >= groundY) {
-  ...
-}
-if (hit) {
-  sfx.ha();
-  if (window.AdsBridge) AdsBridge.hideBanner();
-  startRespawn();
-  return;
-}
-sfx.ha();
-// Attempt ad-based revive once per run
-if (!window.reviveUsed && tryReviveFlow()) return;
-die();
-return;
-}
-Replace that entire region with this tidy logic (one path only):
-if (circle.y + circle.r >= groundY) {
-  if (shieldActive) { startRespawn(); return; }
-  if (!window.reviveUsed && tryReviveFlow()) return;
-  die(); return;
-}
-if (hit) {
-  if (shieldActive) { startRespawn(); return; }
-  if (!window.reviveUsed && tryReviveFlow()) return;
-  die(); return;
-}
----
-3) Fix wrong sound call in die() (typo)
-In function die(), find:
-sfx_die();
-Replace with:
-sfx.die();
----
-4) Do not touch anything else
-No reindent, no renames, no moving code.
-Keep the ad container <div id="ad-container"> and the JS Ads.showBanner() in showGameOver() as-is.
-Leave CSS and HTML unchanged.
----
