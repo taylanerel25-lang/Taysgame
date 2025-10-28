@@ -458,7 +458,7 @@
                 collectibles: { chance: 0.4, bonus: 2, size: 16 }
             };
             // --- Magnet settings ---
-            const MAGNET_THRESHOLD = 1; // shells in a single run to trigger (set back to 15 later)
+            const MAGNET_THRESHOLD = 15; // shells in a single run to trigger (set back to 15 later)
             const MAGNET_DURATION = 30; // seconds
             const MAGNET_RADIUS = 110; // px pull radius
             const MAGNET_STRENGTH = 6; // higher = faster pull
@@ -544,7 +544,7 @@
                     showToast('Shield already equipped');
                     return;
                 }
-                const COST = 1;
+                const COST = 30;
                 if (shellBank < COST) {
                     showToast('Not enough shells');
                     return;
@@ -556,14 +556,14 @@
             });
 const buyDoublerBtn = document.getElementById('buyDoublerBtn');
 buyDoublerBtn.addEventListener('click', () => {
-  if (doublerActive && doublerT > 0) { showToast('2× already active'); return; }
-  const COST = 1;
+  if (doublerActive) { showToast('2× already active'); return; }
+  if (doublerQueued) { showToast('2× already armed'); return; }
+  const COST = 40;
   if (shellBank < COST) { showToast('Not enough shells'); return; }
   updateBank(-COST);
-  doublerActive = true;
-  doublerT = DOUBLER_DURATION;
+  doublerQueued = true;          // arm for next run
   updateDoublerHud();
-  showToast('✖️2 Points for 30s!');
+  showToast('✖️2 armed for next run!');
   sfx.swoosh && sfx.swoosh();
 });
             document.getElementById('howToPlayBtn').addEventListener('click', () => {
@@ -589,8 +589,19 @@ buyDoublerBtn.addEventListener('click', () => {
 let doublerActive = false;
 let doublerT = 0;
 
+// ADD THIS LINE:
+let doublerQueued = false; // armed for next run (survives resetGame)
+
 const doublerHud = document.getElementById('doublerHud');
-function updateDoublerHud(){ doublerHud.style.display = doublerActive ? 'block' : 'none'; }
+function updateDoublerHud(){
+  if (doublerActive || doublerQueued) {
+    doublerHud.style.display = 'block';
+    doublerHud.style.opacity = doublerActive ? '1' : '0.6'; // dim when queued
+    doublerHud.title = doublerActive ? '2x points active' : '2x points armed for next run';
+  } else {
+    doublerHud.style.display = 'none';
+  }
+}
             const storage = {
                 best: Number(localStorage.getItem('sb_best') || 0)
             };
@@ -714,6 +725,13 @@ updateDoublerHud();
                     updateShieldHud();
                     updateMagnetHud();
                     state = 'running';
+if (doublerQueued && !doublerActive) {
+  doublerActive = true;
+  doublerT = DOUBLER_DURATION;
+  doublerQueued = false;    // consume it
+  updateDoublerHud();
+  showToast('✖️2 Points ON for 30s!');
+}
                     playMusic();
                     announce('Game started');
                     splashEl.style.display = 'none';
