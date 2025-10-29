@@ -669,10 +669,12 @@ document.querySelector('.splash-inner .btn').addEventListener('click', () => {
 storeModal.style.display = 'grid';
 });
 document.getElementById('storeBtn').addEventListener('click', () => {
-storeModal.style.display = 'grid';
+    storeModal.style.display = 'grid';
+    Ads.hideBanner?.(); // ✅ hide ad when store is open
 });
 closeStoreBtn.addEventListener('click', () => {
-storeModal.style.display = 'none';
+    storeModal.style.display = 'none';
+    if (state === 'dead') Ads.showBanner?.(); // ✅ Only show again at Game Over
 });
 buyShieldBtn.addEventListener('click', () => {
 if (shieldActive) {
@@ -702,7 +704,8 @@ showToast('✖️2 armed for next run!');
 sfx.swoosh && sfx.swoosh();
 });
 document.getElementById('howToPlayBtn').addEventListener('click', () => {
-document.getElementById('howToModal').style.display = 'grid';
+    document.getElementById('howToModal').style.display = 'grid';
+    Ads.hideBanner?.(); // ✅ hide ad when help dialog is open
 });
 document.getElementById('closeHowToBtn').addEventListener('click', () => {
 document.getElementById('howToModal').style.display = 'none';
